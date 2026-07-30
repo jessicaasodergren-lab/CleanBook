@@ -2,14 +2,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase, type Booking, type Incident } from './lib/supabase';
 import HostView from './components/HostView';
 import CleanerView from './components/CleanerView';
-import { Sparkles, Home, UserCheck, Lock, KeyRound, LogOut } from 'lucide-react';
+import { Sparkles, Home, UserCheck, Lock, KeyRound, LogOut, ArrowRight, ShieldCheck, Globe } from 'lucide-react';
 
 type ViewMode = 'landing' | 'host' | 'cleaner';
+type HostLanguage = 'sv' | 'en' | 'da';
 
-const CLEANER_PIN = '1234'; // Lösenord för Maria
+const CLEANER_PIN = '1234';
 
 export default function App() {
   const [view, setView] = useState<ViewMode>('landing');
+  const [hostLang, setHostLang] = useState<HostLanguage>('sv');
   const [cleanerAuth, setCleanerAuth] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
@@ -25,8 +27,8 @@ export default function App() {
       supabase.from('incidents').select('*').order('created_at', { ascending: false }),
     ]);
 
-    if (bRes.error) console.error('Fel vid hämtning av bokningar:', bRes.error);
-    if (iRes.error) console.error('Fel vid hämtning av incidenter:', iRes.error);
+    if (bRes.error) console.error('Error fetching bookings:', bRes.error);
+    if (iRes.error) console.error('Error fetching incidents:', iRes.error);
 
     setBookings((bRes.data as Booking[]) ?? []);
     setIncidents((iRes.data as Incident[]) ?? []);
@@ -36,6 +38,11 @@ export default function App() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  const handleSelectHost = (lang: HostLanguage) => {
+    setHostLang(lang);
+    setView('host');
+  };
 
   const handleCleanerLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,108 +61,207 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={handleGoHome}>
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
+      <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/80">
+        <div className="max-w-xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div
+            className="flex items-center gap-3 cursor-pointer group select-none"
+            onClick={handleGoHome}
+          >
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-all">
+              <Sparkles className="w-5 h-5 fill-white/20" />
             </div>
-            <span className="font-extrabold text-slate-900 text-lg">CleanBook</span>
+            <div>
+              <span className="font-black text-white text-lg tracking-wider block leading-none">
+                CleanBook
+              </span>
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+                Premium Cleaning
+              </span>
+            </div>
           </div>
 
-          {/* Hem / Byt roll-knapp när man är inne i en vy */}
           {view !== 'landing' && (
             <button
               onClick={handleGoHome}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition border border-slate-300"
-              title="Gå till startsidan / Byt roll"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700/80 shadow-md active:scale-95"
             >
-              <LogOut className="w-4 h-4" />
-              <span>Startsida</span>
+              <LogOut className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Change role</span>
             </button>
           )}
         </div>
       </header>
 
-      {/* Content */}
-      <main>
+      {/* Main Content */}
+      <main className="py-8">
         {view === 'landing' ? (
-          /* VÄLKOMMENSKÄRM / ROLLVAL */
-          <div className="max-w-md mx-auto px-4 py-12 space-y-8 text-center">
-            <div className="space-y-2">
-              <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto text-emerald-600">
-                <Sparkles className="w-8 h-8" />
+          /* STARTSIDA PÅ ENGELSKA MED ALLA SPRÅKVAL */
+          <div className="max-w-md mx-auto px-4 py-4 space-y-6">
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                <ShieldCheck className="w-4 h-4" /> Simple & secure cleaning management
               </div>
-              <h1 className="text-3xl font-black text-slate-900">Välkommen till CleanBook</h1>
-              <p className="text-slate-600 text-sm">Välj din roll för att fortsätta</p>
+              <h1 className="text-3xl font-black text-white tracking-tight leading-tight">
+                Welcome to <br />
+                <span className="bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
+                  CleanBook
+                </span>
+              </h1>
+              <p className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
+                Select your profile & language to manage cleaning assignments
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              {/* KORT 1: VÄRD */}
+            <div className="space-y-3 pt-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1 block">
+                Property Owner / Host Options
+              </span>
+
+              {/* VÄRD (SVENSKA) */}
               <button
-                onClick={() => setView('host')}
-                className="bg-white hover:bg-emerald-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-emerald-600 shadow-md transition text-left flex items-center justify-between group"
+                onClick={() => handleSelectHost('sv')}
+                className="w-full text-left bg-slate-800/60 hover:bg-slate-800 p-4 rounded-2xl border border-slate-700/60 hover:border-emerald-500/60 transition-all duration-300 group shadow-lg relative overflow-hidden"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Home className="w-5 h-5 text-emerald-600" />
-                    <span className="text-xl font-bold text-slate-900">Värd (Svenska)</span>
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                      <Home className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-sm group-hover:text-emerald-400 transition-colors flex items-center gap-2">
+                        Värd (Svenska) <span className="text-xs">🇸🇪</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Boka städning med din fastighetskod
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500">Boka städning med din fastighetskod</p>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center text-slate-400 transition">
-                  →
+                  <div className="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-all">
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
                 </div>
               </button>
 
-              {/* KORT 2: LIMPIADORA */}
+              {/* HOST (ENGLISH) */}
+              <button
+                onClick={() => handleSelectHost('en')}
+                className="w-full text-left bg-slate-800/60 hover:bg-slate-800 p-4 rounded-2xl border border-slate-700/60 hover:border-emerald-500/60 transition-all duration-300 group shadow-lg relative overflow-hidden"
+              >
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                      <Globe className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-sm group-hover:text-emerald-400 transition-colors flex items-center gap-2">
+                        Host (English) <span className="text-xs">🇬🇧</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Book cleaning with your property code
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-all">
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </button>
+
+              {/* VÆRT (DANSK) */}
+              <button
+                onClick={() => handleSelectHost('da')}
+                className="w-full text-left bg-slate-800/60 hover:bg-slate-800 p-4 rounded-2xl border border-slate-700/60 hover:border-emerald-500/60 transition-all duration-300 group shadow-lg relative overflow-hidden"
+              >
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                      <Home className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-sm group-hover:text-emerald-400 transition-colors flex items-center gap-2">
+                        Vært (Dansk) <span className="text-xs">🇩🇰</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Bestil rengøring med din ejendomskode
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-all">
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </button>
+
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1 block pt-3">
+                Cleaner Option
+              </span>
+
+              {/* LIMPIADORA (ESPAÑOL) */}
               <button
                 onClick={() => setView('cleaner')}
-                className="bg-white hover:bg-sky-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-sky-600 shadow-md transition text-left flex items-center justify-between group"
+                className="w-full text-left bg-slate-800/60 hover:bg-slate-800 p-4 rounded-2xl border border-slate-700/60 hover:border-sky-500/60 transition-all duration-300 group shadow-lg relative overflow-hidden"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-sky-600" />
-                    <span className="text-xl font-bold text-slate-900">Limpiadora (Español)</span>
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30 group-hover:scale-105 transition-transform">
+                      <UserCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-sm group-hover:text-sky-400 transition-colors flex items-center gap-2">
+                        Limpiadora (Español) <span className="text-xs">🇪🇸</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Panel de tareas para Maria
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500">Panel de tareas y propiedades para Maria</p>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-sky-600 group-hover:text-white flex items-center justify-center text-slate-400 transition">
-                  →
+                  <div className="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 group-hover:bg-sky-500 group-hover:text-white flex items-center justify-center transition-all">
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
                 </div>
               </button>
             </div>
           </div>
         ) : view === 'host' ? (
-          <HostView bookings={bookings} loading={loading} onRefresh={fetchAll} />
+          <HostView bookings={bookings} loading={loading} onRefresh={fetchAll} lang={hostLang} />
         ) : !cleanerAuth ? (
-          /* LÖSENORDSSKÄRM FÖR MARIAS VY */
-          <div className="max-w-md mx-auto px-4 py-16 text-center space-y-6">
-            <div className="w-16 h-16 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto text-sky-600">
-              <Lock className="w-8 h-8" />
-            </div>
-            <h2 className="text-2xl font-black text-slate-900">Acceso restringido</h2>
-            <p className="text-sm text-slate-600">Introduce la contraseña de limpiadora para acceder.</p>
+          /* LÖSENORDSSKÄRM */
+          <div className="max-w-sm mx-auto px-4 py-8 space-y-6">
+            <div className="bg-slate-800/70 border border-slate-700/80 rounded-3xl p-6 text-center space-y-5 shadow-2xl backdrop-blur-sm">
+              <div className="w-14 h-14 bg-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto border border-sky-500/30">
+                <Lock className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white">Acceso restringido</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Introduce la contraseña de limpiadora
+                </p>
+              </div>
 
-            <form onSubmit={handleCleanerLogin} className="space-y-4">
-              <input
-                type="password"
-                placeholder="PIN (1234)"
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                className="w-full text-center text-xl font-mono tracking-widest p-3 border-2 border-slate-300 rounded-xl focus:border-sky-600 outline-none"
-                autoFocus
-              />
-              {pinError && <p className="text-sm font-bold text-red-600">Contraseña incorrecta. (Prueba 1234)</p>}
-              <button
-                type="submit"
-                className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2"
-              >
-                <KeyRound className="w-5 h-5" /> Entrar
-              </button>
-            </form>
+              <form onSubmit={handleCleanerLogin} className="space-y-4">
+                <input
+                  type="password"
+                  placeholder="PIN (1234)"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  className="w-full text-center text-2xl font-mono tracking-widest px-4 py-3 bg-slate-900 border border-slate-700 rounded-2xl text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none transition-all font-bold"
+                  autoFocus
+                />
+                {pinError && (
+                  <p className="text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+                    Contraseña incorrecta. (Prueba 1234)
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-black py-3.5 rounded-2xl transition shadow-lg shadow-sky-500/20 active:scale-95 flex items-center justify-center gap-2 text-sm"
+                >
+                  <KeyRound className="w-4 h-4" /> Entrar
+                </button>
+              </form>
+            </div>
           </div>
         ) : (
           <CleanerView

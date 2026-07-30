@@ -2,22 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property, type NewIncident } from '../lib/supabase';
 import { TIME_LABELS, formatDate, getUrgency } from '../lib/constants';
 import {
-  Check,
-  Clock,
-  Users,
-  BedDouble,
-  StickyNote,
-  Camera,
+  ChevronDown,
+  ChevronUp,
   Loader2,
-  AlertTriangle,
   X,
-  CheckCircle2,
-  Home,
+  Clock,
+  Building,
+  MapPin,
   User,
+  Check,
+  Camera,
   Plus,
   KeyRound,
-  Building2,
-  PlayCircle,
 } from 'lucide-react';
 
 interface CleanerViewProps {
@@ -31,6 +27,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
   const [activeTab, setActiveTab] = useState<'jobs' | 'properties'>('jobs');
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [openIncidentFor, setOpenIncidentFor] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [newPropName, setNewPropName] = useState('');
@@ -58,7 +55,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
     const { data: existing } = await supabase.from('properties').select('id').eq('passcode', code);
     if (existing && existing.length > 0) {
-      setPropError('¡Este código ya existe! Por favor usa un código diferente para esta propiedad.');
+      setPropError('¡Este código ya existe! Por favor usa un código diferente.');
       return;
     }
 
@@ -90,131 +87,172 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
     onRefresh();
   };
 
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      {/* VÄXLA FLIKAR */}
-      <div className="flex bg-slate-200 p-1 rounded-xl font-bold text-sm">
+    <div className="max-w-xl mx-auto px-4 space-y-6">
+      {/* FLIK-REGLEGE */}
+      <div className="flex bg-slate-900/90 p-1.5 rounded-2xl border border-slate-700/80 text-xs font-black shadow-xl">
         <button
           onClick={() => setActiveTab('jobs')}
-          className={`flex-1 py-2.5 rounded-lg transition flex items-center justify-center gap-2 ${
-            activeTab === 'jobs' ? 'bg-slate-900 text-white shadow' : 'text-slate-700 hover:text-slate-900'
+          className={`flex-1 py-3 rounded-xl transition flex items-center justify-center gap-2 ${
+            activeTab === 'jobs' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
           }`}
         >
           <Clock className="w-4 h-4" /> Tareas de Limpieza ({upcoming.length})
         </button>
         <button
           onClick={() => setActiveTab('properties')}
-          className={`flex-1 py-2.5 rounded-lg transition flex items-center justify-center gap-2 ${
-            activeTab === 'properties' ? 'bg-slate-900 text-white shadow' : 'text-slate-700 hover:text-slate-900'
+          className={`flex-1 py-3 rounded-xl transition flex items-center justify-center gap-2 ${
+            activeTab === 'properties' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <Building2 className="w-4 h-4" /> Mis Propiedades ({properties.length})
+          <Building className="w-4 h-4" /> Mis Propiedades ({properties.length})
         </button>
       </div>
 
       {activeTab === 'jobs' ? (
         loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 text-sky-600 animate-spin" />
+            <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
           </div>
         ) : upcoming.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-slate-300">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
-            <p className="text-slate-800 font-bold text-lg">¡Todo limpio! No hay tareas pendientes.</p>
+          <div className="text-center py-12 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-8 space-y-2">
+            <p className="text-white font-black text-lg">¡Todo limpio!</p>
+            <p className="text-slate-400 text-xs">No hay tareas pendientes en este momento.</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {upcoming.map((b) => {
               const urgency = getUrgency(b);
               const isSameDay = urgency.type === 'same_day';
+              const isExpanded = expandedId === b.id;
               const displayNote = b.notes_es || b.notes;
+
+              const displayAddress = b.property_address || b.property_name;
+              const displayHost =
+                b.host_name && b.host_name !== 'Värd'
+                  ? b.host_name
+                  : b.property_name !== displayAddress
+                  ? b.property_name
+                  : null;
 
               return (
                 <div
                   key={b.id}
-                  className={`bg-white rounded-2xl border-4 shadow-lg overflow-hidden transition ${
-                    isSameDay ? 'border-red-500' : 'border-slate-800'
-                  }`}
+                  className="bg-white text-slate-900 rounded-3xl overflow-hidden shadow-2xl transition-all border border-slate-200"
                 >
-                  {/* DEADLINE / BRÅDSKA BANDÅ */}
                   <div
-                    className={`px-5 py-3 font-black text-sm uppercase tracking-wide flex items-center justify-between ${
-                      isSameDay
-                        ? 'bg-red-600 text-white animate-pulse'
-                        : urgency.type === 'flexible'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-sky-700 text-white'
+                    className={`h-2.5 w-full ${
+                      isSameDay ? 'bg-rose-500 animate-pulse' : urgency.type === 'flexible' ? 'bg-emerald-500' : 'bg-sky-500'
                     }`}
-                  >
-                    <span>{urgency.title}</span>
-                  </div>
+                  />
 
-                  <div className="p-5 space-y-4">
-                    {/* FASTIGHET & VÄRD */}
-                    <div className="border-b border-slate-200 pb-3">
-                      <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                        <Home className="w-6 h-6 text-slate-700" /> {b.property_name}
-                      </h3>
-                      {b.host_name && (
-                        <p className="text-sm font-semibold text-slate-600 mt-1 flex items-center gap-1">
-                          <User className="w-4 h-4" /> Anfitriona: <span className="text-slate-900 font-bold">{b.host_name}</span>
+                  <div className="p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                              isSameDay
+                                ? 'bg-rose-500 text-white'
+                                : urgency.type === 'flexible'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-sky-100 text-sky-800 border border-sky-300'
+                            }`}
+                          >
+                            {urgency.title}
+                          </span>
+
+                          <span
+                            className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                              b.laundry
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {b.laundry ? '🧺 Lavar: SÍ' : '🚫 No lavar'}
+                          </span>
+                        </div>
+
+                        <h3 className="font-black text-slate-900 text-lg leading-snug flex items-center gap-1.5 pt-0.5">
+                          <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="truncate">{displayAddress}</span>
+                        </h3>
+
+                        <p className="text-xs text-slate-600 font-semibold">
+                          Plazo límite:{" "}
+                          <span className="font-black text-slate-900">{urgency.text}</span>
                         </p>
-                      )}
-                    </div>
-
-                    {/* STÄDFÖNSTER: START & DEADLINE */}
-                    <div className="bg-slate-100 p-4 rounded-xl border border-slate-300 space-y-2">
-                      <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
-                        <PlayCircle className="w-5 h-5 text-amber-600" />
-                        <span>Inicio más temprano: {b.vacant_now ? <b className="text-emerald-700">Puede empezar ya (Vacía)</b> : <b>{formatDate(b.departure_date, 'es')}</b>} ({TIME_LABELS.es[b.departure_time_window as keyof typeof TIME_LABELS.es] || b.departure_time_window})</span>
                       </div>
-                      <p className="text-sm font-bold text-slate-700 pt-2 border-t border-slate-200">
-                        📌 Plazo límite: {urgency.text}
-                      </p>
-                    </div>
 
-                    {/* INFORMATION OM UPPDRAGET */}
-                    <div className="flex flex-wrap gap-2">
-                      <div className="bg-slate-200 text-slate-800 font-bold text-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                        <Users className="w-4 h-4" /> {b.guests} huéspedes
-                      </div>
-                      <div
-                        className={`font-bold text-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${
-                          b.laundry ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-slate-200 text-slate-700'
-                        }`}
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(b.id)}
+                        className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition shrink-0 mt-1"
                       >
-                        <BedDouble className="w-4 h-4" /> {b.laundry ? '🧺 Lavar ropa usada: SÍ' : '🚫 Lavar ropa: NO'}
-                      </div>
+                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </button>
                     </div>
 
-                    {/* ANTECKNINGAR */}
-                    {displayNote && (
-                      <div className="bg-amber-100 border-2 border-amber-300 p-3 rounded-xl flex items-start gap-2">
-                        <StickyNote className="w-5 h-5 text-amber-800 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-bold text-amber-900 uppercase">Instrucciones de la anfitriona:</p>
-                          <p className="text-sm font-bold text-amber-950">{displayNote}</p>
+                    {isExpanded && (
+                      <div className="pt-3 border-t border-slate-100 space-y-3 text-xs">
+                        <div className="bg-slate-50 p-3.5 rounded-2xl space-y-2 border border-slate-100">
+                          {displayHost && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500 font-bold flex items-center gap-1">
+                                <User className="w-3.5 h-3.5" /> Anfitriona:
+                              </span>
+                              <span className="font-black text-slate-900">{displayHost}</span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500 font-bold">Huéspedes:</span>
+                            <span className="font-black text-slate-900">{b.guests} personas</span>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500 font-bold">Inicio más temprano:</span>
+                            <span className="font-black text-slate-900">
+                              {b.vacant_now
+                                ? 'Puede empezar ya (Vacía)'
+                                : `${formatDate(b.departure_date, 'es')} (${TIME_LABELS.es[b.departure_time_window as keyof typeof TIME_LABELS.es] || b.departure_time_window})`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {displayNote && (
+                          <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl space-y-1">
+                            <span className="font-black text-amber-900 block uppercase text-[10px] tracking-wider">
+                              Instrucciones:
+                            </span>
+                            <p className="font-bold text-amber-950 leading-relaxed">{displayNote}</p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setOpenIncidentFor(b.id)}
+                            className="py-3 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+                          >
+                            <Camera className="w-4 h-4 text-slate-600" /> Reportar foto
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleComplete(b.id)}
+                            disabled={completingId === b.id}
+                            className="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1.5"
+                          >
+                            {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Completado
+                          </button>
                         </div>
                       </div>
                     )}
-                  </div>
-
-                  {/* KNAPPAR */}
-                  <div className="grid grid-cols-2 divide-x-2 divide-slate-800 border-t-2 border-slate-800">
-                    <button
-                      onClick={() => setOpenIncidentFor(b.id)}
-                      className="py-4 bg-slate-100 hover:bg-slate-200 font-bold text-slate-900 flex items-center justify-center gap-2 transition"
-                    >
-                      <Camera className="w-5 h-5 text-slate-700" /> Reportar foto
-                    </button>
-                    <button
-                      onClick={() => handleComplete(b.id)}
-                      disabled={completingId === b.id}
-                      className="py-4 bg-emerald-600 hover:bg-emerald-700 font-extrabold text-white flex items-center justify-center gap-2 transition"
-                    >
-                      {completingId === b.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                      Completado
-                    </button>
                   </div>
                 </div>
               );
@@ -222,81 +260,131 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
           </div>
         )
       ) : (
-        /* FASTIGHETS-FLIKEN */
+        /* FASTIGHETSFLIKEN (MIS PROPIEDADES) */
         <div className="space-y-6">
-          <form onSubmit={handleCreateProperty} className="bg-white p-5 rounded-2xl border-2 border-slate-800 shadow-md space-y-4">
-            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-emerald-600" /> Registrar Nueva Propiedad
-            </h3>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la propiedad *</label>
-              <input
-                type="text"
-                placeholder="Ej. Gran Vista 45"
-                value={newPropName}
-                onChange={(e) => setNewPropName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-bold text-slate-900"
-                required
-              />
+          {/* REGISTRERA FORMULÄR */}
+          <form onSubmit={handleCreateProperty} className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black">
+                <Plus className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-black text-slate-900">Registrar Nueva Propiedad</h3>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la anfitriona (Värd)</label>
-              <input
-                type="text"
-                placeholder="Ej. Anna"
-                value={newPropHost}
-                onChange={(e) => setNewPropHost(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm text-slate-900"
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la propiedad *</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Gran Vista 45"
+                  value={newPropName}
+                  onChange={(e) => setNewPropName(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 transition"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la anfitriona (Värd)</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Jessica"
+                  value={newPropHost}
+                  onChange={(e) => setNewPropHost(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 font-medium outline-none focus:bg-white focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Dirección completa *</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Calle Bach 71, Gran Alacant"
+                  value={newPropAddress}
+                  onChange={(e) => setNewPropAddress(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 font-medium outline-none focus:bg-white focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Código Secreto / Contraseña *</label>
+                <input
+                  type="text"
+                  placeholder="Ej. GV45"
+                  value={newPropPasscode}
+                  onChange={(e) => setNewPropPasscode(e.target.value.toUpperCase())}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold uppercase text-slate-900 outline-none focus:bg-white focus:border-emerald-500 transition"
+                  required
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Dirección completa</label>
-              <input
-                type="text"
-                placeholder="Ej. Calle Bach 71, Gran Alacant"
-                value={newPropAddress}
-                onChange={(e) => setNewPropAddress(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Código Secreto / Contraseña *</label>
-              <input
-                type="text"
-                placeholder="Ej. GV45 o BACH71"
-                value={newPropPasscode}
-                onChange={(e) => setNewPropPasscode(e.target.value.toUpperCase())}
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-mono font-bold uppercase text-slate-900"
-                required
-              />
-            </div>
-
-            {propError && <p className="text-sm font-bold text-red-600 bg-red-50 p-2.5 rounded-lg">{propError}</p>}
+            {propError && <p className="text-xs font-bold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">{propError}</p>}
 
             <button
               type="submit"
               disabled={savingProp}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
             >
-              {savingProp ? <Loader2 className="w-5 h-5 animate-spin" /> : <KeyRound className="w-5 h-5" />}
-              Guardar Propiedad y Código
+              {savingProp ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+              Guardar Propiedad
             </button>
           </form>
 
+          {/* FASTIGHETER MED KORT & ETIKETTER */}
           <div className="space-y-3">
-            <h4 className="font-bold text-slate-800 text-base">Tus Propiedades Registradas ({properties.length})</h4>
+            <h4 className="font-black text-white text-xs uppercase tracking-wider px-1">
+              Tus Propiedades ({properties.length})
+            </h4>
+
             {properties.map((p) => (
-              <div key={p.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                <div>
-                  <h5 className="font-black text-slate-900">{p.name}</h5>
-                  <p className="text-xs text-slate-500">{p.address} {p.host_name ? `· Anfitriona: ${p.host_name}` : ''}</p>
+              <div
+                key={p.id}
+                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xl space-y-4 text-slate-900 relative overflow-hidden"
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-black">
+                      <Building className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h5 className="font-black text-slate-900 text-base leading-tight">
+                        {p.name}
+                      </h5>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Fastighet / Propiedad
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider">
+                      Lösen / Código
+                    </span>
+                    <span className="inline-block px-3 py-1 bg-slate-900 text-emerald-400 font-mono font-black text-xs rounded-xl border border-slate-700 shadow-sm mt-0.5">
+                      🔑 {p.passcode}
+                    </span>
+                  </div>
                 </div>
-                <div className="bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-lg border border-emerald-300 text-xs font-mono font-bold flex items-center gap-1">
-                  <KeyRound className="w-3.5 h-3.5" /> Código: {p.passcode}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-emerald-600" /> Värd / Anfitriona
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-xs">
+                      {p.host_name || 'Ej angiven'}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Adress / Dirección
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-xs truncate block">
+                      {p.address || p.name}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -308,7 +396,6 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
       {openIncidentFor && (
         <IncidentModal
           bookingId={openIncidentFor}
-          existing={incidents.filter((i) => i.booking_id === openIncidentFor)}
           onClose={() => setOpenIncidentFor(null)}
           onSaved={() => {
             setOpenIncidentFor(null);
@@ -322,12 +409,10 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
 function IncidentModal({
   bookingId,
-  existing,
   onClose,
   onSaved,
 }: {
   bookingId: string;
-  existing: Incident[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -358,13 +443,11 @@ function IncidentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
-        <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
-          <h3 className="font-bold flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-400" /> Reportar foto / incidencia
-          </h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-800 rounded">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
+      <div className="bg-white text-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="font-black text-sm text-slate-900">Reportar foto / incidencia</h3>
+          <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -372,7 +455,7 @@ function IncidentModal({
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Foto (Opcional)</label>
-            <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm" />
+            <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-xs text-slate-600" />
           </div>
 
           <div>
@@ -381,8 +464,8 @@ function IncidentModal({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
-              placeholder="Ej. Silla rota en terraza, llave dejada en buzón..."
-              className="w-full border border-slate-300 rounded-lg p-2.5 text-sm"
+              placeholder="Ej. Silla rota en terraza..."
+              className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-xs outline-none focus:bg-white focus:border-slate-400 transition"
               required
             />
           </div>
@@ -390,9 +473,9 @@ function IncidentModal({
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-1.5"
           >
-            {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             Guardar reporte
           </button>
         </form>
