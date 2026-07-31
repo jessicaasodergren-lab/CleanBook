@@ -28,14 +28,14 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
 
   const [bookingTitle, setBookingTitle] = useState('');
   
-  // Incheckning
+  // Incheckning - INGET FÖRVALT TIDSFÖNSTER (måste väljas)
   const [nextArrivalDate, setNextArrivalDate] = useState('');
-  const [arrivalTimeWindow, setArrivalTimeWindow] = useState<ArrivalTimeWindow>('afternoon');
+  const [arrivalTimeWindow, setArrivalTimeWindow] = useState<ArrivalTimeWindow | ''>('');
   const [arrivalExactTime, setArrivalExactTime] = useState('');
   
-  // Utcheckning / Städstart
+  // Utcheckning / Städstart - INGET FÖRVALT TIDSFÖNSTER (måste väljas)
   const [departureDate, setDepartureDate] = useState('');
-  const [departureTimeWindow, setDepartureTimeWindow] = useState<DepartureTimeWindow>('morning');
+  const [departureTimeWindow, setDepartureTimeWindow] = useState<DepartureTimeWindow | ''>('');
   const [departureExactTime, setDepartureExactTime] = useState('');
   
   const [guests, setGuests] = useState(2);
@@ -80,6 +80,12 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       return;
     }
 
+    // TVINGANDE VAL AV TIDSFÖNSTER
+    if (!arrivalTimeWindow || !departureTimeWindow) {
+      setErrorMsg('Vänligen välj ett ankomstfönster och ett utcheckningsfönster (Förmiddag, Eftermiddag eller Kväll).');
+      return;
+    }
+
     if (departureDate < nextArrivalDate) {
       setErrorMsg('Utcheckningsdatumet (städstart) kan inte vara före incheckningsdatumet.');
       return;
@@ -118,14 +124,16 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
     if (error) {
       setErrorMsg(`Kunde inte skapa bokningen: ${error.message}`);
     } else {
-      const inserted = data ? (data[0] as Booking) : (newBookingData as Booking);
+      const inserted = data && data.length > 0 ? (data[0] as Booking) : (newBookingData as Booking);
       setCreatedBooking(inserted);
       
       // Återställ formuläret
       setBookingTitle('');
       setNextArrivalDate('');
+      setArrivalTimeWindow('');
       setArrivalExactTime('');
       setDepartureDate('');
+      setDepartureTimeWindow('');
       setDepartureExactTime('');
       setNotes('');
       onBookingCreated();
@@ -157,9 +165,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
 
   return (
     <div className="space-y-4">
-      {/* LYCKAD BOKNING MODAL / BOX */}
+      {/* LYCKAD BOKNING MODAL / BOX MED WHATSAPP-KNAPP */}
       {createdBooking && (
-        <div className="bg-emerald-500 text-slate-950 p-5 rounded-3xl space-y-3 shadow-xl border border-emerald-400">
+        <div className="bg-emerald-500 text-slate-950 p-5 rounded-3xl space-y-3 shadow-xl border border-emerald-400 animate-in fade-in slide-in-from-top duration-300">
           <div className="flex items-center gap-2">
             <Check className="w-6 h-6 bg-slate-950 text-emerald-400 p-1 rounded-full shrink-0" />
             <div>
@@ -262,10 +270,10 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               </div>
             </div>
 
-            {/* KNAPPAR FÖR ANKOMSTTID */}
+            {/* KNAPPAR FÖR ANKOMSTTID - INGET FÖRVALT */}
             <div>
               <label className="block font-bold text-sky-950 mb-1.5 text-[11px]">
-                Ankomstfönster (Tid på dagen): *
+                Ankomstfönster (Tid på dagen) *:
               </label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
@@ -335,10 +343,10 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               </div>
             </div>
 
-            {/* KNAPPAR FÖR UTCHECKNINGSTID */}
+            {/* KNAPPAR FÖR UTCHECKNINGSTID - INGET FÖRVALT */}
             <div>
               <label className="block font-bold text-amber-950 mb-1.5 text-[11px]">
-                Utcheckningsfönster (Städstart): *
+                Utcheckningsfönster (Städstart) *:
               </label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button

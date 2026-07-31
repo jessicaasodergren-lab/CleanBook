@@ -22,7 +22,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    setLoading(true);
+    // Sätt bara loading = true om vi inte har några bokningar alls (första laddningen)
+    // Detta förhindrar att formulär och komponenter laddas om/blinkar bort vid sparning!
     const [bRes, iRes] = await Promise.all([
       supabase.from('bookings').select('*').order('departure_date', { ascending: true }),
       supabase.from('incidents').select('*').order('created_at', { ascending: false }),
