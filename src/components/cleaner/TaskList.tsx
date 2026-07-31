@@ -23,6 +23,7 @@ import {
   Info,
   Building,
   User,
+  ThumbsUp,
 } from 'lucide-react';
 
 interface TaskListProps {
@@ -123,18 +124,20 @@ function getTaskDeadlineAndUrgency(b: Booking, allBookings: Booking[]) {
 }
 
 export default function TaskList({ bookings, incidents, properties, loading, onRefresh }: TaskListProps) {
-  const [jobFilter, setJobFilter] = useState<'pending' | 'finished' | 'all'>('pending');
+  const [jobFilter, setJobFilter] = useState<'pending' | 'accepted' | 'finished' | 'all'>('pending');
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [openIncidentFor, setOpenIncidentFor] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ id: string; msg: string } | null>(null);
 
   const pendingJobs = bookings.filter((b) => b.status === 'pending');
+  const acceptedJobs = bookings.filter((b) => b.status === 'accepted');
   const finishedJobs = bookings.filter((b) => b.status === 'finished');
 
   const filteredJobs = bookings
     .filter((b) => {
       if (jobFilter === 'pending') return b.status === 'pending';
+      if (jobFilter === 'accepted') return b.status === 'accepted';
       if (jobFilter === 'finished') return b.status === 'finished';
       return true;
     })
@@ -145,24 +148,35 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
       return (a.departure_date || '').localeCompare(b.departure_date || '');
     });
 
-  const handleToggleStatus = async (b: Booking) => {
+  const handleAcceptTask = async (b: Booking) => {
+    setCompletingId(b.id);
+    await supabase.from('bookings').update({ status: 'accepted' }).eq('id', b.id);
+    setCompletingId(null);
+    onRefresh();
+  };
+
+  const handleCompleteTask = async (b: Booking) => {
     setActionError(null);
 
-    if (b.status === 'pending') {
-      const todayYMD = new Date().toISOString().split('T')[0];
-      if (!b.vacant_now && b.departure_date && todayYMD < b.departure_date) {
-        setActionError({
-          id: b.id,
-          msg: `No puedes completar esta tarea antes de la salida del huésped (${formatDate(b.departure_date, 'es')}).`,
-        });
-        setTimeout(() => setActionError(null), 5000);
-        return;
-      }
+    const todayYMD = new Date().toISOString().split('T')[0];
+    if (!b.vacant_now && b.departure_date && todayYMD < b.departure_date) {
+      setActionError({
+        id: b.id,
+        msg: `No puedes completar esta tarea antes de la salida del huésped (${formatDate(b.departure_date, 'es')}).`,
+      });
+      setTimeout(() => setActionError(null), 5000);
+      return;
     }
 
     setCompletingId(b.id);
-    const newStatus = b.status === 'finished' ? 'pending' : 'finished';
-    await supabase.from('bookings').update({ status: newStatus }).eq('id', b.id);
+    await supabase.from('bookings').update({ status: 'finished' }).eq('id', b.id);
+    setCompletingId(null);
+    onRefresh();
+  };
+
+  const handleReopenTask = async (b: Booking) => {
+    setCompletingId(b.id);
+    await supabase.from('bookings').update({ status: 'accepted' }).eq('id', b.id);
     setCompletingId(null);
     onRefresh();
   };
@@ -174,20 +188,29 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
   return (
     <div className="space-y-4">
       {/* UNDERFILTER */}
-      <div className="flex bg-slate-800/80 p-1 rounded-xl text-xs font-bold gap-1 border border-slate-700/60 shadow-md">
+      <div className="flex bg-slate-800/80 p-1 rounded-xl text-[11px] font-bold gap-1 border border-slate-700/60 shadow-md flex-wrap">
         <button
           type="button"
           onClick={() => setJobFilter('pending')}
-          className={`flex-1 py-2 rounded-lg transition text-center ${
+          className={`flex-1 py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
             jobFilter === 'pending' ? 'bg-amber-500 text-slate-950 font-black shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          ⏳ Pendientes ({pendingJobs.length})
+          ⏳ Por Aceptar ({pendingJobs.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setJobFilter('accepted')}
+          className={`flex-1 py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
+            jobFilter === 'accepted' ? 'bg-sky-500 text-slate-950 font-black shadow' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          🔵 Aceptadas ({acceptedJobs.length})
         </button>
         <button
           type="button"
           onClick={() => setJobFilter('finished')}
-          className={`flex-1 py-2 rounded-lg transition text-center ${
+          className={`flex-1 py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
             jobFilter === 'finished' ? 'bg-emerald-500 text-slate-950 font-black shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
@@ -196,7 +219,7 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
         <button
           type="button"
           onClick={() => setJobFilter('all')}
-          className={`flex-1 py-2 rounded-lg transition text-center ${
+          className={`flex-1 py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
             jobFilter === 'all' ? 'bg-slate-700 text-white font-black shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
@@ -216,11 +239,12 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
       ) : (
         <div className="space-y-4">
           {filteredJobs.map((b) => {
+            const isPending = b.status === 'pending';
+            const isAccepted = b.status === 'accepted';
             const isFinished = b.status === 'finished';
             const isExpanded = expandedId === b.id;
             const displayNote = b.notes_es || b.notes;
 
-            // MATCHA MOT FASTIGHETER I DATABASEN FÖR RÄTT NAMN, ADRESS OCH VÄRD
             const matchedProp = properties.find(
               (p) =>
                 p.name.toLowerCase() === b.property_name.toLowerCase() ||
@@ -229,13 +253,8 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
                 (p.address && b.property_address && b.property_address.toLowerCase().includes(p.address.toLowerCase()))
             );
 
-            // RÄTT FASTIGHETSNAMN (T.ex. CasaAlmados)
             const displayPropertyName = matchedProp?.name || b.property_name;
-
-            // RÄTT ADRESS (T.ex. Calle Bach 71)
             const displayAddress = matchedProp?.address || b.property_address || b.property_name;
-
-            // RÄTT VÄRD (T.ex. Jessica)
             const displayHost =
               matchedProp?.host_name && matchedProp.host_name !== 'Värd'
                 ? matchedProp.host_name
@@ -248,38 +267,56 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
 
             const hasBookingNotes = Boolean(displayNote);
             const hasPropertyNotes = Boolean(matchedProp?.property_notes);
-
             const taskUrgency = getTaskDeadlineAndUrgency(b, bookings);
 
             return (
               <div
                 key={b.id}
                 className={`bg-white text-slate-900 rounded-3xl overflow-hidden shadow-2xl transition-all border ${
-                  isFinished ? 'opacity-90 border-emerald-300' : 'border-slate-200'
+                  isFinished
+                    ? 'opacity-90 border-emerald-300'
+                    : isAccepted
+                    ? 'border-sky-300 shadow-sky-500/10'
+                    : 'border-amber-300'
                 }`}
               >
-                <div className={`h-2.5 w-full ${isFinished ? 'bg-emerald-500' : taskUrgency.topBannerColor}`} />
+                <div
+                  className={`h-2.5 w-full ${
+                    isFinished ? 'bg-emerald-500' : isAccepted ? 'bg-sky-500' : taskUrgency.topBannerColor
+                  }`}
+                />
 
                 <div className="p-5 space-y-3.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-2 flex-1 min-w-0">
                       {/* BADGES */}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {isFinished ? (
+                        {isPending && (
+                          <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                            🟡 POR ACEPTAR
+                          </span>
+                        )}
+                        {isAccepted && (
+                          <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-sky-600 text-white">
+                            🔵 TAREA ACEPTADA
+                          </span>
+                        )}
+                        {isFinished && (
                           <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-emerald-600 text-white">
                             ✓ COMPLETADA
                           </span>
-                        ) : (
+                        )}
+
+                        {!isFinished && (
                           <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${taskUrgency.urgencyColor}`}>
                             {taskUrgency.urgencyTitle}
                           </span>
                         )}
 
-                        {/* ℹ️-SYMBOLEN PÅ STÄNGT KORT */}
                         {hasBookingNotes && (
                           <span
                             className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0"
-                            title="Nota específica para esta estancia (Abre para leer)"
+                            title="Nota específica para esta estancia"
                           >
                             <Info className="w-3 h-3 text-amber-700" />
                           </span>
@@ -341,6 +378,21 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
                           </div>
                         </div>
                       </div>
+
+                      {/* SNABBKNAPP FÖR ATT ACCEPTERA RAKT PÅ KORTET OM PENDING */}
+                      {isPending && (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleAcceptTask(b)}
+                            disabled={completingId === b.id}
+                            className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                          >
+                            {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
+                            Aceptar tarea de limpieza
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -362,7 +414,6 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
                   {/* EXPANDERAT LÄGE */}
                   {isExpanded && (
                     <div className="pt-3 border-t border-slate-100 space-y-3 text-xs">
-                      {/* FASTIGHETSNAMN OCH VÄRD DETALJER */}
                       <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
                         {displayPropertyName && (
                           <div className="flex justify-between items-center">
@@ -423,17 +474,15 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
                         )}
                       </div>
 
-                      {/* UNIK BOKNINGSANTECKNING FÖR DENNA VISTELSE */}
                       {displayNote && (
                         <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl space-y-1">
                           <span className="font-black text-amber-900 block uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-                            <StickyNote className="w-3.5 h-3.5 text-amber-600" /> Instrucción del anfitrión (Esta estancia):
+                            <StickyNote className="w-3.5 h-3.5 text-amber-600" /> Instrucción del anfitrión:
                           </span>
                           <p className="font-bold text-amber-950 leading-relaxed whitespace-pre-line">{displayNote}</p>
                         </div>
                       )}
 
-                      {/* FASTA ANTECKNINGAR FÖR BOSTADEN */}
                       {hasPropertyNotes && (
                         <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl space-y-1">
                           <span className="font-black text-slate-800 block uppercase text-[10px] tracking-wider flex items-center gap-1.5">
@@ -443,11 +492,10 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
                         </div>
                       )}
 
-                      {/* FOTON */}
                       {bookingIncidents.length > 0 && (
                         <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl space-y-2">
                           <span className="font-black text-slate-900 block uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-                            <Camera className="w-3.5 h-3.5 text-slate-600" /> Fotos e incidencias enviadas ({bookingIncidents.length}):
+                            <Camera className="w-3.5 h-3.5 text-slate-600" /> Fotos enviadas ({bookingIncidents.length}):
                           </span>
                           <div className="space-y-2">
                             {bookingIncidents.map((inc) => {
@@ -481,18 +529,27 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
                         {isFinished ? (
                           <button
                             type="button"
-                            onClick={() => handleToggleStatus(b)}
+                            onClick={() => handleReopenTask(b)}
                             disabled={completingId === b.id}
                             className="py-3 px-3 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-1.5"
                           >
                             {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4 text-amber-400" />} Reabrir
                           </button>
+                        ) : isPending ? (
+                          <button
+                            type="button"
+                            onClick={() => handleAcceptTask(b)}
+                            disabled={completingId === b.id}
+                            className="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5"
+                          >
+                            {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />} Aceptar
+                          </button>
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleToggleStatus(b)}
+                            onClick={() => handleCompleteTask(b)}
                             disabled={completingId === b.id}
-                            className="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5"
+                            className="py-3 px-3 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5"
                           >
                             {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Completado
                           </button>

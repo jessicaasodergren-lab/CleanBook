@@ -7,7 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type DepartureTimeWindow = 'morning' | 'afternoon' | 'evening';
 export type ArrivalTimeWindow = 'morning' | 'afternoon' | 'evening';
-export type BookingStatus = 'pending' | 'finished';
+export type BookingStatus = 'pending' | 'accepted' | 'finished';
 
 export interface Property {
   id: string;
@@ -28,6 +28,7 @@ export interface Booking {
   property_name: string;
   property_address: string | null;
   host_name: string | null;
+  booking_title?: string;
   departure_date: string;
   departure_time_window: DepartureTimeWindow;
   departure_exact_time?: string | null;

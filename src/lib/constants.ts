@@ -5,6 +5,7 @@ export const APP_CONFIG = {
   tagline: 'Smart Cleaning Management',
   fullTitle: 'CleanBook – Smart Cleaning Management',
   description: 'Hantering av städuppdrag och bokningar i semesterbostäder.',
+  mariaPhoneNumber: '46721886174', // WhatsApp-format (utan + eller mellanslag)
 };
 
 export const TIME_WINDOWS = ['morning', 'afternoon', 'evening'] as const;

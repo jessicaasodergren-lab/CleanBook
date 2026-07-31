@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase, type Booking, type Incident } from '../../lib/supabase';
-import { formatDate } from '../../lib/constants';
+import { formatDate, APP_CONFIG } from '../../lib/constants';
 import {
   ChevronDown,
   ChevronUp,
@@ -12,6 +12,8 @@ import {
   Trash2,
   Loader2,
   FileText,
+  Lock,
+  MessageSquare,
 } from 'lucide-react';
 
 interface BookingListProps {
@@ -28,6 +30,29 @@ function parsePhotos(photoUrl: string | null): string[] {
   return [photoUrl];
 }
 
+function getWhatsAppUrl(b: Booking): string {
+  const phone = APP_CONFIG.mariaPhoneNumber || '34600000000';
+  const depDate = formatDate(b.departure_date, 'es');
+  const depTime = b.departure_exact_time ? `kl ${b.departure_exact_time}` : '';
+  const arrDate = formatDate(b.next_arrival_date, 'es');
+  const arrTime = b.arrival_exact_time ? `kl ${b.arrival_exact_time}` : '';
+  const notesText = b.notes_es || b.notes;
+
+  const msg = 
+`¡Hola Maria! 🧹
+Nueva reserva para gestionar en CleanBook:
+
+📍 *Propiedad:* ${b.property_name} (${b.property_address || b.property_name})
+📅 *Salida (Limpieza):* ${depDate} ${depTime}
+📅 *Próxima entrada:* ${arrDate} ${arrTime}
+👥 *Huéspedes:* ${b.guests}
+🧺 *Lavar:* ${b.laundry ? 'SÍ' : 'NO'}
+${notesText ? `📝 *Instrucciones:* ${notesText}\n` : ''}
+Por favor, entra en CleanBook para aceptar la tarea.`;
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+}
+
 export default function BookingList({ bookings, incidents, onRefresh }: BookingListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -36,10 +61,15 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (b: Booking) => {
+    if (b.status !== 'pending') {
+      alert('Kan inte radera: Bokningen är redan accepterad av Maria eller utförd.');
+      return;
+    }
     if (!window.confirm('Är du säker på att du vill ta bort denna bokning?')) return;
-    setDeletingId(id);
-    await supabase.from('bookings').delete().eq('id', id);
+    
+    setDeletingId(b.id);
+    await supabase.from('bookings').delete().eq('id', b.id);
     setDeletingId(null);
     onRefresh();
   };
@@ -65,6 +95,8 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
 
       <div className="space-y-3">
         {sortedBookings.map((b) => {
+          const isPending = b.status === 'pending';
+          const isAccepted = b.status === 'accepted';
           const isFinished = b.status === 'finished';
           const isExpanded = expandedId === b.id;
           const bookingIncidents = incidents.filter((i) => i.booking_id === b.id);
@@ -73,22 +105,38 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
             <div
               key={b.id}
               className={`bg-white text-slate-900 rounded-3xl overflow-hidden shadow-xl border transition-all ${
-                isFinished ? 'border-emerald-300' : 'border-slate-200'
+                isFinished
+                  ? 'border-emerald-300'
+                  : isAccepted
+                  ? 'border-sky-300 shadow-sky-500/10'
+                  : 'border-amber-200'
               }`}
             >
-              <div className={`h-2.5 w-full ${isFinished ? 'bg-emerald-500' : 'bg-sky-500'}`} />
+              <div
+                className={`h-2.5 w-full ${
+                  isFinished ? 'bg-emerald-500' : isAccepted ? 'bg-sky-500' : 'bg-amber-400'
+                }`}
+              />
 
               <div className="p-5 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                          isFinished ? 'bg-emerald-600 text-white' : 'bg-amber-100 text-amber-900 border border-amber-300'
-                        }`}
-                      >
-                        {isFinished ? '✓ Utförd städning' : '⏳ Städning väntar'}
-                      </span>
+                      {isPending && (
+                        <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+                          🟡 Väntar på Marias svar
+                        </span>
+                      )}
+                      {isAccepted && (
+                        <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-sky-100 text-sky-900 border border-sky-300 font-bold">
+                          🔵 Accepterad av Maria
+                        </span>
+                      )}
+                      {isFinished && (
+                        <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-emerald-600 text-white">
+                          ✓ Utförd städning
+                        </span>
+                      )}
 
                       {bookingIncidents.length > 0 && (
                         <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-900 border border-sky-300 flex items-center gap-1">
@@ -196,16 +244,33 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                       </div>
                     )}
 
-                    <div className="pt-1 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(b.id)}
-                        disabled={deletingId === b.id}
-                        className="py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 border border-rose-200"
+                    {/* ÅTGÄRDER (WHATSAPP & TA BORT) */}
+                    <div className="pt-2 flex items-center justify-between gap-2">
+                      <a
+                        href={getWhatsAppUrl(b)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition flex items-center gap-1.5 border border-emerald-300 shadow-sm"
                       >
-                        {deletingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                        Ta bort bokning
-                      </button>
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                        Avisera Maria på WhatsApp
+                      </a>
+
+                      {isPending ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(b)}
+                          disabled={deletingId === b.id}
+                          className="py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 border border-rose-200"
+                        >
+                          {deletingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                          Ta bort
+                        </button>
+                      ) : (
+                        <div className="py-2 px-3 bg-slate-100 text-slate-400 font-bold text-[11px] rounded-xl flex items-center gap-1 border border-slate-200">
+                          <Lock className="w-3 h-3" /> Låst (accepterad/utförd)
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
