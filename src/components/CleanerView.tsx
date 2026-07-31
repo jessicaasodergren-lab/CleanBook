@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
+import { APP_CONFIG } from '../lib/constants';
 import TaskList from './cleaner/TaskList';
 import PropertyList from './cleaner/PropertyList';
-import { Clock, Building } from 'lucide-react';
+import { Clock, Building, Sparkles } from 'lucide-react';
 
 interface CleanerViewProps {
   bookings: Booking[];
@@ -31,6 +32,22 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
   return (
     <div className="max-w-xl mx-auto px-4 space-y-6">
+      {/* Brand Header */}
+      <div className="flex items-center justify-between px-1">
+        <div>
+          <h2 className="text-base font-black text-white tracking-tight flex items-center gap-2">
+            <span>{APP_CONFIG.name}</span>
+            <span className="text-[10px] uppercase font-bold bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/30">
+              Cleaner
+            </span>
+          </h2>
+          <p className="text-[11px] text-slate-400">{APP_CONFIG.tagline}</p>
+        </div>
+        <div className="p-2 bg-slate-900 rounded-xl border border-slate-800 text-sky-400">
+          <Sparkles className="w-4 h-4" />
+        </div>
+      </div>
+
       {/* FLIK-REGLEGE */}
       <div className="flex bg-slate-900/90 p-1.5 rounded-2xl border border-slate-700/80 text-xs font-black shadow-xl">
         <button

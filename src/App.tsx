@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, type Booking, type Incident } from './lib/supabase';
+import { APP_CONFIG } from './lib/constants';
 import HostView from './components/HostView';
 import CleanerView from './components/CleanerView';
-import { Sparkles, Home, UserCheck, Lock, KeyRound, LogOut, ArrowRight, ShieldCheck, Globe } from 'lucide-react';
+import { Sparkles, Home, UserCheck, Lock, KeyRound, LogOut, ArrowRight, Globe } from 'lucide-react';
 
 type ViewMode = 'landing' | 'host' | 'cleaner';
 type HostLanguage = 'sv' | 'en' | 'da';
@@ -74,10 +75,10 @@ export default function App() {
             </div>
             <div>
               <span className="font-black text-white text-lg tracking-wider block leading-none">
-                CleanBook
+                {APP_CONFIG.name}
               </span>
               <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
-                Premium Cleaning
+                {APP_CONFIG.tagline}
               </span>
             </div>
           </div>
@@ -100,13 +101,10 @@ export default function App() {
           /* STARTSIDA */
           <div className="max-w-md mx-auto px-4 py-4 space-y-6">
             <div className="text-center space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-                <ShieldCheck className="w-4 h-4" /> Simple & secure cleaning management
-              </div>
               <h1 className="text-3xl font-black text-white tracking-tight leading-tight">
                 Welcome to <br />
                 <span className="bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
-                  CleanBook
+                  {APP_CONFIG.name}
                 </span>
               </h1>
               <p className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
+import { APP_CONFIG } from '../lib/constants';
 import BookingForm from './host/BookingForm';
 import BookingList from './host/BookingList';
 import CalendarView from './host/CalendarView';
-import { PlusCircle, List, Calendar as CalendarIcon, KeyRound, Loader2, Building } from 'lucide-react';
+import { PlusCircle, List, Calendar as CalendarIcon, KeyRound, Loader2, Building, Sparkles } from 'lucide-react';
 
 interface HostViewProps {
   bookings: Booking[];
@@ -45,7 +46,17 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
 
   if (!authenticated) {
     return (
-      <div className="max-w-sm mx-auto px-4 py-8">
+      <div className="max-w-sm mx-auto px-4 py-8 space-y-4">
+        {/* Brand Header */}
+        <div className="text-center space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[11px] font-bold">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{APP_CONFIG.tagline}</span>
+          </div>
+          <h1 className="text-2xl font-black tracking-tight text-white">{APP_CONFIG.name}</h1>
+        </div>
+
+        {/* Login Form */}
         <form onSubmit={handleLogin} className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
           <div className="text-center space-y-1">
             <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 mx-auto flex items-center justify-center font-black">
@@ -89,6 +100,20 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
 
   return (
     <div className="max-w-xl mx-auto px-4 space-y-6">
+      {/* Platform Header */}
+      <div className="flex items-center justify-between px-1">
+        <div>
+          <h2 className="text-base font-black text-white tracking-tight flex items-center gap-2">
+            <span>{APP_CONFIG.name}</span>
+            <span className="text-[10px] uppercase font-bold bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/30">
+              Host
+            </span>
+          </h2>
+          <p className="text-[11px] text-slate-400">{APP_CONFIG.tagline}</p>
+        </div>
+      </div>
+
+      {/* Property Badge */}
       <div className="bg-slate-900/90 text-white p-4 rounded-2xl border border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Building className="w-5 h-5 text-sky-400" />
@@ -105,6 +130,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
         </button>
       </div>
 
+      {/* Tabs */}
       <div className="flex bg-slate-900/90 p-1.5 rounded-2xl border border-slate-700 text-xs font-black shadow-xl">
         <button
           onClick={() => setActiveTab('create')}

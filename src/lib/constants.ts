@@ -1,5 +1,12 @@
 import type { Booking } from './supabase';
 
+export const APP_CONFIG = {
+  name: 'CleanBook',
+  tagline: 'Smart Cleaning Management',
+  fullTitle: 'CleanBook – Smart Cleaning Management',
+  description: 'Hantering av städuppdrag och bokningar i semesterbostäder.',
+};
+
 export const TIME_WINDOWS = ['morning', 'afternoon', 'evening'] as const;
 
 export const TIME_LABELS = {
