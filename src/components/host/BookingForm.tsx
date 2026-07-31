@@ -86,12 +86,36 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       return;
     }
 
+    // DATUMVALIDERING 1: Utcheckning får inte vara före incheckning
     if (departureDate < nextArrivalDate) {
       setErrorMsg('Utcheckningsdatumet (städstart) kan inte vara före incheckningsdatumet.');
       return;
     }
 
     setSubmitting(true);
+
+    // DATUMVALIDERING 2: KONTROLLERA ÖVERLAPPNING MED EXISTERANDE BOKNINGAR PÅ SAMMA FASTIGHET
+    const { data: existingBookings } = await supabase
+      .from('bookings')
+      .select('id, booking_title, departure_date, next_arrival_date')
+      .eq('property_name', prop.name);
+
+    if (existingBookings && existingBookings.length > 0) {
+      const overlappingBooking = existingBookings.find((b) => {
+        if (!b.departure_date || !b.next_arrival_date) return false;
+        // Två vistelser på samma fastighet överlappar om:
+        // Nya utcheckningen < Existerande incheckning AND Existerande utcheckning < Nya incheckningen
+        return departureDate < b.next_arrival_date && b.departure_date < nextArrivalDate;
+      });
+
+      if (overlappingBooking) {
+        setSubmitting(false);
+        setErrorMsg(
+          `Det finns redan en krockande bokning ("${overlappingBooking.booking_title}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.departure_date, 'sv')} och ${formatDate(overlappingBooking.next_arrival_date, 'sv')}.`
+        );
+        return;
+      }
+    }
 
     let notesEs = '';
     if (notes.trim()) {
