@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property, type NewIncident } from '../lib/supabase';
-import { TIME_LABELS, formatDate, getUrgency } from '../lib/constants';
+import { TIME_LABELS, formatDate } from '../lib/constants';
 import {
   ChevronDown,
   ChevronUp,
@@ -14,6 +14,12 @@ import {
   Camera,
   Plus,
   KeyRound,
+  Eye,
+  EyeOff,
+  RotateCcw,
+  AlertCircle,
+  Play,
+  Flag,
 } from 'lucide-react';
 
 interface CleanerViewProps {
@@ -23,11 +29,112 @@ interface CleanerViewProps {
   onRefresh: () => void;
 }
 
+function parsePhotos(photoUrl: string | null): string[] {
+  if (!photoUrl) return [];
+  try {
+    if (photoUrl.startsWith('[')) {
+      return JSON.parse(photoUrl) as string[];
+    }
+  } catch (e) {
+    // Om inte JSON
+  }
+  return [photoUrl];
+}
+
+// SMARTHJÄLP FÖR ATT BERÄKNA STÄDFÖNSTRET OCH VARNINGAR
+function getTaskDeadlineAndUrgency(b: Booking, allBookings: Booking[]) {
+  const currentDeparture = b.departure_date;
+  if (!currentDeparture) {
+    return {
+      deadlineStr: 'Flexible',
+      urgencyTitle: '🟢 FLEXIBLE',
+      urgencyColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      topBannerColor: 'bg-emerald-500',
+      urgencyType: 'flexible',
+      daysGap: null,
+      sortDate: '9999-99-99',
+    };
+  }
+
+  // Sök nästa bokning på samma fastighet
+  const nextBooking = allBookings
+    .filter(
+      (other) =>
+        other.property_name === b.property_name &&
+        other.id !== b.id &&
+        (other.next_arrival_date || other.departure_date) >= currentDeparture
+    )
+    .sort((x, y) => {
+      const arrX = x.next_arrival_date || x.departure_date || '';
+      const arrY = y.next_arrival_date || y.departure_date || '';
+      return arrX.localeCompare(arrY);
+    })[0];
+
+  if (!nextBooking) {
+    return {
+      deadlineStr: 'Flexible (Sin nueva reserva)',
+      urgencyTitle: '🟢 FLEXIBLE (SIN PRÓXIMO HUÉSPED)',
+      urgencyColor: 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold',
+      topBannerColor: 'bg-emerald-500',
+      urgencyType: 'flexible',
+      daysGap: null,
+      sortDate: '9999-99-99',
+    };
+  }
+
+  const nextArrival = nextBooking.next_arrival_date || nextBooking.departure_date;
+  const exactTimeStr = nextBooking.arrival_exact_time ? ` (kl ${nextBooking.arrival_exact_time})` : '';
+  const formattedDeadline = `${formatDate(nextArrival, 'es')}${exactTimeStr}`;
+
+  // Räkna ut skillnaden i dagar mellan avresa och nästa ankomst
+  const d1 = new Date(currentDeparture);
+  const d2 = new Date(nextArrival);
+  const diffTime = d2.getTime() - d1.getTime();
+  const daysGap = Math.round(diffTime / (1000 * 3600 * 24));
+
+  if (daysGap <= 0) {
+    return {
+      deadlineStr: formattedDeadline,
+      urgencyTitle: '⚡ URGENTE: MISMO DÍA',
+      urgencyColor: 'bg-rose-500 text-white font-black animate-pulse',
+      topBannerColor: 'bg-rose-500',
+      urgencyType: 'same_day',
+      daysGap: 0,
+      sortDate: nextArrival,
+    };
+  } else if (daysGap === 1) {
+    return {
+      deadlineStr: formattedDeadline,
+      urgencyTitle: '⏳ CAMBIO RÁPIDO (1 DÍA)',
+      urgencyColor: 'bg-amber-500 text-slate-950 font-black',
+      topBannerColor: 'bg-amber-500',
+      urgencyType: 'tight',
+      daysGap: 1,
+      sortDate: nextArrival,
+    };
+  } else {
+    return {
+      deadlineStr: formattedDeadline,
+      urgencyTitle: `📅 PLAZO: ${formatDate(nextArrival, 'es').toUpperCase()}`,
+      urgencyColor: 'bg-sky-100 text-sky-900 border-sky-300 font-bold',
+      topBannerColor: 'bg-sky-500',
+      urgencyType: 'standard',
+      daysGap: daysGap,
+      sortDate: nextArrival,
+    };
+  }
+}
+
 export default function CleanerView({ bookings, incidents, loading, onRefresh }: CleanerViewProps) {
   const [activeTab, setActiveTab] = useState<'jobs' | 'properties'>('jobs');
+  const [jobFilter, setJobFilter] = useState<'pending' | 'finished' | 'all'>('pending');
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [openIncidentFor, setOpenIncidentFor] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const [actionError, setActionError] = useState<{ id: string; msg: string } | null>(null);
+
+  const [revealedPropIds, setRevealedPropIds] = useState<string[]>([]);
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [newPropName, setNewPropName] = useState('');
@@ -45,6 +152,12 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
   useEffect(() => {
     fetchProperties();
   }, [fetchProperties]);
+
+  const toggleRevealPasscode = (id: string) => {
+    setRevealedPropIds((prev) =>
+      prev.includes(id) ? prev.filter((pId) => pId !== id) : [...prev, id]
+    );
+  };
 
   const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,13 +189,44 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
     fetchProperties();
   };
 
-  const upcoming = [...bookings]
-    .filter((b) => b.status === 'pending')
-    .sort((a, b) => (a.departure_date ?? '').localeCompare(b.departure_date ?? ''));
+  const pendingJobs = bookings.filter((b) => b.status === 'pending');
+  const finishedJobs = bookings.filter((b) => b.status === 'finished');
 
-  const handleComplete = async (id: string) => {
-    setCompletingId(id);
-    await supabase.from('bookings').update({ status: 'finished' }).eq('id', id);
+  // SORTERA STIGANDE UTIFRÅN STÄDFÖNSTRETS DEADLINE
+  const filteredJobs = bookings
+    .filter((b) => {
+      if (jobFilter === 'pending') return b.status === 'pending';
+      if (jobFilter === 'finished') return b.status === 'finished';
+      return true;
+    })
+    .sort((a, b) => {
+      const deadlineA = getTaskDeadlineAndUrgency(a, bookings).sortDate;
+      const deadlineB = getTaskDeadlineAndUrgency(b, bookings).sortDate;
+      if (deadlineA !== deadlineB) {
+        return deadlineA.localeCompare(deadlineB);
+      }
+      return (a.departure_date || '').localeCompare(b.departure_date || '');
+    });
+
+  const handleToggleStatus = async (b: Booking) => {
+    setActionError(null);
+
+    if (b.status === 'pending') {
+      const todayYMD = new Date().toISOString().split('T')[0];
+
+      if (!b.vacant_now && b.departure_date && todayYMD < b.departure_date) {
+        setActionError({
+          id: b.id,
+          msg: `No puedes completar esta tarea antes de la salida del huésped (${formatDate(b.departure_date, 'es')}).`,
+        });
+        setTimeout(() => setActionError(null), 5000);
+        return;
+      }
+    }
+
+    setCompletingId(b.id);
+    const newStatus = b.status === 'finished' ? 'pending' : 'finished';
+    await supabase.from('bookings').update({ status: newStatus }).eq('id', b.id);
     setCompletingId(null);
     onRefresh();
   };
@@ -101,7 +245,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
             activeTab === 'jobs' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <Clock className="w-4 h-4" /> Tareas de Limpieza ({upcoming.length})
+          <Clock className="w-4 h-4" /> Tareas ({bookings.length})
         </button>
         <button
           onClick={() => setActiveTab('properties')}
@@ -114,155 +258,293 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
       </div>
 
       {activeTab === 'jobs' ? (
-        loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+        <div className="space-y-4">
+          {/* UNDERFILTER */}
+          <div className="flex bg-slate-800/80 p-1 rounded-xl text-xs font-bold gap-1 border border-slate-700/60 shadow-md">
+            <button
+              type="button"
+              onClick={() => setJobFilter('pending')}
+              className={`flex-1 py-2 rounded-lg transition text-center ${
+                jobFilter === 'pending'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              ⏳ Pendientes ({pendingJobs.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setJobFilter('finished')}
+              className={`flex-1 py-2 rounded-lg transition text-center ${
+                jobFilter === 'finished'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              💚 Completadas ({finishedJobs.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setJobFilter('all')}
+              className={`flex-1 py-2 rounded-lg transition text-center ${
+                jobFilter === 'all'
+                  ? 'bg-slate-700 text-white font-black shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              📋 Todas ({bookings.length})
+            </button>
           </div>
-        ) : upcoming.length === 0 ? (
-          <div className="text-center py-12 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-8 space-y-2">
-            <p className="text-white font-black text-lg">¡Todo limpio!</p>
-            <p className="text-slate-400 text-xs">No hay tareas pendientes en este momento.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {upcoming.map((b) => {
-              const urgency = getUrgency(b);
-              const isSameDay = urgency.type === 'same_day';
-              const isExpanded = expandedId === b.id;
-              const displayNote = b.notes_es || b.notes;
 
-              const displayAddress = b.property_address || b.property_name;
-              const displayHost =
-                b.host_name && b.host_name !== 'Värd'
-                  ? b.host_name
-                  : b.property_name !== displayAddress
-                  ? b.property_name
-                  : null;
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+            </div>
+          ) : filteredJobs.length === 0 ? (
+            <div className="text-center py-12 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-8 space-y-2">
+              <p className="text-white font-black text-lg">Sin tareas aquí</p>
+              <p className="text-slate-400 text-xs">No hay tareas encontradas en este filtro.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredJobs.map((b) => {
+                const isFinished = b.status === 'finished';
+                const isExpanded = expandedId === b.id;
+                const displayNote = b.notes_es || b.notes;
 
-              return (
-                <div
-                  key={b.id}
-                  className="bg-white text-slate-900 rounded-3xl overflow-hidden shadow-2xl transition-all border border-slate-200"
-                >
+                const displayAddress = b.property_address || b.property_name;
+                const displayHost =
+                  b.host_name && b.host_name !== 'Värd'
+                    ? b.host_name
+                    : b.property_name !== displayAddress
+                    ? b.property_name
+                    : null;
+
+                const bookingIncidents = incidents.filter((i) => i.booking_id === b.id);
+                const isEarlyError = actionError?.id === b.id;
+
+                // BERÄKNA DYNAMISK STÄDFÖNSTER
+                const taskUrgency = getTaskDeadlineAndUrgency(b, bookings);
+
+                return (
                   <div
-                    className={`h-2.5 w-full ${
-                      isSameDay ? 'bg-rose-500 animate-pulse' : urgency.type === 'flexible' ? 'bg-emerald-500' : 'bg-sky-500'
+                    key={b.id}
+                    className={`bg-white text-slate-900 rounded-3xl overflow-hidden shadow-2xl transition-all border ${
+                      isFinished ? 'opacity-90 border-emerald-300' : 'border-slate-200'
                     }`}
-                  />
+                  >
+                    <div
+                      className={`h-2.5 w-full ${
+                        isFinished ? 'bg-emerald-500' : taskUrgency.topBannerColor
+                      }`}
+                    />
 
-                  <div className="p-5 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1.5 flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span
-                            className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                              isSameDay
-                                ? 'bg-rose-500 text-white'
-                                : urgency.type === 'flexible'
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                : 'bg-sky-100 text-sky-800 border border-sky-300'
-                            }`}
-                          >
-                            {urgency.title}
-                          </span>
+                    <div className="p-5 space-y-3.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          {/* BADGES */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {isFinished ? (
+                              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-emerald-600 text-white">
+                                ✓ COMPLETADA
+                              </span>
+                            ) : (
+                              <span
+                                className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${taskUrgency.urgencyColor}`}
+                              >
+                                {taskUrgency.urgencyTitle}
+                              </span>
+                            )}
 
-                          <span
-                            className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                              b.laundry
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            {b.laundry ? '🧺 Lavar: SÍ' : '🚫 No lavar'}
-                          </span>
+                            <span
+                              className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                                b.laundry
+                                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}
+                            >
+                              {b.laundry ? '🧺 Lavar: SÍ' : '🚫 No lavar'}
+                            </span>
+                          </div>
+
+                          {/* ADRESS */}
+                          <h3 className="font-black text-slate-900 text-lg leading-snug flex items-center gap-1.5">
+                            <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="truncate">{displayAddress}</span>
+                          </h3>
+
+                          {/* TYDLIGT STÄDFÖNSTER (VENTANA DE LIMPIEZA) */}
+                          <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3 space-y-2">
+                            <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center justify-between border-b border-slate-200/60 pb-1.5">
+                              <span className="flex items-center gap-1 text-slate-700">
+                                <Clock className="w-3.5 h-3.5 text-emerald-600" /> VENTANA DE LIMPIEZA
+                              </span>
+                              {taskUrgency.daysGap !== null && (
+                                <span className="text-slate-500 font-extrabold">
+                                  {taskUrgency.daysGap === 0 ? 'Mismo día' : `${taskUrgency.daysGap} ${taskUrgency.daysGap === 1 ? 'día' : 'días'}`}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              {/* BOX 1: START / SALIDA */}
+                              <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-0.5">
+                                <span className="text-[10px] font-extrabold uppercase text-slate-400 block flex items-center gap-1">
+                                  <Play className="w-3 h-3 text-emerald-600 fill-emerald-600" /> Puede empezar (Salida)
+                                </span>
+                                <span className="font-black text-slate-900 block">
+                                  {formatDate(b.departure_date, 'es')}
+                                </span>
+                                {b.departure_exact_time && (
+                                  <span className="text-[11px] font-bold text-slate-500 block">
+                                    kl {b.departure_exact_time}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* BOX 2: DEADLINE / LLEGADA */}
+                              <div
+                                className={`p-2.5 rounded-xl border space-y-0.5 ${
+                                  taskUrgency.urgencyType === 'same_day'
+                                    ? 'bg-rose-50 border-rose-200'
+                                    : taskUrgency.urgencyType === 'tight'
+                                    ? 'bg-amber-50 border-amber-200'
+                                    : 'bg-emerald-50/60 border-emerald-200'
+                                }`}
+                              >
+                                <span className="text-[10px] font-extrabold uppercase text-slate-500 block flex items-center gap-1">
+                                  <Flag className="w-3 h-3 text-slate-700 fill-slate-700" /> Plazo límite (Llegada)
+                                </span>
+                                <span className="font-black text-slate-900 block">
+                                  {taskUrgency.deadlineStr}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
-                        <h3 className="font-black text-slate-900 text-lg leading-snug flex items-center gap-1.5 pt-0.5">
-                          <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span className="truncate">{displayAddress}</span>
-                        </h3>
-
-                        <p className="text-xs text-slate-600 font-semibold">
-                          Plazo límite:{" "}
-                          <span className="font-black text-slate-900">{urgency.text}</span>
-                        </p>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(b.id)}
+                          className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition shrink-0 mt-1"
+                        >
+                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => toggleExpand(b.id)}
-                        className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition shrink-0 mt-1"
-                      >
-                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                      </button>
-                    </div>
+                      {/* FELMEDDELANDE OM FÖR TIDIG SLUTFÖRNING */}
+                      {isEarlyError && (
+                        <div className="bg-rose-50 border border-rose-200 p-3 rounded-2xl text-xs font-bold text-rose-700 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>{actionError.msg}</span>
+                        </div>
+                      )}
 
-                    {isExpanded && (
-                      <div className="pt-3 border-t border-slate-100 space-y-3 text-xs">
-                        <div className="bg-slate-50 p-3.5 rounded-2xl space-y-2 border border-slate-100">
-                          {displayHost && (
+                      {/* DETALJER NÄR EXPANDERAD */}
+                      {isExpanded && (
+                        <div className="pt-3 border-t border-slate-100 space-y-3 text-xs">
+                          <div className="bg-slate-50 p-3.5 rounded-2xl space-y-2 border border-slate-100">
+                            {displayHost && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-slate-500 font-bold flex items-center gap-1">
+                                  <User className="w-3.5 h-3.5" /> Anfitriona:
+                                </span>
+                                <span className="font-black text-slate-900">{displayHost}</span>
+                              </div>
+                            )}
+
                             <div className="flex justify-between items-center">
-                              <span className="text-slate-500 font-bold flex items-center gap-1">
-                                <User className="w-3.5 h-3.5" /> Anfitriona:
+                              <span className="text-slate-500 font-bold">Huéspedes salientes:</span>
+                              <span className="font-black text-slate-900">{b.guests} personas</span>
+                            </div>
+                          </div>
+
+                          {/* INSTRUKTIONER */}
+                          {displayNote && (
+                            <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl space-y-1">
+                              <span className="font-black text-amber-900 block uppercase text-[10px] tracking-wider">
+                                Instrucciones del anfitrión:
                               </span>
-                              <span className="font-black text-slate-900">{displayHost}</span>
+                              <p className="font-bold text-amber-950 leading-relaxed">{displayNote}</p>
                             </div>
                           )}
 
-                          <div className="flex justify-between items-center">
-                            <span className="text-slate-500 font-bold">Huéspedes:</span>
-                            <span className="font-black text-slate-900">{b.guests} personas</span>
-                          </div>
+                          {/* FOTON */}
+                          {bookingIncidents.length > 0 && (
+                            <div className="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl space-y-2">
+                              <span className="font-black text-sky-900 block uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                                <Camera className="w-3.5 h-3.5 text-sky-600" /> Fotos e incidencias enviadas ({bookingIncidents.length}):
+                              </span>
+                              <div className="space-y-2">
+                                {bookingIncidents.map((inc) => {
+                                  const photoList = parsePhotos(inc.photo_url);
+                                  return (
+                                    <div key={inc.id} className="bg-white p-3 rounded-xl border border-sky-200/80 space-y-2">
+                                      {photoList.length > 0 && (
+                                        <div className="grid grid-cols-2 gap-2">
+                                          {photoList.map((url, idx) => (
+                                            <img
+                                              key={idx}
+                                              src={url}
+                                              alt={`Foto ${idx + 1}`}
+                                              className="w-full h-28 object-cover rounded-lg border border-slate-200"
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
+                                      <p className="font-bold text-slate-800 text-xs leading-relaxed">{inc.note}</p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
 
-                          <div className="flex justify-between items-center">
-                            <span className="text-slate-500 font-bold">Inicio más temprano:</span>
-                            <span className="font-black text-slate-900">
-                              {b.vacant_now
-                                ? 'Puede empezar ya (Vacía)'
-                                : `${formatDate(b.departure_date, 'es')} (${TIME_LABELS.es[b.departure_time_window as keyof typeof TIME_LABELS.es] || b.departure_time_window})`}
-                            </span>
+                          {/* KNAPPAR */}
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setOpenIncidentFor(b.id)}
+                              className="py-3 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+                            >
+                              <Camera className="w-4 h-4 text-slate-600" /> Reportar foto
+                            </button>
+
+                            {isFinished ? (
+                              <button
+                                type="button"
+                                onClick={() => handleToggleStatus(b)}
+                                disabled={completingId === b.id}
+                                className="py-3 px-3 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+                                title="Deshacer / Marcar como pendiente"
+                              >
+                                {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4 text-amber-400" />}
+                                Reabrir
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleToggleStatus(b)}
+                                disabled={completingId === b.id}
+                                className="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1.5"
+                              >
+                                {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                Completado
+                              </button>
+                            )}
                           </div>
                         </div>
-
-                        {displayNote && (
-                          <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl space-y-1">
-                            <span className="font-black text-amber-900 block uppercase text-[10px] tracking-wider">
-                              Instrucciones:
-                            </span>
-                            <p className="font-bold text-amber-950 leading-relaxed">{displayNote}</p>
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setOpenIncidentFor(b.id)}
-                            className="py-3 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
-                          >
-                            <Camera className="w-4 h-4 text-slate-600" /> Reportar foto
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleComplete(b.id)}
-                            disabled={completingId === b.id}
-                            className="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1.5"
-                          >
-                            {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                            Completado
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )
+                );
+              })}
+            </div>
+          )}
+        </div>
       ) : (
         /* FASTIGHETSFLIKEN (MIS PROPIEDADES) */
         <div className="space-y-6">
-          {/* REGISTRERA FORMULÄR */}
           <form onSubmit={handleCreateProperty} className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black">
@@ -331,63 +613,81 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
             </button>
           </form>
 
-          {/* FASTIGHETER MED KORT & ETIKETTER */}
           <div className="space-y-3">
             <h4 className="font-black text-white text-xs uppercase tracking-wider px-1">
               Tus Propiedades ({properties.length})
             </h4>
 
-            {properties.map((p) => (
-              <div
-                key={p.id}
-                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xl space-y-4 text-slate-900 relative overflow-hidden"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-black">
-                      <Building className="w-5 h-5" />
+            {properties.map((p) => {
+              const isRevealed = revealedPropIds.includes(p.id);
+
+              return (
+                <div
+                  key={p.id}
+                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xl space-y-4 text-slate-900 relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-black">
+                        <Building className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h5 className="font-black text-slate-900 text-base leading-tight">
+                          {p.name}
+                        </h5>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          Fastighet / Propiedad
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h5 className="font-black text-slate-900 text-base leading-tight">
-                        {p.name}
-                      </h5>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        Fastighet / Propiedad
+
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider mb-1">
+                        Lösen / Código
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleRevealPasscode(p.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 font-mono font-black text-xs rounded-xl border border-slate-700 shadow-sm transition active:scale-95"
+                        title={isRevealed ? 'Ocultar código' : 'Mostrar código'}
+                      >
+                        {isRevealed ? (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{p.passcode}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>••••</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 text-emerald-600" /> Värd / Anfitriona
+                      </span>
+                      <span className="font-extrabold text-slate-900 text-xs">
+                        {p.host_name || 'Ej angiven'}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Adress / Dirección
+                      </span>
+                      <span className="font-extrabold text-slate-900 text-xs truncate block">
+                        {p.address || p.name}
                       </span>
                     </div>
                   </div>
-
-                  <div className="text-right shrink-0">
-                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider">
-                      Lösen / Código
-                    </span>
-                    <span className="inline-block px-3 py-1 bg-slate-900 text-emerald-400 font-mono font-black text-xs rounded-xl border border-slate-700 shadow-sm mt-0.5">
-                      🔑 {p.passcode}
-                    </span>
-                  </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-emerald-600" /> Värd / Anfitriona
-                    </span>
-                    <span className="font-extrabold text-slate-900 text-xs">
-                      {p.host_name || 'Ej angiven'}
-                    </span>
-                  </div>
-
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Adress / Dirección
-                    </span>
-                    <span className="font-extrabold text-slate-900 text-xs truncate block">
-                      {p.address || p.name}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -417,26 +717,41 @@ function IncidentModal({
   onSaved: () => void;
 }) {
   const [note, setNote] = useState('');
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setPhoto(reader.result as string);
-    reader.readAsDataURL(file);
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const readers = files.map((file) => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readers).then((base64List) => {
+      setPhotos((prev) => [...prev, ...base64List]);
+    });
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!note.trim()) return;
     setSubmitting(true);
+
     const payload: NewIncident = {
       booking_id: bookingId,
       note: note.trim(),
-      photo_url: photo,
+      photo_url: photos.length > 0 ? JSON.stringify(photos) : null,
     };
+
     await supabase.from('incidents').insert(payload);
     setSubmitting(false);
     onSaved();
@@ -454,9 +769,38 @@ function IncidentModal({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Foto (Opcional)</label>
-            <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-xs text-slate-600" />
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Fotos (Selecciona una o varias)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFiles}
+              className="block w-full text-xs text-slate-600"
+            />
           </div>
+
+          {photos.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {photos.map((url, idx) => (
+                <div key={idx} className="relative group">
+                  <img
+                    src={url}
+                    alt={`Preview ${idx}`}
+                    className="w-full h-20 object-cover rounded-xl border border-slate-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(idx)}
+                    className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 shadow-md hover:bg-rose-600 transition"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Nota explicativa *</label>
@@ -476,7 +820,7 @@ function IncidentModal({
             className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-1.5"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            Guardar reporte
+            Guardar reporte ({photos.length} {photos.length === 1 ? 'foto' : 'fotos'})
           </button>
         </form>
       </div>

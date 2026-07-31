@@ -97,7 +97,7 @@ export default function App() {
       {/* Main Content */}
       <main className="py-8">
         {view === 'landing' ? (
-          /* STARTSIDA PÅ ENGELSKA MED ALLA SPRÅKVAL */
+          /* STARTSIDA */
           <div className="max-w-md mx-auto px-4 py-4 space-y-6">
             <div className="text-center space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
@@ -225,7 +225,7 @@ export default function App() {
             </div>
           </div>
         ) : view === 'host' ? (
-          <HostView bookings={bookings} loading={loading} onRefresh={fetchAll} lang={hostLang} />
+          <HostView bookings={bookings} incidents={incidents} loading={loading} onRefresh={fetchAll} lang={hostLang} />
         ) : !cleanerAuth ? (
           /* LÖSENORDSSKÄRM */
           <div className="max-w-sm mx-auto px-4 py-8 space-y-6">
