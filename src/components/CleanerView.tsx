@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property, type NewIncident } from '../lib/supabase';
-import { TIME_LABELS, formatDate } from '../lib/constants';
+import { formatDate } from '../lib/constants';
 import {
   ChevronDown,
   ChevronUp,
@@ -20,7 +20,21 @@ import {
   AlertCircle,
   Play,
   Flag,
+  Ruler,
+  Timer,
+  Pencil,
+  Bed,
+  Bath,
+  StickyNote,
 } from 'lucide-react';
+
+interface ExtendedProperty extends Property {
+  kvm?: string | null;
+  rooms?: string | null;
+  bathrooms?: string | null;
+  cleaning_time?: string | null;
+  property_notes?: string | null;
+}
 
 interface CleanerViewProps {
   bookings: Booking[];
@@ -136,17 +150,25 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
   const [revealedPropIds, setRevealedPropIds] = useState<string[]>([]);
 
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<ExtendedProperty[]>([]);
   const [newPropName, setNewPropName] = useState('');
   const [newPropAddress, setNewPropAddress] = useState('');
   const [newPropHost, setNewPropHost] = useState('');
   const [newPropPasscode, setNewPropPasscode] = useState('');
+  const [newPropKvm, setNewPropKvm] = useState('');
+  const [newPropRooms, setNewPropRooms] = useState('');
+  const [newPropBathrooms, setNewPropBathrooms] = useState('');
+  const [newPropTime, setNewPropTime] = useState('');
+  const [newPropNotes, setNewPropNotes] = useState('');
   const [savingProp, setSavingProp] = useState(false);
   const [propError, setPropError] = useState<string | null>(null);
 
+  // REDIGERINGS-MODAL FÖR FASTIGHETER
+  const [editingProperty, setEditingProperty] = useState<ExtendedProperty | null>(null);
+
   const fetchProperties = useCallback(async () => {
     const { data } = await supabase.from('properties').select('*').order('name');
-    if (data) setProperties(data as Property[]);
+    if (data) setProperties(data as ExtendedProperty[]);
   }, []);
 
   useEffect(() => {
@@ -179,13 +201,48 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
       address: newPropAddress.trim() || newPropName.trim(),
       host_name: newPropHost.trim() || null,
       passcode: code,
+      kvm: newPropKvm.trim() || null,
+      rooms: newPropRooms.trim() || null,
+      bathrooms: newPropBathrooms.trim() || null,
+      cleaning_time: newPropTime.trim() || null,
+      property_notes: newPropNotes.trim() || null,
     });
 
     setNewPropName('');
     setNewPropAddress('');
     setNewPropHost('');
     setNewPropPasscode('');
+    setNewPropKvm('');
+    setNewPropRooms('');
+    setNewPropBathrooms('');
+    setNewPropTime('');
+    setNewPropNotes('');
     setSavingProp(false);
+    fetchProperties();
+  };
+
+  const handleUpdateProperty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProperty) return;
+
+    setSavingProp(true);
+    await supabase
+      .from('properties')
+      .update({
+        name: editingProperty.name,
+        address: editingProperty.address,
+        host_name: editingProperty.host_name,
+        passcode: editingProperty.passcode.toUpperCase(),
+        kvm: editingProperty.kvm || null,
+        rooms: editingProperty.rooms || null,
+        bathrooms: editingProperty.bathrooms || null,
+        cleaning_time: editingProperty.cleaning_time || null,
+        property_notes: editingProperty.property_notes || null,
+      })
+      .eq('id', editingProperty.id);
+
+    setSavingProp(false);
+    setEditingProperty(null);
     fetchProperties();
   };
 
@@ -320,11 +377,23 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
                     ? b.property_name
                     : null;
 
+                // MATCHA MED FASTIGHET FÖR SPECIFIKATIONER OCH SPECIELLA ANTECKNINGAR
+                const matchedProp = properties.find(
+                  (p) =>
+                    p.name.toLowerCase() === b.property_name.toLowerCase() ||
+                    p.address.toLowerCase() === displayAddress.toLowerCase() ||
+                    (p.name && b.property_name && b.property_name.toLowerCase().includes(p.name.toLowerCase()))
+                );
+
                 const bookingIncidents = incidents.filter((i) => i.booking_id === b.id);
                 const isEarlyError = actionError?.id === b.id;
 
                 // BERÄKNA DYNAMISK STÄDFÖNSTER
                 const taskUrgency = getTaskDeadlineAndUrgency(b, bookings);
+
+                const hasSpecs =
+                  matchedProp &&
+                  (matchedProp.kvm || matchedProp.rooms || matchedProp.bathrooms || matchedProp.cleaning_time);
 
                 return (
                   <div
@@ -372,6 +441,36 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
                             <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
                             <span className="truncate">{displayAddress}</span>
                           </h3>
+
+                          {/* DEDIKERADE BADGES FÖR KVM, RUM, BADRUM & TIDSÅTGÅNG */}
+                          {hasSpecs && (
+                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                              {matchedProp.kvm && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg border border-slate-200">
+                                  <Ruler className="w-3 h-3 text-slate-500" />
+                                  {matchedProp.kvm} m²
+                                </span>
+                              )}
+                              {matchedProp.rooms && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg border border-slate-200">
+                                  <Bed className="w-3 h-3 text-slate-500" />
+                                  {matchedProp.rooms} hab
+                                </span>
+                              )}
+                              {matchedProp.bathrooms && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg border border-slate-200">
+                                  <Bath className="w-3 h-3 text-slate-500" />
+                                  {matchedProp.bathrooms} baños
+                                </span>
+                              )}
+                              {matchedProp.cleaning_time && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-black bg-sky-50 text-sky-900 px-2 py-0.5 rounded-lg border border-sky-200">
+                                  <Timer className="w-3 h-3 text-sky-600" />
+                                  Est: {matchedProp.cleaning_time}
+                                </span>
+                              )}
+                            </div>
+                          )}
 
                           {/* TYDLIGT STÄDFÖNSTER (VENTANA DE LIMPIEZA) */}
                           <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3 space-y-2">
@@ -459,27 +558,39 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
                             </div>
                           </div>
 
-                          {/* INSTRUKTIONER */}
+                          {/* FASTIGHETENS SPECIELLA FASTA ANTECKNINGAR */}
+                          {matchedProp?.property_notes && (
+                            <div className="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl space-y-1">
+                              <span className="font-black text-sky-900 block uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                                <StickyNote className="w-3.5 h-3.5 text-sky-600" /> Notas fijas de la propiedad (Fasta instruktioner):
+                              </span>
+                              <p className="font-bold text-sky-950 leading-relaxed whitespace-pre-line">
+                                {matchedProp.property_notes}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* BOKNINGSSPECIFIKA INSTRUKTIONER */}
                           {displayNote && (
                             <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl space-y-1">
                               <span className="font-black text-amber-900 block uppercase text-[10px] tracking-wider">
-                                Instrucciones del anfitrión:
+                                Instrucciones del anfitrión (Esta estancia):
                               </span>
-                              <p className="font-bold text-amber-950 leading-relaxed">{displayNote}</p>
+                              <p className="font-bold text-amber-950 leading-relaxed whitespace-pre-line">{displayNote}</p>
                             </div>
                           )}
 
                           {/* FOTON */}
                           {bookingIncidents.length > 0 && (
-                            <div className="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl space-y-2">
-                              <span className="font-black text-sky-900 block uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-                                <Camera className="w-3.5 h-3.5 text-sky-600" /> Fotos e incidencias enviadas ({bookingIncidents.length}):
+                            <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl space-y-2">
+                              <span className="font-black text-slate-900 block uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                                <Camera className="w-3.5 h-3.5 text-slate-600" /> Fotos e incidencias enviadas ({bookingIncidents.length}):
                               </span>
                               <div className="space-y-2">
                                 {bookingIncidents.map((inc) => {
                                   const photoList = parsePhotos(inc.photo_url);
                                   return (
-                                    <div key={inc.id} className="bg-white p-3 rounded-xl border border-sky-200/80 space-y-2">
+                                    <div key={inc.id} className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
                                       {photoList.length > 0 && (
                                         <div className="grid grid-cols-2 gap-2">
                                           {photoList.map((url, idx) => (
@@ -545,6 +656,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
       ) : (
         /* FASTIGHETSFLIKEN (MIS PROPIEDADES) */
         <div className="space-y-6">
+          {/* NY FASTIGHET FORMULÄR */}
           <form onSubmit={handleCreateProperty} className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black">
@@ -566,15 +678,29 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la anfitriona (Värd)</label>
-                <input
-                  type="text"
-                  placeholder="Ej. Jessica"
-                  value={newPropHost}
-                  onChange={(e) => setNewPropHost(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 font-medium outline-none focus:bg-white focus:border-emerald-500 transition"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la anfitriona (Värd)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Jessica"
+                    value={newPropHost}
+                    onChange={(e) => setNewPropHost(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 font-medium outline-none focus:bg-white focus:border-emerald-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Código Secreto / Contraseña *</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. GV45"
+                    value={newPropPasscode}
+                    onChange={(e) => setNewPropPasscode(e.target.value.toUpperCase())}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold uppercase text-slate-900 outline-none focus:bg-white focus:border-emerald-500 transition"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
@@ -588,15 +714,72 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
                 />
               </div>
 
+              {/* SPECIFIKATIONER GRID */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Ruler className="w-3.5 h-3.5 text-slate-500" /> Kvm (m²)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 85"
+                    value={newPropKvm}
+                    onChange={(e) => setNewPropKvm(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Bed className="w-3.5 h-3.5 text-slate-500" /> Rum
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 3"
+                    value={newPropRooms}
+                    onChange={(e) => setNewPropRooms(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Bath className="w-3.5 h-3.5 text-slate-500" /> Badrum
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 2"
+                    value={newPropBathrooms}
+                    onChange={(e) => setNewPropBathrooms(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Timer className="w-3.5 h-3.5 text-sky-600" /> Tidsåtgång
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 2.5 h"
+                    value={newPropTime}
+                    onChange={(e) => setNewPropTime(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* SPECIELLA ANTECKNINGAR */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Código Secreto / Contraseña *</label>
-                <input
-                  type="text"
-                  placeholder="Ej. GV45"
-                  value={newPropPasscode}
-                  onChange={(e) => setNewPropPasscode(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold uppercase text-slate-900 outline-none focus:bg-white focus:border-emerald-500 transition"
-                  required
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <StickyNote className="w-3.5 h-3.5 text-amber-600" /> Speciella anteckningar / Notas especiales
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ej. Reservnyckel under stenen. Låset krånglar, vrid två varv åt vänster..."
+                  value={newPropNotes}
+                  onChange={(e) => setNewPropNotes(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 outline-none focus:bg-white focus:border-emerald-500 transition"
                 />
               </div>
             </div>
@@ -613,6 +796,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
             </button>
           </form>
 
+          {/* LISTA ÖVER FASTIGHETER */}
           <div className="space-y-3">
             <h4 className="font-black text-white text-xs uppercase tracking-wider px-1">
               Tus Propiedades ({properties.length})
@@ -641,53 +825,220 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <span className="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider mb-1">
-                        Lösen / Código
-                      </span>
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => toggleRevealPasscode(p.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 font-mono font-black text-xs rounded-xl border border-slate-700 shadow-sm transition active:scale-95"
-                        title={isRevealed ? 'Ocultar código' : 'Mostrar código'}
+                        onClick={() => setEditingProperty(p)}
+                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition"
+                        title="Editar propiedad / Redigera"
                       >
-                        {isRevealed ? (
-                          <>
-                            <EyeOff className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{p.passcode}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>••••</span>
-                          </>
-                        )}
+                        <Pencil className="w-4 h-4" />
                       </button>
+
+                      <div className="text-right shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleRevealPasscode(p.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 font-mono font-black text-xs rounded-xl border border-slate-700 shadow-sm transition active:scale-95"
+                          title={isRevealed ? 'Ocultar código' : 'Mostrar código'}
+                        >
+                          {isRevealed ? (
+                            <>
+                              <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{p.passcode}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>••••</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                  {/* RUTNÄT MED SPECIFIKATIONER */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                        <User className="w-3.5 h-3.5 text-emerald-600" /> Värd / Anfitriona
+                        <Ruler className="w-3 h-3 text-slate-500" /> Kvm
                       </span>
                       <span className="font-extrabold text-slate-900 text-xs">
-                        {p.host_name || 'Ej angiven'}
+                        {p.kvm ? `${p.kvm} m²` : '-'}
                       </span>
                     </div>
 
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Adress / Dirección
+                        <Bed className="w-3 h-3 text-slate-500" /> Rum
                       </span>
-                      <span className="font-extrabold text-slate-900 text-xs truncate block">
-                        {p.address || p.name}
+                      <span className="font-extrabold text-slate-900 text-xs">
+                        {p.rooms ? `${p.rooms} hab` : '-'}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                        <Bath className="w-3 h-3 text-slate-500" /> Badrum
+                      </span>
+                      <span className="font-extrabold text-slate-900 text-xs">
+                        {p.bathrooms ? `${p.bathrooms} baños` : '-'}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                        <Timer className="w-3 h-3 text-sky-600" /> Tiempo
+                      </span>
+                      <span className="font-extrabold text-slate-900 text-xs">
+                        {p.cleaning_time || '-'}
                       </span>
                     </div>
                   </div>
+
+                  {/* SPECIELLA FASTA ANTECKNINGAR */}
+                  {p.property_notes && (
+                    <div className="bg-sky-50 border border-sky-200 p-3 rounded-xl space-y-1 text-xs">
+                      <span className="font-black text-sky-900 uppercase text-[10px] tracking-wider block flex items-center gap-1">
+                        <StickyNote className="w-3.5 h-3.5 text-sky-600" /> Notas fijas / Anteckningar:
+                      </span>
+                      <p className="font-bold text-sky-950 leading-relaxed whitespace-pre-line">
+                        {p.property_notes}
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL FÖR ATT REDIGERA FASTIGHET */}
+      {editingProperty && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
+          <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                <Pencil className="w-4 h-4 text-emerald-600" /> Editar Propiedad
+              </h3>
+              <button onClick={() => setEditingProperty(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateProperty} className="p-5 space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nombre</label>
+                <input
+                  type="text"
+                  value={editingProperty.name}
+                  onChange={(e) => setEditingProperty({ ...editingProperty, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Dirección</label>
+                <input
+                  type="text"
+                  value={editingProperty.address}
+                  onChange={(e) => setEditingProperty({ ...editingProperty, address: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Anfitriona (Värd)</label>
+                  <input
+                    type="text"
+                    value={editingProperty.host_name || ''}
+                    onChange={(e) => setEditingProperty({ ...editingProperty, host_name: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Código / Lösenord</label>
+                  <input
+                    type="text"
+                    value={editingProperty.passcode}
+                    onChange={(e) => setEditingProperty({ ...editingProperty, passcode: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-mono font-bold uppercase outline-none focus:bg-white focus:border-emerald-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* SPECIFIKATIONER GRID */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Kvm (m²)</label>
+                  <input
+                    type="text"
+                    placeholder="85"
+                    value={editingProperty.kvm || ''}
+                    onChange={(e) => setEditingProperty({ ...editingProperty, kvm: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Rum</label>
+                  <input
+                    type="text"
+                    placeholder="3"
+                    value={editingProperty.rooms || ''}
+                    onChange={(e) => setEditingProperty({ ...editingProperty, rooms: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Badrum</label>
+                  <input
+                    type="text"
+                    placeholder="2"
+                    value={editingProperty.bathrooms || ''}
+                    onChange={(e) => setEditingProperty({ ...editingProperty, bathrooms: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tiempo</label>
+                  <input
+                    type="text"
+                    placeholder="2.5 h"
+                    value={editingProperty.cleaning_time || ''}
+                    onChange={(e) => setEditingProperty({ ...editingProperty, cleaning_time: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-bold outline-none focus:bg-white focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Notas especiales (Speciella anteckningar)</label>
+                <textarea
+                  rows={2}
+                  value={editingProperty.property_notes || ''}
+                  onChange={(e) => setEditingProperty({ ...editingProperty, property_notes: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:bg-white focus:border-emerald-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingProp}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-1.5 mt-2"
+              >
+                {savingProp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Guardar Cambios
+              </button>
+            </form>
           </div>
         </div>
       )}

@@ -15,6 +15,11 @@ export interface Property {
   address: string;
   passcode: string;
   host_name?: string | null;
+  kvm?: string | null;
+  rooms?: string | null;
+  bathrooms?: string | null;
+  cleaning_time?: string | null;
+  property_notes?: string | null;
   created_at?: string;
 }
 
@@ -25,10 +30,12 @@ export interface Booking {
   host_name: string | null;
   departure_date: string;
   departure_time_window: DepartureTimeWindow;
-  vacant_now?: boolean; // Nytt fält: Bostaden står tom just nu
+  departure_exact_time?: string | null;
+  vacant_now?: boolean;
   no_next_guest: boolean;
   next_arrival_date: string | null;
   next_arrival_time_window: ArrivalTimeWindow | null;
+  arrival_exact_time?: string | null;
   guests: number;
   laundry: boolean;
   notes: string | null;
