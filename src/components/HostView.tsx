@@ -99,32 +99,34 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
     : bookings;
 
   return (
-    <div className="max-w-xl mx-auto px-4 space-y-6">
-      {/* Platform Header */}
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <h2 className="text-base font-black text-white tracking-tight flex items-center gap-2">
-            <span>{APP_CONFIG.name}</span>
-            <span className="text-[10px] uppercase font-bold bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/30">
-              Host
-            </span>
-          </h2>
-          <p className="text-[11px] text-slate-400">{APP_CONFIG.tagline}</p>
-        </div>
-      </div>
-
-      {/* Property Badge */}
-      <div className="bg-slate-900/90 text-white p-4 rounded-2xl border border-slate-700 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Building className="w-5 h-5 text-sky-400" />
-          <div>
-            <h3 className="font-black text-sm">{selectedProperty?.name}</h3>
-            <span className="text-[10px] text-slate-400 font-bold">{selectedProperty?.address}</span>
+    <div className="max-w-xl mx-auto px-4 space-y-4">
+      {/* SAMMANSLAGEN KOMPAKT HEADER & FASTIGHETSBAADGE */}
+      <div className="bg-slate-900/90 text-white p-3.5 rounded-2xl border border-slate-700/80 shadow-lg flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
+            <Building className="w-5 h-5" />
+          </div>
+          <div className="min-w-0 space-y-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-black text-xs text-white tracking-tight">{APP_CONFIG.name}</span>
+              <span className="text-[9px] uppercase font-black bg-sky-500/20 text-sky-400 px-1.5 py-0.2 rounded-md border border-sky-500/30">
+                Host
+              </span>
+            </div>
+            <p className="font-black text-sm text-sky-400 truncate leading-tight">
+              {selectedProperty?.name}
+              {selectedProperty?.address && (
+                <span className="text-xs font-semibold text-slate-400 ml-1.5 font-normal">
+                  · {selectedProperty.address}
+                </span>
+              )}
+            </p>
           </div>
         </div>
+
         <button
           onClick={() => setAuthenticated(false)}
-          className="text-[10px] font-extrabold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-600 transition"
+          className="text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 transition shrink-0 active:scale-95"
         >
           Byt fastighet
         </button>

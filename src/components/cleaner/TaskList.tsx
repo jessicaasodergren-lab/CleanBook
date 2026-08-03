@@ -41,6 +41,17 @@ function getValidNote(notesEs: string | null | undefined, notesSv: string | null
   return notesSv || null;
 }
 
+// Visar exakt klockslag ELLER tidsfönster på spanska (Mañana/Tarde/Noche)
+function formatTimeOrWindowEs(exactTime: string | null | undefined, timeWindow: string | null | undefined): string | null {
+  if (exactTime) {
+    return `a las ${exactTime}`;
+  }
+  if (timeWindow === 'morning') return '🌅 Mañana';
+  if (timeWindow === 'afternoon') return '☀️ Tarde';
+  if (timeWindow === 'evening') return '🌙 Noche';
+  return null;
+}
+
 export default function TaskList({ bookings, incidents, properties, loading, onRefresh }: TaskListProps) {
   const [jobFilter, setJobFilter] = useState<'active' | 'pending_only' | 'finished'>('active');
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -112,7 +123,6 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
     const isFinished = b.status === 'finished';
     const isExpanded = expandedId === b.id;
     
-    // Säkerställ att vi inte visar översättningsfel
     const displayNote = getValidNote(b.notes_es, b.notes);
 
     const matchedProp = properties.find(
@@ -124,6 +134,9 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
     const displayAddress = matchedProp?.address || b.property_address || b.property_name;
     const displayHost = matchedProp?.host_name || b.host_name;
     const bookingIncidents = incidents.filter((i) => i.booking_id === b.id);
+
+    const arrivalTimeFormatted = formatTimeOrWindowEs(b.arrival_exact_time, b.next_arrival_time_window);
+    const departureTimeFormatted = formatTimeOrWindowEs(b.departure_exact_time, b.departure_time_window);
 
     return (
       <div
@@ -181,7 +194,7 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
           </button>
         </div>
 
-        {/* 2. INSTRUKTIONSBOX (VISAR MAX 80 TECKEN OCH TRE PRICKAR (...) OM HOPFÄLLT) */}
+        {/* 2. INSTRUKTIONSBOX (EXPANDERAR PÅ SAMMA STÄLLE UTAN ATT HOPPA) */}
         {displayNote && (
           <div
             onClick={() => toggleExpand(b.id)}
@@ -214,8 +227,10 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
               <span className="font-black text-slate-900 block text-sm">
                 {formatDate(b.departure_date, 'es')}
               </span>
-              {b.departure_exact_time && (
-                <span className="text-[11px] font-bold text-slate-500">kl {b.departure_exact_time}</span>
+              {departureTimeFormatted && (
+                <span className="text-[11px] font-bold text-slate-500 block mt-0.5">
+                  {departureTimeFormatted}
+                </span>
               )}
             </div>
 
@@ -226,8 +241,10 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
               <span className="font-black text-sky-950 block text-sm">
                 {formatDate(b.next_arrival_date, 'es')}
               </span>
-              {b.arrival_exact_time && (
-                <span className="text-[11px] font-bold text-sky-700">kl {b.arrival_exact_time}</span>
+              {arrivalTimeFormatted && (
+                <span className="text-[11px] font-bold text-sky-700 block mt-0.5">
+                  {arrivalTimeFormatted}
+                </span>
               )}
             </div>
           </div>
