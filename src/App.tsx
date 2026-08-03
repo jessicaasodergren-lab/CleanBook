@@ -31,7 +31,7 @@ export default function App() {
 
   const fetchAll = useCallback(async () => {
     const [bRes, iRes] = await Promise.all([
-      supabase.from('bookings').select('*').order('departure_date', { ascending: true }),
+      supabase.from('bookings').select('*').order('check_out_date', { ascending: true }),
       supabase.from('incidents').select('*').order('created_at', { ascending: false }),
     ]);
 

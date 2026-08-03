@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronUp,
   MapPin,
-  Calendar,
   Camera,
   Trash2,
   Loader2,
@@ -31,7 +30,6 @@ function parsePhotos(photoUrl: string | null): string[] {
   return [photoUrl];
 }
 
-// Säkerställ att tekniska översättningsfel aldrig visas
 function getValidNote(notesEs: string | null | undefined, notesSv: string | null | undefined): string | null {
   if (notesEs && !notesEs.toUpperCase().includes('QUERY LENGTH LIMIT') && !notesEs.toUpperCase().includes('MYMEMORY')) {
     return notesEs;
@@ -39,7 +37,6 @@ function getValidNote(notesEs: string | null | undefined, notesSv: string | null
   return notesSv || null;
 }
 
-// Visar exakt klockslag ELLER tidsfönster (Förmiddag/Eftermiddag/Kväll)
 function formatTimeOrWindow(exactTime: string | null | undefined, timeWindow: string | null | undefined): string | null {
   if (exactTime) {
     return `kl ${exactTime}`;
@@ -52,10 +49,10 @@ function formatTimeOrWindow(exactTime: string | null | undefined, timeWindow: st
 
 function getWhatsAppUrl(b: Booking): string {
   const phone = APP_CONFIG.mariaPhoneNumber || '34600000000';
-  const depDate = formatDate(b.departure_date, 'es');
-  const depTime = b.departure_exact_time ? `kl ${b.departure_exact_time}` : '';
-  const arrDate = formatDate(b.next_arrival_date, 'es');
-  const arrTime = b.arrival_exact_time ? `kl ${b.arrival_exact_time}` : '';
+  const depDate = formatDate(b.check_out_date, 'es');
+  const depTime = b.check_out_exact_time ? `kl ${b.check_out_exact_time}` : '';
+  const arrDate = formatDate(b.check_in_date, 'es');
+  const arrTime = b.check_in_exact_time ? `kl ${b.check_in_exact_time}` : '';
   
   const validNoteEs = getValidNote(b.notes_es, b.notes);
   const notesText = validNoteEs || b.notes;
@@ -66,7 +63,7 @@ Nueva reserva para gestionar en CleanBook:
 
 📍 *Propiedad:* ${b.property_name} (${b.property_address || b.property_name})
 📅 *Salida (Limpieza):* ${depDate} ${depTime}
-📅 *Próxima entrada:* ${arrDate} ${arrTime}
+📅 *Entrada del huésped:* ${arrDate} ${arrTime}
 👥 *Huéspedes:* ${b.guests}
 🧺 *Lavar:* ${b.laundry ? 'SÍ' : 'NO'}
 ${notesText ? `📝 *Instrucciones:* ${notesText}\n` : ''}
@@ -98,12 +95,12 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
     onRefresh();
   };
 
-  // Sortera STIGANDE efter next_arrival_date (tidigaste incheckning först)
+  // Sortera STIGANDE efter check_in_date (tidigaste incheckning först)
   const sortedBookings = [...bookings].sort((a, b) => {
-    const dateA = a.next_arrival_date || a.departure_date || '9999-99-99';
-    const dateB = b.next_arrival_date || b.departure_date || '9999-99-99';
+    const dateA = a.check_in_date || a.check_out_date || '9999-99-99';
+    const dateB = b.check_in_date || b.check_out_date || '9999-99-99';
     if (dateA !== dateB) return dateA.localeCompare(dateB);
-    return (a.departure_date || '').localeCompare(b.departure_date || '');
+    return (a.check_out_date || '').localeCompare(b.check_out_date || '');
   });
 
   const activeJobs = sortedBookings.filter((b) => b.status === 'pending' || b.status === 'accepted');
@@ -128,7 +125,6 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
 
   return (
     <div className="space-y-4">
-      {/* FILTERMENY / FLIKAR */}
       <div className="flex bg-slate-800 p-1 rounded-2xl text-xs font-bold gap-1 border border-slate-700 shadow-md">
         <button
           type="button"
@@ -170,7 +166,6 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
         </button>
       </div>
 
-      {/* RUBRIK / SORTERINGSINFO */}
       <div className="flex items-center justify-between px-1 text-xs">
         <span className="text-slate-300 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
           <Clock className="w-4 h-4 text-sky-400" />
@@ -183,7 +178,6 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
         </span>
       </div>
 
-      {/* BOKNINGSLISTA */}
       <div className="space-y-3">
         {displayedJobs.length === 0 ? (
           <div className="text-center py-12 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-8 space-y-2">
@@ -199,8 +193,8 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
             const bookingIncidents = incidents.filter((i) => i.booking_id === b.id);
             const validNoteEs = getValidNote(b.notes_es, b.notes);
 
-            const arrivalTimeFormatted = formatTimeOrWindow(b.arrival_exact_time, b.next_arrival_time_window);
-            const departureTimeFormatted = formatTimeOrWindow(b.departure_exact_time, b.departure_time_window);
+            const arrivalTimeFormatted = formatTimeOrWindow(b.check_in_exact_time, b.check_in_time_window);
+            const departureTimeFormatted = formatTimeOrWindow(b.check_out_exact_time, b.check_out_time_window);
 
             return (
               <div
@@ -213,7 +207,6 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                     : 'bg-white text-slate-900 border border-slate-200'
                 }`}
               >
-                {/* 1. TOPP-INFO: STATUS & BADGES */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -259,7 +252,6 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                   </button>
                 </div>
 
-                {/* 2. SMLDIGT INSTRUKTIONSBLOCK (EXPANDERAR PÅ SAMMA PLATS UTAN ATT HOPPA) */}
                 {b.notes && (
                   <div
                     onClick={() => toggleExpand(b.id)}
@@ -291,33 +283,32 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                   </div>
                 )}
 
-                {/* 3. TIDER, GÄSTER & TVÄTT BLOCK */}
                 <div className="bg-white/90 rounded-2xl p-3.5 border border-slate-200/80 space-y-2 text-xs shadow-sm">
                   <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-200/60">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                        Utcheckning (Städstart)
-                      </span>
-                      <span className="font-black text-slate-900 block text-sm">
-                        {formatDate(b.departure_date, 'sv')}
-                      </span>
-                      {departureTimeFormatted && (
-                        <span className="text-[11px] font-bold text-slate-500 block mt-0.5">
-                          {departureTimeFormatted}
-                        </span>
-                      )}
-                    </div>
-
                     <div className="bg-sky-50/80 p-2 rounded-xl border border-sky-100">
                       <span className="text-[10px] font-black text-sky-900 uppercase block">
                         Incheckning (Gäst anländer)
                       </span>
                       <span className="font-black text-sky-950 block text-sm">
-                        {formatDate(b.next_arrival_date, 'sv')}
+                        {formatDate(b.check_in_date, 'sv')}
                       </span>
                       {arrivalTimeFormatted && (
                         <span className="text-[11px] font-bold text-sky-700 block mt-0.5">
                           {arrivalTimeFormatted}
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                        Utcheckning (Städstart)
+                      </span>
+                      <span className="font-black text-slate-900 block text-sm">
+                        {formatDate(b.check_out_date, 'sv')}
+                      </span>
+                      {departureTimeFormatted && (
+                        <span className="text-[11px] font-bold text-slate-500 block mt-0.5">
+                          {departureTimeFormatted}
                         </span>
                       )}
                     </div>
@@ -329,10 +320,8 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                   </div>
                 </div>
 
-                {/* 4. EXPANDERAT INNEHÅLL (MARIAS FOTO OCH ÅTGÄRDER) */}
                 {isExpanded && (
                   <div className="pt-3 border-t border-slate-200/80 space-y-3 text-xs animate-in fade-in duration-200">
-                    {/* MARIAS FOTORAPPORTER */}
                     {bookingIncidents.length > 0 && (
                       <div className="bg-slate-100/70 border border-slate-200 p-3.5 rounded-2xl space-y-2">
                         <span className="font-black text-slate-900 uppercase text-[10px] block flex items-center gap-1">
@@ -364,7 +353,6 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                       </div>
                     )}
 
-                    {/* ÅTGÄRDER: ENBART WHATSAPP FÖR PENDING (OACCEPTERADE) */}
                     <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                       {isPending ? (
                         <>
@@ -402,7 +390,6 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
         )}
       </div>
 
-      {/* FULLSKÄRMS-BILD FÖR MARIAS FOTON */}
       {selectedImage && (
         <div
           className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"

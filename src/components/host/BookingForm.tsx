@@ -51,7 +51,7 @@ const formTexts = {
     laundryYes: '🧺 Ja, tvätta lakan/handdukar',
     laundryNo: '🚫 Nej, ingen tvätt',
     notesLabel: 'Instruktioner till Maria',
-    notesPlaceholder: 'T.ex. Kom ihåg att ställa ut terrassmöblerna och lämna extra handdukar...',
+    notesPlaceholder: 'T.ex. Kom ihåg att ställa ut terrassmöblerna...',
     notesHelp: 'Texten översätts automatiskt till spanska.',
     saveBtn: 'Spara & Schemalägg Städning',
     savedTitle: 'Bokningen är sparad!',
@@ -60,7 +60,7 @@ const formTexts = {
     errNoProperty: 'Hittade ingen giltig fastighet.',
     errRequired: 'Fyll i alla obligatoriska fält (Gästnamn, Incheckning och Utcheckning).',
     errWindowRequired: 'Vänligen välj ett ankomstfönster och ett utcheckningsfönster.',
-    errDepartureBeforeArrival: 'Utcheckningsdatumet (städstart) kan inte vara före incheckningsdatumet.',
+    errDepartureBeforeArrival: 'Utcheckningsdatumet kan inte vara före incheckningsdatumet.',
   },
   en: {
     title: 'Create New Guest Booking',
@@ -82,7 +82,7 @@ const formTexts = {
     laundryYes: '🧺 Yes, wash linen/towels',
     laundryNo: '🚫 No laundry',
     notesLabel: 'Instructions for Maria',
-    notesPlaceholder: 'E.g. Remember to put out the terrace furniture and leave extra towels...',
+    notesPlaceholder: 'E.g. Remember to put out the terrace furniture...',
     notesHelp: 'Text is automatically translated to Spanish.',
     saveBtn: 'Save & Schedule Cleaning',
     savedTitle: 'Booking saved!',
@@ -91,7 +91,7 @@ const formTexts = {
     errNoProperty: 'No valid property found.',
     errRequired: 'Please fill in all required fields (Guest Name, Check-in, and Check-out).',
     errWindowRequired: 'Please select an arrival window and a departure window.',
-    errDepartureBeforeArrival: 'Check-out date (cleaning start) cannot be before check-in date.',
+    errDepartureBeforeArrival: 'Check-out date cannot be before check-in date.',
   },
   da: {
     title: 'Opret ny gæstebooking',
@@ -113,7 +113,7 @@ const formTexts = {
     laundryYes: '🧺 Ja, vask linned/håndklæder',
     laundryNo: '🚫 Ingen vask',
     notesLabel: 'Instruktioner til Maria',
-    notesPlaceholder: 'F.eks. Husk at stille terrassemøblerne ud og lægge ekstra håndklæder...',
+    notesPlaceholder: 'F.eks. Husk at stille terrassemøblerne ud...',
     notesHelp: 'Teksten oversættes automatisk til spansk.',
     saveBtn: 'Gem & planlæg rengøring',
     savedTitle: 'Bookingen er gemt!',
@@ -122,7 +122,7 @@ const formTexts = {
     errNoProperty: 'Ingen gyldig ejendom fundet.',
     errRequired: 'Udfyld venligst alle obligatoriske felter (Gæstenavn, Indtjekning og Udtjekning).',
     errWindowRequired: 'Vælg venligst et ankomstvindue og et udtjekningsvindue.',
-    errDepartureBeforeArrival: 'Udtjekningsdatoen (rengøringsstart) kan ikke være før indtjekningsdatoen.',
+    errDepartureBeforeArrival: 'Udtjekningsdatoen kan ikke være før indtjekningsdatoen.',
   },
 };
 
@@ -146,14 +146,14 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
   const [bookingTitle, setBookingTitle] = useState('');
 
   // Incheckning
-  const [nextArrivalDate, setNextArrivalDate] = useState('');
-  const [arrivalTimeWindow, setArrivalTimeWindow] = useState<ArrivalTimeWindow | ''>('');
-  const [arrivalExactTime, setArrivalExactTime] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkInTimeWindow, setCheckInTimeWindow] = useState<ArrivalTimeWindow | ''>('');
+  const [checkInExactTime, setCheckInExactTime] = useState('');
 
-  // Utcheckning / Städstart
-  const [departureDate, setDepartureDate] = useState('');
-  const [departureTimeWindow, setDepartureTimeWindow] = useState<DepartureTimeWindow | ''>('');
-  const [departureExactTime, setDepartureExactTime] = useState('');
+  // Utcheckning
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [checkOutTimeWindow, setCheckOutTimeWindow] = useState<DepartureTimeWindow | ''>('');
+  const [checkOutExactTime, setCheckOutExactTime] = useState('');
 
   const [guests, setGuests] = useState(2);
   const [laundry, setLaundry] = useState(true);
@@ -164,18 +164,18 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
 
   const handleArrivalExactTimeChange = (timeValue: string) => {
-    setArrivalExactTime(timeValue);
+    setCheckInExactTime(timeValue);
     const autoWindow = getTimeWindowFromExactTime(timeValue);
     if (autoWindow) {
-      setArrivalTimeWindow(autoWindow as ArrivalTimeWindow);
+      setCheckInTimeWindow(autoWindow as ArrivalTimeWindow);
     }
   };
 
   const handleDepartureExactTimeChange = (timeValue: string) => {
-    setDepartureExactTime(timeValue);
+    setCheckOutExactTime(timeValue);
     const autoWindow = getTimeWindowFromExactTime(timeValue);
     if (autoWindow) {
-      setDepartureTimeWindow(autoWindow as DepartureTimeWindow);
+      setCheckOutTimeWindow(autoWindow as DepartureTimeWindow);
     }
   };
 
@@ -190,17 +190,17 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       return;
     }
 
-    if (!nextArrivalDate || !departureDate || !bookingTitle.trim()) {
+    if (!checkInDate || !checkOutDate || !bookingTitle.trim()) {
       setErrorMsg(txt.errRequired);
       return;
     }
 
-    if (!arrivalTimeWindow || !departureTimeWindow) {
+    if (!checkInTimeWindow || !checkOutTimeWindow) {
       setErrorMsg(txt.errWindowRequired);
       return;
     }
 
-    if (departureDate < nextArrivalDate) {
+    if (checkOutDate < checkInDate) {
       setErrorMsg(txt.errDepartureBeforeArrival);
       return;
     }
@@ -209,19 +209,19 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
 
     const { data: existingBookings } = await supabase
       .from('bookings')
-      .select('id, booking_title, departure_date, next_arrival_date')
+      .select('id, booking_title, check_out_date, check_in_date')
       .eq('property_name', prop.name);
 
     if (existingBookings && existingBookings.length > 0) {
       const overlappingBooking = existingBookings.find((b) => {
-        if (!b.departure_date || !b.next_arrival_date) return false;
-        return departureDate < b.next_arrival_date && b.departure_date < nextArrivalDate;
+        if (!b.check_out_date || !b.check_in_date) return false;
+        return checkOutDate < b.check_in_date && b.check_out_date < checkInDate;
       });
 
       if (overlappingBooking) {
         setSubmitting(false);
         setErrorMsg(
-          `Det finns redan en krockande bokning ("${overlappingBooking.booking_title}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.departure_date, lang)} och ${formatDate(overlappingBooking.next_arrival_date, lang)}.`
+          `Det finns redan en krockande bokning ("${overlappingBooking.booking_title}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.check_in_date, lang)} och ${formatDate(overlappingBooking.check_out_date, lang)}.`
         );
         return;
       }
@@ -254,12 +254,12 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       property_address: prop.address || prop.name,
       host_name: prop.host_name || 'Värd',
       booking_title: bookingTitle.trim(),
-      next_arrival_date: nextArrivalDate,
-      next_arrival_time_window: arrivalTimeWindow,
-      arrival_exact_time: arrivalExactTime.trim() || null,
-      departure_date: departureDate,
-      departure_time_window: departureTimeWindow,
-      departure_exact_time: departureExactTime.trim() || null,
+      check_in_date: checkInDate,
+      check_in_time_window: checkInTimeWindow,
+      check_in_exact_time: checkInExactTime.trim() || null,
+      check_out_date: checkOutDate,
+      check_out_time_window: checkOutTimeWindow,
+      check_out_exact_time: checkOutExactTime.trim() || null,
       guests: Number(guests) || 1,
       laundry: laundry,
       notes: cleanNotes || null,
@@ -279,12 +279,12 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       setCreatedBooking(inserted);
 
       setBookingTitle('');
-      setNextArrivalDate('');
-      setArrivalTimeWindow('');
-      setArrivalExactTime('');
-      setDepartureDate('');
-      setDepartureTimeWindow('');
-      setDepartureExactTime('');
+      setCheckInDate('');
+      setCheckInTimeWindow('');
+      setCheckInExactTime('');
+      setCheckOutDate('');
+      setCheckOutTimeWindow('');
+      setCheckOutExactTime('');
       setNotes('');
       onBookingCreated();
     }
@@ -292,10 +292,10 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
 
   const getWhatsAppUrl = (b: Booking) => {
     const phone = APP_CONFIG.mariaPhoneNumber || '34600000000';
-    const depDate = formatDate(b.departure_date, 'es');
-    const depTime = b.departure_exact_time ? `kl ${b.departure_exact_time}` : '';
-    const arrDate = formatDate(b.next_arrival_date, 'es');
-    const arrTime = b.arrival_exact_time ? `kl ${b.arrival_exact_time}` : '';
+    const depDate = formatDate(b.check_out_date, 'es');
+    const depTime = b.check_out_exact_time ? `kl ${b.check_out_exact_time}` : '';
+    const arrDate = formatDate(b.check_in_date, 'es');
+    const arrTime = b.check_in_exact_time ? `kl ${b.check_in_exact_time}` : '';
     const notesText = b.notes_es || b.notes;
 
     const msg = `¡Hola Maria! 🧹
@@ -303,7 +303,7 @@ Nueva reserva para gestionar en CleanBook:
 
 📍 *Propiedad:* ${b.property_name} (${b.property_address || b.property_name})
 📅 *Salida (Limpieza):* ${depDate} ${depTime}
-📅 *Próxima entrada:* ${arrDate} ${arrTime}
+📅 *Entrada del huésped:* ${arrDate} ${arrTime}
 👥 *Huéspedes:* ${b.guests}
 🧺 *Lavar:* ${b.laundry ? 'SÍ' : 'NO'}
 ${notesText ? `📝 *Instrucciones:* ${notesText}\n` : ''}
@@ -342,7 +342,6 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
         </div>
 
         <div className="space-y-4 text-xs">
-          {/* LÅST FASTIGHET (MED KARTNÅL MAPPIN EXAKT SOM I BOOKINGLIST) */}
           {selectedPropertyId ? (
             <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 flex items-center justify-between">
               <div className="space-y-0.5">
@@ -393,7 +392,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
             />
           </div>
 
-          {/* INCHECKNING (NÄSTA GÄST ANKOMMER) */}
+          {/* INCHECKNING (GÄST ANKOMMER) */}
           <div className="bg-sky-50/60 p-3.5 rounded-2xl border border-sky-100 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
@@ -402,8 +401,8 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </label>
                 <input
                   type="date"
-                  value={nextArrivalDate}
-                  onChange={(e) => setNextArrivalDate(e.target.value)}
+                  value={checkInDate}
+                  onChange={(e) => setCheckInDate(e.target.value)}
                   className="w-full bg-white border border-sky-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-sky-500"
                   required
                 />
@@ -415,7 +414,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </label>
                 <input
                   type="time"
-                  value={arrivalExactTime}
+                  value={checkInExactTime}
                   onChange={(e) => handleArrivalExactTimeChange(e.target.value)}
                   className="w-full bg-white border border-sky-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-sky-500"
                 />
@@ -427,9 +426,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setArrivalTimeWindow('morning')}
+                  onClick={() => setCheckInTimeWindow('morning')}
                   className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
-                    arrivalTimeWindow === 'morning'
+                    checkInTimeWindow === 'morning'
                       ? 'bg-sky-600 text-white border-sky-600 shadow-md'
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
                   }`}
@@ -438,9 +437,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </button>
                 <button
                   type="button"
-                  onClick={() => setArrivalTimeWindow('afternoon')}
+                  onClick={() => setCheckInTimeWindow('afternoon')}
                   className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
-                    arrivalTimeWindow === 'afternoon'
+                    checkInTimeWindow === 'afternoon'
                       ? 'bg-sky-600 text-white border-sky-600 shadow-md'
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
                   }`}
@@ -449,9 +448,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </button>
                 <button
                   type="button"
-                  onClick={() => setArrivalTimeWindow('evening')}
+                  onClick={() => setCheckInTimeWindow('evening')}
                   className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
-                    arrivalTimeWindow === 'evening'
+                    checkInTimeWindow === 'evening'
                       ? 'bg-sky-600 text-white border-sky-600 shadow-md'
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
                   }`}
@@ -471,9 +470,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </label>
                 <input
                   type="date"
-                  value={departureDate}
-                  min={nextArrivalDate || undefined}
-                  onChange={(e) => setDepartureDate(e.target.value)}
+                  value={checkOutDate}
+                  min={checkInDate || undefined}
+                  onChange={(e) => setCheckOutDate(e.target.value)}
                   className="w-full bg-white border border-amber-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-amber-500"
                   required
                 />
@@ -485,7 +484,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </label>
                 <input
                   type="time"
-                  value={departureExactTime}
+                  value={checkOutExactTime}
                   onChange={(e) => handleDepartureExactTimeChange(e.target.value)}
                   className="w-full bg-white border border-amber-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-amber-500"
                 />
@@ -497,9 +496,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setDepartureTimeWindow('morning')}
+                  onClick={() => setCheckOutTimeWindow('morning')}
                   className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
-                    departureTimeWindow === 'morning'
+                    checkOutTimeWindow === 'morning'
                       ? 'bg-amber-600 text-white border-amber-600 shadow-md'
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
                   }`}
@@ -508,9 +507,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDepartureTimeWindow('afternoon')}
+                  onClick={() => setCheckOutTimeWindow('afternoon')}
                   className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
-                    departureTimeWindow === 'afternoon'
+                    checkOutTimeWindow === 'afternoon'
                       ? 'bg-amber-600 text-white border-amber-600 shadow-md'
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
                   }`}
@@ -519,9 +518,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDepartureTimeWindow('evening')}
+                  onClick={() => setCheckOutTimeWindow('evening')}
                   className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
-                    departureTimeWindow === 'evening'
+                    checkOutTimeWindow === 'evening'
                       ? 'bg-amber-600 text-white border-amber-600 shadow-md'
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
                   }`}
