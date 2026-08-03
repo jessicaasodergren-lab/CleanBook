@@ -71,8 +71,12 @@ export default function App() {
             className="flex items-center gap-3 cursor-pointer group select-none"
             onClick={handleGoHome}
           >
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-all">
-              <Sparkles className="w-5 h-5 fill-white/20" />
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-all overflow-hidden">
+              <img 
+                src="/apple-touch-icon.png" 
+                alt="CleanBook Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <span className="font-black text-white text-lg tracking-wider block leading-none">
@@ -151,7 +155,7 @@ export default function App() {
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-105 transition-transform">
-                      <Globe className="w-5 h-5" />
+                      <Home className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="font-bold text-white text-sm group-hover:text-emerald-400 transition-colors flex items-center gap-2">
@@ -205,7 +209,7 @@ export default function App() {
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30 group-hover:scale-105 transition-transform">
-                      <UserCheck className="w-5 h-5" />
+                      <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="font-bold text-white text-sm group-hover:text-sky-400 transition-colors flex items-center gap-2">
