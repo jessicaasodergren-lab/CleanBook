@@ -16,6 +16,8 @@ import {
   Bed,
   Bath,
   StickyNote,
+  Trash2,
+  User,
 } from 'lucide-react';
 
 interface PropertyListProps {
@@ -25,6 +27,8 @@ interface PropertyListProps {
 
 export default function PropertyList({ properties, onRefresh }: PropertyListProps) {
   const [revealedPropIds, setRevealedPropIds] = useState<string[]>([]);
+  
+  // Skapa ny fastighet
   const [newPropName, setNewPropName] = useState('');
   const [newPropAddress, setNewPropAddress] = useState('');
   const [newPropHost, setNewPropHost] = useState('');
@@ -34,9 +38,12 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
   const [newPropBathrooms, setNewPropBathrooms] = useState('');
   const [newPropTime, setNewPropTime] = useState('');
   const [newPropNotes, setNewPropNotes] = useState('');
+  
   const [savingProp, setSavingProp] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [propError, setPropError] = useState<string | null>(null);
 
+  // Redigera fastighet
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
 
   const toggleRevealPasscode = (id: string) => {
@@ -50,8 +57,9 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
     setPropError(null);
     const code = newPropPasscode.trim().toUpperCase();
 
-    if (!newPropName || !code) return;
+    if (!newPropName.trim() || !code) return;
 
+    // Kontrollera om koden redan är upptagen
     const { data: existing } = await supabase.from('properties').select('id').eq('passcode', code);
     if (existing && existing.length > 0) {
       setPropError('¡Este código ya existe! Por favor usa un código diferente.');
@@ -72,6 +80,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
       property_notes: newPropNotes.trim() || null,
     });
 
+    // Återställ alla fält
     setNewPropName('');
     setNewPropAddress('');
     setNewPropHost('');
@@ -93,15 +102,15 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
     await supabase
       .from('properties')
       .update({
-        name: editingProperty.name,
-        address: editingProperty.address,
-        host_name: editingProperty.host_name,
-        passcode: editingProperty.passcode.toUpperCase(),
-        kvm: editingProperty.kvm || null,
-        rooms: editingProperty.rooms || null,
-        bathrooms: editingProperty.bathrooms || null,
-        cleaning_time: editingProperty.cleaning_time || null,
-        property_notes: editingProperty.property_notes || null,
+        name: editingProperty.name.trim(),
+        address: editingProperty.address.trim() || editingProperty.name.trim(),
+        host_name: editingProperty.host_name?.trim() || null,
+        passcode: editingProperty.passcode.trim().toUpperCase(),
+        kvm: editingProperty.kvm?.trim() || null,
+        rooms: editingProperty.rooms?.trim() || null,
+        bathrooms: editingProperty.bathrooms?.trim() || null,
+        cleaning_time: editingProperty.cleaning_time?.trim() || null,
+        property_notes: editingProperty.property_notes?.trim() || null,
       })
       .eq('id', editingProperty.id);
 
@@ -110,9 +119,29 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
     onRefresh();
   };
 
+  const handleDeleteProperty = async (p: Property) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar la propiedad "${p.name}"?`)) {
+      return;
+    }
+
+    setDeletingId(p.id);
+    const { error } = await supabase.from('properties').delete().eq('id', p.id);
+    setDeletingId(null);
+
+    if (error) {
+      alert(`No se pudo eliminar: ${error.message}`);
+    } else {
+      onRefresh();
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <form onSubmit={handleCreateProperty} className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
+      {/* FORMULARIO: REGISTRAR NUEVA PROPIEDAD */}
+      <form
+        onSubmit={handleCreateProperty}
+        className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200"
+      >
         <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
           <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black">
             <Plus className="w-5 h-5" />
@@ -122,7 +151,9 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la propiedad *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Nombre de la propiedad *
+            </label>
             <input
               type="text"
               placeholder="Ej. Gran Vista 45"
@@ -135,7 +166,9 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la anfitriona (Värd)</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Nombre de la anfitriona
+              </label>
               <input
                 type="text"
                 placeholder="Ej. Jessica"
@@ -146,7 +179,9 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Código Secreto / Contraseña *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Código Secreto / Contraseña *
+              </label>
               <input
                 type="text"
                 placeholder="Ej. GV45"
@@ -159,7 +194,9 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Dirección completa *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Dirección completa *
+            </label>
             <input
               type="text"
               placeholder="Ej. Calle Bach 71, Gran Alacant"
@@ -172,7 +209,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Ruler className="w-3.5 h-3.5 text-slate-500" /> Kvm (m²)
+                <Ruler className="w-3.5 h-3.5 text-slate-500" /> Superficie (m²)
               </label>
               <input
                 type="text"
@@ -185,7 +222,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
 
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Bed className="w-3.5 h-3.5 text-slate-500" /> Rum
+                <Bed className="w-3.5 h-3.5 text-slate-500" /> Habitaciones
               </label>
               <input
                 type="text"
@@ -198,7 +235,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
 
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Bath className="w-3.5 h-3.5 text-slate-500" /> Badrum
+                <Bath className="w-3.5 h-3.5 text-slate-500" /> Baños
               </label>
               <input
                 type="text"
@@ -211,7 +248,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
 
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Timer className="w-3.5 h-3.5 text-sky-600" /> Tidsåtgång
+                <Timer className="w-3.5 h-3.5 text-sky-600" /> Tiempo est.
               </label>
               <input
                 type="text"
@@ -225,11 +262,11 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-              <StickyNote className="w-3.5 h-3.5 text-amber-600" /> Speciella anteckningar / Notas especiales
+              <StickyNote className="w-3.5 h-3.5 text-amber-600" /> Notas fijas / Instrucciones permanentes
             </label>
             <textarea
               rows={2}
-              placeholder="Ej. Reservnyckel under stenen. Låset krånglar, vrid två varv åt vänster..."
+              placeholder="Ej. Llave de repuesto debajo de la piedra. La cerradura va un poco dura..."
               value={newPropNotes}
               onChange={(e) => setNewPropNotes(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 outline-none focus:bg-white focus:border-emerald-500 transition"
@@ -237,61 +274,99 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
           </div>
         </div>
 
-        {propError && <p className="text-xs font-bold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">{propError}</p>}
+        {propError && (
+          <p className="text-xs font-bold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">
+            {propError}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={savingProp}
-          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 active:scale-98"
         >
           {savingProp ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
           Guardar Propiedad
         </button>
       </form>
 
+      {/* LISTA DE PROPIEDADES */}
       <div className="space-y-3">
         <h4 className="font-black text-white text-xs uppercase tracking-wider px-1">
-          Tus Propiedades ({properties.length})
+          Mis Propiedades ({properties.length})
         </h4>
 
-        {properties.map((p) => {
-          const isRevealed = revealedPropIds.includes(p.id);
+        {properties.length === 0 ? (
+          <div className="text-center py-10 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 text-slate-400 text-xs">
+            No hay propiedades registradas. Usa el formulario de arriba para añadir una.
+          </div>
+        ) : (
+          properties.map((p) => {
+            const isRevealed = revealedPropIds.includes(p.id);
 
-          return (
-            <div
-              key={p.id}
-              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xl space-y-4 text-slate-900 relative overflow-hidden"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-black">
-                    <Building className="w-5 h-5" />
+            return (
+              <div
+                key={p.id}
+                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xl space-y-4 text-slate-900 relative overflow-hidden"
+              >
+                {/* CABECERA */}
+                <div className="flex items-start justify-between border-b border-slate-100 pb-3 gap-2">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-black shrink-0 mt-0.5">
+                      <Building className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h5 className="font-black text-slate-900 text-base leading-tight">
+                        {p.name}
+                      </h5>
+
+                      {/* DIRECCIÓN */}
+                      {p.address && (
+                        <p className="text-xs font-bold text-slate-600 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{p.address}</span>
+                        </p>
+                      )}
+
+                      {/* ANFITRIONA */}
+                      {p.host_name && (
+                        <p className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mt-0.5">
+                          <User className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span>Anfitriona: {p.host_name}</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h5 className="font-black text-slate-900 text-base leading-tight">
-                      {p.name}
-                    </h5>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Fastighet / Propiedad
-                    </span>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingProperty(p)}
-                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition"
-                    title="Editar propiedad / Redigera"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
+                  {/* ACCIONES: EDITAR, ELIMINAR, MOSTRAR CÓDIGO */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setEditingProperty(p)}
+                      className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition active:scale-95"
+                      title="Editar propiedad"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
 
-                  <div className="text-right shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProperty(p)}
+                      disabled={deletingId === p.id}
+                      className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition active:scale-95 border border-rose-100"
+                      title="Eliminar propiedad"
+                    >
+                      {deletingId === p.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-rose-600" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => toggleRevealPasscode(p.id)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 font-mono font-black text-xs rounded-xl border border-slate-700 shadow-sm transition active:scale-95"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 font-mono font-black text-xs rounded-xl border border-slate-700 shadow-sm transition active:scale-95"
                       title={isRevealed ? 'Ocultar código' : 'Mostrar código'}
                     >
                       {isRevealed ? (
@@ -308,69 +383,75 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
                     </button>
                   </div>
                 </div>
+
+                {/* ESPECIFICACIONES */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                      <Ruler className="w-3 h-3 text-slate-500" /> Superficie
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-xs">
+                      {p.kvm ? `${p.kvm} m²` : '-'}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                      <Bed className="w-3 h-3 text-slate-500" /> Habitaciones
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-xs">
+                      {p.rooms ? `${p.rooms} hab` : '-'}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                      <Bath className="w-3 h-3 text-slate-500" /> Baños
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-xs">
+                      {p.bathrooms ? `${p.bathrooms} baños` : '-'}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                      <Timer className="w-3 h-3 text-sky-600" /> Tiempo
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-xs">
+                      {p.cleaning_time || '-'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* NOTAS FIJAS */}
+                {p.property_notes && (
+                  <div className="bg-sky-50 border border-sky-200 p-3 rounded-xl space-y-1 text-xs">
+                    <span className="font-black text-sky-900 uppercase text-[10px] tracking-wider block flex items-center gap-1">
+                      <StickyNote className="w-3.5 h-3.5 text-sky-600" /> Notas fijas:
+                    </span>
+                    <p className="font-bold text-sky-950 leading-relaxed whitespace-pre-line">
+                      {p.property_notes}
+                    </p>
+                  </div>
+                )}
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                    <Ruler className="w-3 h-3 text-slate-500" /> Kvm
-                  </span>
-                  <span className="font-extrabold text-slate-900 text-xs">
-                    {p.kvm ? `${p.kvm} m²` : '-'}
-                  </span>
-                </div>
-
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                    <Bed className="w-3 h-3 text-slate-500" /> Rum
-                  </span>
-                  <span className="font-extrabold text-slate-900 text-xs">
-                    {p.rooms ? `${p.rooms} hab` : '-'}
-                  </span>
-                </div>
-
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                    <Bath className="w-3 h-3 text-slate-500" /> Badrum
-                  </span>
-                  <span className="font-extrabold text-slate-900 text-xs">
-                    {p.bathrooms ? `${p.bathrooms} baños` : '-'}
-                  </span>
-                </div>
-
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-0.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                    <Timer className="w-3 h-3 text-sky-600" /> Tiempo
-                  </span>
-                  <span className="font-extrabold text-slate-900 text-xs">
-                    {p.cleaning_time || '-'}
-                  </span>
-                </div>
-              </div>
-
-              {p.property_notes && (
-                <div className="bg-sky-50 border border-sky-200 p-3 rounded-xl space-y-1 text-xs">
-                  <span className="font-black text-sky-900 uppercase text-[10px] tracking-wider block flex items-center gap-1">
-                    <StickyNote className="w-3.5 h-3.5 text-sky-600" /> Notas fijas / Anteckningar:
-                  </span>
-                  <p className="font-bold text-sky-950 leading-relaxed whitespace-pre-line">
-                    {p.property_notes}
-                  </p>
-                </div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
+      {/* MODAL EDITAR PROPIEDAD */}
       {editingProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
-          <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+          <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-black text-sm text-slate-900 flex items-center gap-1.5">
                 <Pencil className="w-4 h-4 text-emerald-600" /> Editar Propiedad
               </h3>
-              <button onClick={() => setEditingProperty(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+              <button
+                onClick={() => setEditingProperty(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -399,7 +480,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Anfitriona (Värd)</label>
+                  <label className="block font-bold text-slate-700 mb-1">Anfitriona</label>
                   <input
                     type="text"
                     value={editingProperty.host_name || ''}
@@ -409,7 +490,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Código / Lösenord</label>
+                  <label className="block font-bold text-slate-700 mb-1">Código / Contraseña</label>
                   <input
                     type="text"
                     value={editingProperty.passcode}
@@ -422,7 +503,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Kvm (m²)</label>
+                  <label className="block font-bold text-slate-700 mb-1">Superficie (m²)</label>
                   <input
                     type="text"
                     placeholder="85"
@@ -433,7 +514,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Rum</label>
+                  <label className="block font-bold text-slate-700 mb-1">Habitaciones</label>
                   <input
                     type="text"
                     placeholder="3"
@@ -444,7 +525,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Badrum</label>
+                  <label className="block font-bold text-slate-700 mb-1">Baños</label>
                   <input
                     type="text"
                     placeholder="2"
@@ -455,7 +536,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tiempo</label>
+                  <label className="block font-bold text-slate-700 mb-1">Tiempo est.</label>
                   <input
                     type="text"
                     placeholder="2.5 h"
@@ -467,7 +548,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Notas especiales (Speciella anteckningar)</label>
+                <label className="block font-bold text-slate-700 mb-1">Notas fijas</label>
                 <textarea
                   rows={2}
                   value={editingProperty.property_notes || ''}
@@ -479,7 +560,7 @@ export default function PropertyList({ properties, onRefresh }: PropertyListProp
               <button
                 type="submit"
                 disabled={savingProp}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-1.5 mt-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-1.5 mt-2 active:scale-98"
               >
                 {savingProp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Guardar Cambios
