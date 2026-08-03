@@ -4,16 +4,55 @@ import { APP_CONFIG } from '../lib/constants';
 import BookingForm from './host/BookingForm';
 import BookingList from './host/BookingList';
 import CalendarView from './host/CalendarView';
-import { PlusCircle, List, Calendar as CalendarIcon, KeyRound, Loader2, Building, Home, Sparkles } from 'lucide-react';
+import { PlusCircle, List, Calendar as CalendarIcon, KeyRound, Loader2, Home } from 'lucide-react';
+
+export type HostLanguage = 'sv' | 'en' | 'da';
 
 interface HostViewProps {
   bookings: Booking[];
   incidents: Incident[];
   loading: boolean;
   onRefresh: () => void;
+  lang?: HostLanguage;
 }
 
-export default function HostView({ bookings, incidents, loading, onRefresh }: HostViewProps) {
+const hostTexts = {
+  sv: {
+    loginTitle: 'Värdinloggning',
+    loginSub: 'Ange fastighetens kod för att hantera bokningar',
+    loginPlaceholder: 'Fastighetens kod (t.ex. GV45)',
+    loginError: 'Felaktigt lösenord. Kontrollera koden för din fastighet.',
+    loginBtn: 'Logga in',
+    changeProp: 'Byt fastighet',
+    tabNew: 'Ny bokning',
+    tabList: 'Mina bokningar',
+    tabCal: 'Kalender',
+  },
+  en: {
+    loginTitle: 'Host Login',
+    loginSub: 'Enter property code to manage bookings',
+    loginPlaceholder: 'Property code (e.g. GV45)',
+    loginError: 'Incorrect passcode. Please check your property code.',
+    loginBtn: 'Log In',
+    changeProp: 'Change property',
+    tabNew: 'New booking',
+    tabList: 'My bookings',
+    tabCal: 'Calendar',
+  },
+  da: {
+    loginTitle: 'Vært Log ind',
+    loginSub: 'Indtast ejendomskode for at administrere bookinger',
+    loginPlaceholder: 'Ejendomskode (f.eks. GV45)',
+    loginError: 'Forkert adgangskode. Tjek koden for din ejendom.',
+    loginBtn: 'Log ind',
+    changeProp: 'Skift ejendom',
+    tabNew: 'Ny booking',
+    tabList: 'Mine bookinger',
+    tabCal: 'Calendar',
+  },
+};
+
+export default function HostView({ bookings, incidents, loading, onRefresh, lang = 'sv' }: HostViewProps) {
   const [authenticated, setAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -21,6 +60,8 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [activeTab, setActiveTab] = useState<'create' | 'list' | 'calendar'>('create');
+
+  const txt = hostTexts[lang] || hostTexts.sv;
 
   const fetchProperties = useCallback(async () => {
     const { data } = await supabase.from('properties').select('*').order('name');
@@ -40,52 +81,49 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
       setSelectedProperty(match);
       setAuthenticated(true);
     } else {
-      setAuthError('Felaktigt lösenord. Kontrollera koden för din fastighet.');
+      setAuthError(txt.loginError);
     }
   };
 
   if (!authenticated) {
     return (
-      <div className="max-w-sm mx-auto px-4 py-8 space-y-4">
-        {/* Brand Header */}
-        <div className="text-center space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[11px] font-bold">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{APP_CONFIG.tagline}</span>
+      <div className="max-w-sm mx-auto px-4 py-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 text-center space-y-5 shadow-2xl backdrop-blur-md">
+          <div className="w-14 h-14 bg-sky-500/10 text-sky-400 rounded-2xl flex items-center justify-center mx-auto border border-sky-500/20 shadow-inner">
+            <KeyRound className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-white">{APP_CONFIG.name}</h1>
-        </div>
-
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
-          <div className="text-center space-y-1">
-            <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 mx-auto flex items-center justify-center font-black">
-              <KeyRound className="w-6 h-6" />
-            </div>
-            <h2 className="text-lg font-black text-slate-900">Värdinloggning</h2>
-            <p className="text-xs text-slate-500">Ange fastighetens kod för att hantera bokningar</p>
-          </div>
-
           <div>
-            <input
-              type="text"
-              placeholder="Fastighetens kod (t.ex. GV45)"
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value.toUpperCase())}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold uppercase text-center text-slate-900 outline-none focus:bg-white focus:border-sky-500 transition"
-              required
-            />
+            <h2 className="text-xl font-black text-white">{txt.loginTitle}</h2>
+            <p className="text-xs text-slate-400 mt-1">{txt.loginSub}</p>
           </div>
 
-          {authError && <p className="text-xs font-bold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200 text-center">{authError}</p>}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <input
+                type="text"
+                placeholder={txt.loginPlaceholder}
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value.toUpperCase())}
+                className="w-full text-center text-xs font-mono font-bold uppercase p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+                required
+                autoFocus
+              />
+            </div>
 
-          <button
-            type="submit"
-            className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg shadow-sky-600/20"
-          >
-            Logga in
-          </button>
-        </form>
+            {authError && (
+              <p className="text-xs font-bold text-rose-400 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 text-center">
+                {authError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-black py-3.5 rounded-2xl transition shadow-lg shadow-sky-500/20 active:scale-95 text-sm flex items-center justify-center gap-2"
+            >
+              <KeyRound className="w-4 h-4" /> {txt.loginBtn}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -100,7 +138,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
 
   return (
     <div className="max-w-xl mx-auto px-4 space-y-4">
-      {/* SAMMANSLAGEN KOMPAKT HEADER & FASTIGHETSBAADGE */}
+      {/* HEADER & FASTIGHETSBADGE */}
       <div className="bg-slate-900/90 text-white p-3.5 rounded-2xl border border-slate-700/80 shadow-lg flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
@@ -110,7 +148,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-black text-xs text-white tracking-tight">{APP_CONFIG.name}</span>
               <span className="text-[9px] uppercase font-black bg-sky-500/20 text-sky-400 px-1.5 py-0.2 rounded-md border border-sky-500/30">
-                Host
+                Host ({lang.toUpperCase()})
               </span>
             </div>
             <p className="font-black text-sm text-sky-400 truncate leading-tight">
@@ -128,11 +166,11 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
           onClick={() => setAuthenticated(false)}
           className="text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 transition shrink-0 active:scale-95"
         >
-          Byt fastighet
+          {txt.changeProp}
         </button>
       </div>
 
-      {/* Tabs */}
+      {/* TABS */}
       <div className="flex bg-slate-900/90 p-1.5 rounded-2xl border border-slate-700 text-xs font-black shadow-xl">
         <button
           onClick={() => setActiveTab('create')}
@@ -140,7 +178,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
             activeTab === 'create' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <PlusCircle className="w-4 h-4" /> Ny bokning
+          <PlusCircle className="w-4 h-4" /> {txt.tabNew}
         </button>
 
         <button
@@ -149,7 +187,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
             activeTab === 'list' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <List className="w-4 h-4" /> Mina bokningar ({propertyBookings.length})
+          <List className="w-4 h-4" /> {txt.tabList} ({propertyBookings.length})
         </button>
 
         <button
@@ -158,7 +196,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
             activeTab === 'calendar' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <CalendarIcon className="w-4 h-4" /> Kalender
+          <CalendarIcon className="w-4 h-4" /> {txt.tabCal}
         </button>
       </div>
 

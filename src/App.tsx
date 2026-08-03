@@ -1,14 +1,21 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, type Booking, type Incident } from './lib/supabase';
 import { APP_CONFIG } from './lib/constants';
-import HostView from './components/HostView';
+import HostView, { type HostLanguage } from './components/HostView';
 import CleanerView from './components/CleanerView';
-import { Sparkles, Home, UserCheck, Lock, KeyRound, LogOut, ArrowRight, Globe } from 'lucide-react';
+import { Sparkles, Home, Lock, KeyRound, LogOut, ArrowRight } from 'lucide-react';
 
 type ViewMode = 'landing' | 'host' | 'cleaner';
-type HostLanguage = 'sv' | 'en' | 'da';
 
 const CLEANER_PIN = '1234';
+
+// Dynamiska etiketter för "Byt roll"-knappen baserat på aktivt språk/roll
+const changeRoleLabels: Record<string, string> = {
+  sv: 'Byt roll',
+  en: 'Change role',
+  da: 'Skift rolle',
+  es: 'Cambiar rol',
+};
 
 export default function App() {
   const [view, setView] = useState<ViewMode>('landing');
@@ -16,14 +23,13 @@ export default function App() {
   const [cleanerAuth, setCleanerAuth] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    // Sätt bara loading = true om vi inte har några bokningar alls (första laddningen)
-    // Detta förhindrar att formulär och komponenter laddas om/blinkar bort vid sparning!
     const [bRes, iRes] = await Promise.all([
       supabase.from('bookings').select('*').order('departure_date', { ascending: true }),
       supabase.from('incidents').select('*').order('created_at', { ascending: false }),
@@ -48,7 +54,7 @@ export default function App() {
 
   const handleCleanerLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput === CLEANER_PIN) {
+    if (pinInput.trim() === CLEANER_PIN) {
       setCleanerAuth(true);
       setPinError(false);
       setPinInput('');
@@ -60,29 +66,40 @@ export default function App() {
   const handleGoHome = () => {
     setView('landing');
     setCleanerAuth(false);
+    setPinInput('');
+    setPinError(false);
   };
 
+  // Bestäm vilket språk som gäller för "Byt roll"-knappen
+  const activeLangKey = view === 'cleaner' ? 'es' : hostLang;
+  const changeRoleText = changeRoleLabels[activeLangKey] || 'Byt roll';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/80">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800/80">
         <div className="max-w-xl mx-auto px-4 h-16 flex items-center justify-between">
           <div
             className="flex items-center gap-3 cursor-pointer group select-none"
             onClick={handleGoHome}
           >
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-all overflow-hidden">
-              <img 
-                src="/apple-touch-icon.png" 
-                alt="CleanBook Logo" 
-                className="w-full h-full object-cover"
-              />
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-all overflow-hidden border border-emerald-400/30">
+              {!imgError ? (
+                <img 
+                  src="/apple-touch-icon.png" 
+                  alt="CleanBook Logo" 
+                  className="w-full h-full object-cover"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <Sparkles className="w-5 h-5 text-slate-950" />
+              )}
             </div>
             <div>
               <span className="font-black text-white text-lg tracking-wider block leading-none">
                 {APP_CONFIG.name}
               </span>
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block pt-0.5">
                 {APP_CONFIG.tagline}
               </span>
             </div>
@@ -91,45 +108,46 @@ export default function App() {
           {view !== 'landing' && (
             <button
               onClick={handleGoHome}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700/80 shadow-md active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700/80 shadow-md active:scale-95"
             >
               <LogOut className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Change role</span>
+              <span>{changeRoleText}</span>
             </button>
           )}
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="py-8">
+      {/* HUVUDINNEHÅLL */}
+      <main className="py-6 sm:py-8">
         {view === 'landing' ? (
-          /* STARTSIDA */
-          <div className="max-w-md mx-auto px-4 py-4 space-y-6">
-            <div className="text-center space-y-3">
+          /* STARTSIDA & ROLLVÄLJARE */
+          <div className="max-w-md mx-auto px-4 py-4 space-y-6 animate-in fade-in duration-300">
+            <div className="text-center space-y-2">
               <h1 className="text-3xl font-black text-white tracking-tight leading-tight">
-                Welcome to <br />
-                <span className="bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
+                Välkommen till <br />
+                <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-400 bg-clip-text text-transparent">
                   {APP_CONFIG.name}
                 </span>
               </h1>
               <p className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
-                Select your profile & language to manage cleaning assignments
+                Välj din profil och språk för att hantera städbokningar
               </p>
             </div>
 
             <div className="space-y-3 pt-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1 block">
-                Property Owner / Host Options
+                Värd / Fastighetsägare (Host)
               </span>
 
               {/* VÄRD (SVENSKA) */}
               <button
+                type="button"
                 onClick={() => handleSelectHost('sv')}
-                className="w-full text-left bg-slate-800/60 hover:bg-slate-800 p-4 rounded-2xl border border-slate-700/60 hover:border-emerald-500/60 transition-all duration-300 group shadow-lg relative overflow-hidden"
+                className="w-full text-left bg-slate-900/80 hover:bg-slate-800/90 p-4 rounded-2xl border border-slate-800 hover:border-emerald-500/50 transition-all duration-300 group shadow-xl relative overflow-hidden active:scale-98"
               >
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-105 transition-transform">
                       <Home className="w-5 h-5" />
                     </div>
                     <div>
@@ -141,7 +159,7 @@ export default function App() {
                       </p>
                     </div>
                   </div>
-                  <div className="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-all">
+                  <div className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 group-hover:bg-emerald-500 group-hover:text-slate-950 flex items-center justify-center transition-all">
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -149,12 +167,13 @@ export default function App() {
 
               {/* HOST (ENGLISH) */}
               <button
+                type="button"
                 onClick={() => handleSelectHost('en')}
-                className="w-full text-left bg-slate-800/60 hover:bg-slate-800 p-4 rounded-2xl border border-slate-700/60 hover:border-emerald-500/60 transition-all duration-300 group shadow-lg relative overflow-hidden"
+                className="w-full text-left bg-slate-900/80 hover:bg-slate-800/90 p-4 rounded-2xl border border-slate-800 hover:border-emerald-500/50 transition-all duration-300 group shadow-xl relative overflow-hidden active:scale-98"
               >
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-105 transition-transform">
                       <Home className="w-5 h-5" />
                     </div>
                     <div>
@@ -166,7 +185,7 @@ export default function App() {
                       </p>
                     </div>
                   </div>
-                  <div className="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-all">
+                  <div className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 group-hover:bg-emerald-500 group-hover:text-slate-950 flex items-center justify-center transition-all">
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -174,12 +193,13 @@ export default function App() {
 
               {/* VÆRT (DANSK) */}
               <button
+                type="button"
                 onClick={() => handleSelectHost('da')}
-                className="w-full text-left bg-slate-800/60 hover:bg-slate-800 p-4 rounded-2xl border border-slate-700/60 hover:border-emerald-500/60 transition-all duration-300 group shadow-lg relative overflow-hidden"
+                className="w-full text-left bg-slate-900/80 hover:bg-slate-800/90 p-4 rounded-2xl border border-slate-800 hover:border-emerald-500/50 transition-all duration-300 group shadow-xl relative overflow-hidden active:scale-98"
               >
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-105 transition-transform">
                       <Home className="w-5 h-5" />
                     </div>
                     <div>
@@ -191,24 +211,25 @@ export default function App() {
                       </p>
                     </div>
                   </div>
-                  <div className="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-all">
+                  <div className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 group-hover:bg-emerald-500 group-hover:text-slate-950 flex items-center justify-center transition-all">
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </button>
 
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1 block pt-3">
-                Cleaner Option
+                Städning / Limpieza (Cleaner)
               </span>
 
               {/* LIMPIADORA (ESPAÑOL) */}
               <button
+                type="button"
                 onClick={() => setView('cleaner')}
-                className="w-full text-left bg-slate-800/60 hover:bg-slate-800 p-4 rounded-2xl border border-slate-700/60 hover:border-sky-500/60 transition-all duration-300 group shadow-lg relative overflow-hidden"
+                className="w-full text-left bg-slate-900/80 hover:bg-slate-800/90 p-4 rounded-2xl border border-slate-800 hover:border-sky-500/50 transition-all duration-300 group shadow-xl relative overflow-hidden active:scale-98"
               >
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30 group-hover:scale-105 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center border border-sky-500/20 group-hover:scale-105 transition-transform">
                       <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
@@ -220,7 +241,7 @@ export default function App() {
                       </p>
                     </div>
                   </div>
-                  <div className="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 group-hover:bg-sky-500 group-hover:text-white flex items-center justify-center transition-all">
+                  <div className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 group-hover:bg-sky-500 group-hover:text-slate-950 flex items-center justify-center transition-all">
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -228,12 +249,18 @@ export default function App() {
             </div>
           </div>
         ) : view === 'host' ? (
-          <HostView bookings={bookings} incidents={incidents} loading={loading} onRefresh={fetchAll} lang={hostLang} />
+          <HostView
+            bookings={bookings}
+            incidents={incidents}
+            loading={loading}
+            onRefresh={fetchAll}
+            lang={hostLang}
+          />
         ) : !cleanerAuth ? (
-          /* LÖSENORDSSKÄRM */
-          <div className="max-w-sm mx-auto px-4 py-8 space-y-6">
-            <div className="bg-slate-800/70 border border-slate-700/80 rounded-3xl p-6 text-center space-y-5 shadow-2xl backdrop-blur-sm">
-              <div className="w-14 h-14 bg-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto border border-sky-500/30">
+          /* PIN-INLOGGNING FÖR MARIA (CLEANER) */
+          <div className="max-w-sm mx-auto px-4 py-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 text-center space-y-5 shadow-2xl backdrop-blur-md">
+              <div className="w-14 h-14 bg-sky-500/10 text-sky-400 rounded-2xl flex items-center justify-center mx-auto border border-sky-500/20 shadow-inner">
                 <Lock className="w-7 h-7" />
               </div>
               <div>
@@ -249,7 +276,7 @@ export default function App() {
                   placeholder="PIN (1234)"
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value)}
-                  className="w-full text-center text-2xl font-mono tracking-widest px-4 py-3 bg-slate-900 border border-slate-700 rounded-2xl text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none transition-all font-bold"
+                  className="w-full text-center text-2xl font-mono tracking-widest px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none transition-all font-bold"
                   autoFocus
                 />
                 {pinError && (
