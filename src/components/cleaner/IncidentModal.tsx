@@ -55,6 +55,9 @@ export default function IncidentModal({ bookingId, onClose, onSaved }: IncidentM
       <div className="bg-white text-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-black text-sm text-slate-900">Reportar foto / incidencia</h3>
+          <p className="text-[11px] font-semibold text-slate-500">
+            Solo si algo está roto, dañado o hay alguna incidencia.
+          </p>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
             <X className="w-5 h-5" />
           </button>

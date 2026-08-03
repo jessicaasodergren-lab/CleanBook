@@ -1,7 +1,26 @@
 import { useState } from 'react';
-import { supabase, translateToSpanish, type Property, type Booking, type DepartureTimeWindow, type ArrivalTimeWindow } from '../../lib/supabase';
+import {
+  supabase,
+  translateToSpanish,
+  type Property,
+  type Booking,
+  type DepartureTimeWindow,
+  type ArrivalTimeWindow,
+} from '../../lib/supabase';
 import { formatDate, APP_CONFIG } from '../../lib/constants';
-import { Loader2, Calendar, Clock, User, Users, FileText, Check, AlertCircle, MessageSquare, Building, Lock } from 'lucide-react';
+import {
+  Loader2,
+  Calendar,
+  Clock,
+  User,
+  Users,
+  FileText,
+  Check,
+  AlertCircle,
+  MessageSquare,
+  Building,
+  Lock,
+} from 'lucide-react';
 
 interface BookingFormProps {
   properties: Property[];
@@ -27,21 +46,21 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
   const [propertyId, setPropertyId] = useState(currentProperty?.id || '');
 
   const [bookingTitle, setBookingTitle] = useState('');
-  
-  // Incheckning - INGET FÖRVALT TIDSFÖNSTER (måste väljas)
+
+  // Incheckning
   const [nextArrivalDate, setNextArrivalDate] = useState('');
   const [arrivalTimeWindow, setArrivalTimeWindow] = useState<ArrivalTimeWindow | ''>('');
   const [arrivalExactTime, setArrivalExactTime] = useState('');
-  
-  // Utcheckning / Städstart - INGET FÖRVALT TIDSFÖNSTER (måste väljas)
+
+  // Utcheckning / Städstart
   const [departureDate, setDepartureDate] = useState('');
   const [departureTimeWindow, setDepartureTimeWindow] = useState<DepartureTimeWindow | ''>('');
   const [departureExactTime, setDepartureExactTime] = useState('');
-  
+
   const [guests, setGuests] = useState(2);
   const [laundry, setLaundry] = useState(true);
   const [notes, setNotes] = useState('');
-  
+
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
@@ -103,8 +122,6 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
     if (existingBookings && existingBookings.length > 0) {
       const overlappingBooking = existingBookings.find((b) => {
         if (!b.departure_date || !b.next_arrival_date) return false;
-        // Två vistelser på samma fastighet överlappar om:
-        // Nya utcheckningen < Existerande incheckning AND Existerande utcheckning < Nya incheckningen
         return departureDate < b.next_arrival_date && b.departure_date < nextArrivalDate;
       });
 
@@ -117,9 +134,29 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       }
     }
 
-    let notesEs = '';
-    if (notes.trim()) {
-      notesEs = await translateToSpanish(notes.trim());
+    // SÄKER ÖVERSÄTTNING MED LÄNGDGRÄNS (SÅ ATT APIT ALDRIG KRASCHAR)
+    let notesEs: string | null = null;
+    const cleanNotes = notes.trim();
+
+    if (cleanNotes) {
+      try {
+        // Skär av texten vid 450 tecken för att hålla oss inom MyMemorys gratissgräns (500 tecken)
+        const safeTextToTranslate = cleanNotes.length > 450 ? cleanNotes.slice(0, 450) : cleanNotes;
+        const translated = await translateToSpanish(safeTextToTranslate);
+
+        // Säkerställ att vi inte lagrar felmeddelandet i databasen
+        if (
+          translated &&
+          !translated.toUpperCase().includes('QUERY LENGTH LIMIT') &&
+          !translated.toUpperCase().includes('MYMEMORY')
+        ) {
+          notesEs = translated;
+        } else {
+          notesEs = cleanNotes; // Fallback till svenska om översättningen misslyckas
+        }
+      } catch (e) {
+        notesEs = cleanNotes; // Fallback till svenska
+      }
     }
 
     const newBookingData = {
@@ -135,7 +172,7 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       departure_exact_time: departureExactTime.trim() || null,
       guests: Number(guests) || 1,
       laundry: laundry,
-      notes: notes.trim() || null,
+      notes: cleanNotes || null,
       notes_es: notesEs || null,
       status: 'pending' as const,
       no_next_guest: false,
@@ -150,7 +187,7 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
     } else {
       const inserted = data && data.length > 0 ? (data[0] as Booking) : (newBookingData as Booking);
       setCreatedBooking(inserted);
-      
+
       // Återställ formuläret
       setBookingTitle('');
       setNextArrivalDate('');
@@ -165,15 +202,14 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
   };
 
   const getWhatsAppUrl = (b: Booking) => {
-    const phone = APP_CONFIG.mariaPhoneNumber || '46721886174';
+    const phone = APP_CONFIG.mariaPhoneNumber || '34600000000';
     const depDate = formatDate(b.departure_date, 'es');
     const depTime = b.departure_exact_time ? `kl ${b.departure_exact_time}` : '';
     const arrDate = formatDate(b.next_arrival_date, 'es');
     const arrTime = b.arrival_exact_time ? `kl ${b.arrival_exact_time}` : '';
     const notesText = b.notes_es || b.notes;
 
-    const msg = 
-`¡Hola Maria! 🧹
+    const msg = `¡Hola Maria! 🧹
 Nueva reserva para gestionar en CleanBook:
 
 📍 *Propiedad:* ${b.property_name} (${b.property_address || b.property_name})
@@ -226,7 +262,9 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 <p className="font-black text-slate-900 text-sm flex items-center gap-1.5">
                   <Building className="w-4 h-4 text-sky-600 shrink-0" />
                   {currentProperty?.name}
-                  {currentProperty?.address && <span className="text-xs font-bold text-slate-500">· {currentProperty.address}</span>}
+                  {currentProperty?.address && (
+                    <span className="text-xs font-bold text-slate-500">· {currentProperty.address}</span>
+                  )}
                 </p>
               </div>
               <span className="text-[10px] font-extrabold bg-sky-100 text-sky-800 px-2.5 py-1 rounded-full border border-sky-200 flex items-center gap-1">
@@ -294,7 +332,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               </div>
             </div>
 
-            {/* KNAPPAR FÖR ANKOMSTTID - INGET FÖRVALT */}
+            {/* KNAPPAR FÖR ANKOMSTTID */}
             <div>
               <label className="block font-bold text-sky-950 mb-1.5 text-[11px]">
                 Ankomstfönster (Tid på dagen) *:
@@ -367,7 +405,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               </div>
             </div>
 
-            {/* KNAPPAR FÖR UTCHECKNINGSTID - INGET FÖRVALT */}
+            {/* KNAPPAR FÖR UTCHECKNINGSTID */}
             <div>
               <label className="block font-bold text-amber-950 mb-1.5 text-[11px]">
                 Utcheckningsfönster (Städstart) *:
@@ -447,14 +485,14 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               <FileText className="w-3.5 h-3.5 text-slate-500" /> Instruktioner till Maria (Svenska)
             </label>
             <textarea
-              rows={2}
-              placeholder="T.ex. Kom ihåg att ställa ut terrassmöblerna..."
+              rows={3}
+              placeholder="T.ex. Kom ihåg att ställa ut terrassmöblerna och lämna extra handdukar..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:bg-white focus:border-sky-500 transition"
             />
             <p className="text-[10px] text-slate-400 mt-1">
-              Texten du skriver översätts automatiskt till spanska så att Maria förstår instruktionerna.
+              Texten översätts automatiskt till spanska.
             </p>
           </div>
         </div>
@@ -469,7 +507,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg shadow-sky-600/20 flex items-center justify-center gap-2"
+          className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg shadow-sky-600/20 flex items-center justify-center gap-2 active:scale-98"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           Spara & Schemalägg Städning
