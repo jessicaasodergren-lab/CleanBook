@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
-import { APP_CONFIG } from '../lib/constants';
 import BookingForm from './host/BookingForm';
 import BookingList from './host/BookingList';
 import CalendarView from './host/CalendarView';
-import { PlusCircle, List, Calendar as CalendarIcon, KeyRound, Loader2, Home } from 'lucide-react';
+import { PlusCircle, List, Calendar as CalendarIcon, Loader2, Home, KeyRound } from 'lucide-react';
 
 export type HostLanguage = 'sv' | 'en' | 'da';
 
@@ -88,7 +87,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
   if (!authenticated) {
     return (
       <div className="max-w-sm mx-auto px-4 py-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 text-center space-y-5 shadow-2xl backdrop-blur-md">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center space-y-5 shadow-2xl">
           <div className="w-14 h-14 bg-sky-500/10 text-sky-400 rounded-2xl flex items-center justify-center mx-auto border border-sky-500/20 shadow-inner">
             <KeyRound className="w-7 h-7" />
           </div>
@@ -104,7 +103,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
                 placeholder={txt.loginPlaceholder}
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value.toUpperCase())}
-                className="w-full text-center text-xs font-mono font-bold uppercase p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+                className="w-full text-center text-xs font-mono font-bold uppercase p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-sky-500 transition"
                 required
                 autoFocus
               />
@@ -118,9 +117,9 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
 
             <button
               type="submit"
-              className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-black py-3.5 rounded-2xl transition shadow-lg shadow-sky-500/20 active:scale-95 text-sm flex items-center justify-center gap-2"
+              className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-black py-3.5 rounded-2xl transition shadow-lg active:scale-95 text-sm"
             >
-              <KeyRound className="w-4 h-4" /> {txt.loginBtn}
+              {txt.loginBtn}
             </button>
           </form>
         </div>
@@ -138,40 +137,34 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
 
   return (
     <div className="max-w-xl mx-auto px-4 space-y-4">
-      {/* HEADER & FASTIGHETSBADGE */}
-      <div className="bg-slate-900/90 text-white p-3.5 rounded-2xl border border-slate-700/80 shadow-lg flex items-center justify-between gap-3">
+      {/* INLOGGAD HEADER: HUS-IKON + FASTIGHET & ADRESS + BYT FASTIGHET */}
+      <div className="flex items-center justify-between bg-slate-900 p-3.5 px-4 rounded-2xl border border-slate-800 shadow-lg gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
-            <Home className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
+            <Home className="w-4 h-4" />
           </div>
-          <div className="min-w-0 space-y-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-black text-xs text-white tracking-tight">{APP_CONFIG.name}</span>
-              <span className="text-[9px] uppercase font-black bg-sky-500/20 text-sky-400 px-1.5 py-0.2 rounded-md border border-sky-500/30">
-                Host ({lang.toUpperCase()})
-              </span>
-            </div>
-            <p className="font-black text-sm text-sky-400 truncate leading-tight">
+          <div className="min-w-0">
+            <h2 className="font-black text-sm text-white truncate leading-tight">
               {selectedProperty?.name}
-              {selectedProperty?.address && (
-                <span className="text-xs font-semibold text-slate-400 ml-1.5 font-normal">
-                  · {selectedProperty.address}
-                </span>
-              )}
-            </p>
+            </h2>
+            {selectedProperty?.address && (
+              <p className="text-xs font-medium text-slate-400 truncate mt-0.5">
+                {selectedProperty.address}
+              </p>
+            )}
           </div>
         </div>
 
         <button
           onClick={() => setAuthenticated(false)}
-          className="text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 transition shrink-0 active:scale-95"
+          className="text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 transition shrink-0 active:scale-95"
         >
           {txt.changeProp}
         </button>
       </div>
 
-      {/* TABS */}
-      <div className="flex bg-slate-900/90 p-1.5 rounded-2xl border border-slate-700 text-xs font-black shadow-xl">
+      {/* FLIKAR */}
+      <div className="flex bg-slate-900 p-1 rounded-2xl border border-slate-800 text-xs font-black shadow-xl">
         <button
           onClick={() => setActiveTab('create')}
           className={`flex-1 py-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
@@ -209,6 +202,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
           properties={properties}
           selectedPropertyId={selectedProperty?.id || null}
           onBookingCreated={onRefresh}
+          lang={lang}
         />
       ) : activeTab === 'list' ? (
         <BookingList bookings={propertyBookings} incidents={incidents} onRefresh={onRefresh} />

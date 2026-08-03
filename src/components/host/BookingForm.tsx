@@ -8,6 +8,7 @@ import {
   type ArrivalTimeWindow,
 } from '../../lib/supabase';
 import { formatDate, APP_CONFIG } from '../../lib/constants';
+import type { HostLanguage } from '../HostView';
 import {
   Loader2,
   Calendar,
@@ -18,7 +19,7 @@ import {
   Check,
   AlertCircle,
   MessageSquare,
-  Building,
+  MapPin,
   Lock,
 } from 'lucide-react';
 
@@ -26,9 +27,105 @@ interface BookingFormProps {
   properties: Property[];
   selectedPropertyId: string | null;
   onBookingCreated: () => void;
+  lang?: HostLanguage;
 }
 
-// Hjälpfunktion för att räkna ut tidsfönster från exakt klockslag
+const formTexts = {
+  sv: {
+    title: 'Skapa Ny Gästbokning',
+    property: 'Fastighet',
+    locked: 'Låst',
+    guestTitle: 'Gästens namn / Bokningens titel *',
+    guestPlaceholder: 'T.ex. Familjen Svensson',
+    checkInDate: 'Incheckning (Datum) *',
+    exactArrival: 'Exakt ankomsttid (frivilligt)',
+    arrivalWindow: 'Ankomstfönster (Tid på dagen) *',
+    morning: 'Förmiddag',
+    afternoon: 'Eftermiddag',
+    evening: 'Kväll',
+    checkOutDate: 'Utcheckning (Datum) *',
+    exactDeparture: 'Exakt utcheckningstid (frivilligt)',
+    departureWindow: 'Utcheckningsfönster (Städstart) *',
+    guestsCount: 'Antal gäster',
+    laundryLabel: 'Sängkläder & Tvätt?',
+    laundryYes: '🧺 Ja, tvätta lakan/handdukar',
+    laundryNo: '🚫 Nej, ingen tvätt',
+    notesLabel: 'Instruktioner till Maria',
+    notesPlaceholder: 'T.ex. Kom ihåg att ställa ut terrassmöblerna och lämna extra handdukar...',
+    notesHelp: 'Texten översätts automatiskt till spanska.',
+    saveBtn: 'Spara & Schemalägg Städning',
+    savedTitle: 'Bokningen är sparad!',
+    savedSub: 'Klicka nedan för att skicka notis till Maria på WhatsApp.',
+    whatsappBtn: 'Skicka WhatsApp-notis till Maria nu',
+    errNoProperty: 'Hittade ingen giltig fastighet.',
+    errRequired: 'Fyll i alla obligatoriska fält (Gästnamn, Incheckning och Utcheckning).',
+    errWindowRequired: 'Vänligen välj ett ankomstfönster och ett utcheckningsfönster.',
+    errDepartureBeforeArrival: 'Utcheckningsdatumet (städstart) kan inte vara före incheckningsdatumet.',
+  },
+  en: {
+    title: 'Create New Guest Booking',
+    property: 'Property',
+    locked: 'Locked',
+    guestTitle: 'Guest Name / Booking Title *',
+    guestPlaceholder: 'E.g. The Smith Family',
+    checkInDate: 'Check-in (Date) *',
+    exactArrival: 'Exact arrival time (optional)',
+    arrivalWindow: 'Arrival Window (Time of day) *',
+    morning: 'Morning',
+    afternoon: 'Afternoon',
+    evening: 'Evening',
+    checkOutDate: 'Check-out (Date) *',
+    exactDeparture: 'Exact departure time (optional)',
+    departureWindow: 'Departure Window (Cleaning start) *',
+    guestsCount: 'Number of guests',
+    laundryLabel: 'Bed linen & Laundry?',
+    laundryYes: '🧺 Yes, wash linen/towels',
+    laundryNo: '🚫 No laundry',
+    notesLabel: 'Instructions for Maria',
+    notesPlaceholder: 'E.g. Remember to put out the terrace furniture and leave extra towels...',
+    notesHelp: 'Text is automatically translated to Spanish.',
+    saveBtn: 'Save & Schedule Cleaning',
+    savedTitle: 'Booking saved!',
+    savedSub: 'Click below to notify Maria on WhatsApp.',
+    whatsappBtn: 'Send WhatsApp notification to Maria now',
+    errNoProperty: 'No valid property found.',
+    errRequired: 'Please fill in all required fields (Guest Name, Check-in, and Check-out).',
+    errWindowRequired: 'Please select an arrival window and a departure window.',
+    errDepartureBeforeArrival: 'Check-out date (cleaning start) cannot be before check-in date.',
+  },
+  da: {
+    title: 'Opret ny gæstebooking',
+    property: 'Ejendom',
+    locked: 'Låst',
+    guestTitle: 'Gæstens navn / Bookingens titel *',
+    guestPlaceholder: 'F.eks. Familien Hansen',
+    checkInDate: 'Indtjekning (Dato) *',
+    exactArrival: 'Præcis ankomsttid (valgfrit)',
+    arrivalWindow: 'Ankomstvindue (Tid på dagen) *',
+    morning: 'Formiddag',
+    afternoon: 'Eftermiddag',
+    evening: 'Aften',
+    checkOutDate: 'Udtjekning (Dato) *',
+    exactDeparture: 'Præcis udtjekningstid (valgfrit)',
+    departureWindow: 'Udtjekningsvindue (Rengøringsstart) *',
+    guestsCount: 'Antal gæster',
+    laundryLabel: 'Sengelinned & Vask?',
+    laundryYes: '🧺 Ja, vask linned/håndklæder',
+    laundryNo: '🚫 Ingen vask',
+    notesLabel: 'Instruktioner til Maria',
+    notesPlaceholder: 'F.eks. Husk at stille terrassemøblerne ud og lægge ekstra håndklæder...',
+    notesHelp: 'Teksten oversættes automatisk til spansk.',
+    saveBtn: 'Gem & planlæg rengøring',
+    savedTitle: 'Bookingen er gemt!',
+    savedSub: 'Klik nedenfor for at sende besked til Maria på WhatsApp.',
+    whatsappBtn: 'Send WhatsApp-notifikation til Maria nu',
+    errNoProperty: 'Ingen gyldig ejendom fundet.',
+    errRequired: 'Udfyld venligst alle obligatoriske felter (Gæstenavn, Indtjekning og Udtjekning).',
+    errWindowRequired: 'Vælg venligst et ankomstvindue og et udtjekningsvindue.',
+    errDepartureBeforeArrival: 'Udtjekningsdatoen (rengøringsstart) kan ikke være før indtjekningsdatoen.',
+  },
+};
+
 function getTimeWindowFromExactTime(timeStr: string): ArrivalTimeWindow | DepartureTimeWindow | null {
   if (!timeStr) return null;
   const [hoursStr] = timeStr.split(':');
@@ -40,8 +137,9 @@ function getTimeWindowFromExactTime(timeStr: string): ArrivalTimeWindow | Depart
   return 'evening';
 }
 
-export default function BookingForm({ properties, selectedPropertyId, onBookingCreated }: BookingFormProps) {
-  // Lås till den inloggade fastigheten
+export default function BookingForm({ properties, selectedPropertyId, onBookingCreated, lang = 'sv' }: BookingFormProps) {
+  const txt = formTexts[lang] || formTexts.sv;
+
   const currentProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
   const [propertyId, setPropertyId] = useState(currentProperty?.id || '');
 
@@ -65,7 +163,6 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
 
-  // Hantera exakt ankomsttid och sätt tidsfönster automatiskt
   const handleArrivalExactTimeChange = (timeValue: string) => {
     setArrivalExactTime(timeValue);
     const autoWindow = getTimeWindowFromExactTime(timeValue);
@@ -74,7 +171,6 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
     }
   };
 
-  // Hantera exakt utcheckningstid och sätt tidsfönster automatiskt
   const handleDepartureExactTimeChange = (timeValue: string) => {
     setDepartureExactTime(timeValue);
     const autoWindow = getTimeWindowFromExactTime(timeValue);
@@ -90,30 +186,27 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
 
     const prop = properties.find((p) => p.id === (selectedPropertyId || propertyId)) || currentProperty;
     if (!prop) {
-      setErrorMsg('Hittade ingen giltig fastighet.');
+      setErrorMsg(txt.errNoProperty);
       return;
     }
 
     if (!nextArrivalDate || !departureDate || !bookingTitle.trim()) {
-      setErrorMsg('Fyll i alla obligatoriska fält (Gästnamn, Incheckning och Utcheckning).');
+      setErrorMsg(txt.errRequired);
       return;
     }
 
-    // TVINGANDE VAL AV TIDSFÖNSTER
     if (!arrivalTimeWindow || !departureTimeWindow) {
-      setErrorMsg('Vänligen välj ett ankomstfönster och ett utcheckningsfönster (Förmiddag, Eftermiddag eller Kväll).');
+      setErrorMsg(txt.errWindowRequired);
       return;
     }
 
-    // DATUMVALIDERING 1: Utcheckning får inte vara före incheckning
     if (departureDate < nextArrivalDate) {
-      setErrorMsg('Utcheckningsdatumet (städstart) kan inte vara före incheckningsdatumet.');
+      setErrorMsg(txt.errDepartureBeforeArrival);
       return;
     }
 
     setSubmitting(true);
 
-    // DATUMVALIDERING 2: KONTROLLERA ÖVERLAPPNING MED EXISTERANDE BOKNINGAR PÅ SAMMA FASTIGHET
     const { data: existingBookings } = await supabase
       .from('bookings')
       .select('id, booking_title, departure_date, next_arrival_date')
@@ -128,23 +221,20 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       if (overlappingBooking) {
         setSubmitting(false);
         setErrorMsg(
-          `Det finns redan en krockande bokning ("${overlappingBooking.booking_title}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.departure_date, 'sv')} och ${formatDate(overlappingBooking.next_arrival_date, 'sv')}.`
+          `Det finns redan en krockande bokning ("${overlappingBooking.booking_title}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.departure_date, lang)} och ${formatDate(overlappingBooking.next_arrival_date, lang)}.`
         );
         return;
       }
     }
 
-    // SÄKER ÖVERSÄTTNING MED LÄNGDGRÄNS (SÅ ATT APIT ALDRIG KRASCHAR)
     let notesEs: string | null = null;
     const cleanNotes = notes.trim();
 
     if (cleanNotes) {
       try {
-        // Skär av texten vid 450 tecken för att hålla oss inom MyMemorys gratissgräns (500 tecken)
         const safeTextToTranslate = cleanNotes.length > 450 ? cleanNotes.slice(0, 450) : cleanNotes;
         const translated = await translateToSpanish(safeTextToTranslate);
 
-        // Säkerställ att vi inte lagrar felmeddelandet i databasen
         if (
           translated &&
           !translated.toUpperCase().includes('QUERY LENGTH LIMIT') &&
@@ -152,10 +242,10 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
         ) {
           notesEs = translated;
         } else {
-          notesEs = cleanNotes; // Fallback till svenska om översättningen misslyckas
+          notesEs = cleanNotes;
         }
       } catch (e) {
-        notesEs = cleanNotes; // Fallback till svenska
+        notesEs = cleanNotes;
       }
     }
 
@@ -183,12 +273,11 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
     setSubmitting(false);
 
     if (error) {
-      setErrorMsg(`Kunde inte skapa bokningen: ${error.message}`);
+      setErrorMsg(`Error: ${error.message}`);
     } else {
       const inserted = data && data.length > 0 ? (data[0] as Booking) : (newBookingData as Booking);
       setCreatedBooking(inserted);
 
-      // Återställ formuläret
       setBookingTitle('');
       setNextArrivalDate('');
       setArrivalTimeWindow('');
@@ -225,14 +314,13 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
 
   return (
     <div className="space-y-4">
-      {/* LYCKAD BOKNING MODAL / BOX MED WHATSAPP-KNAPP */}
       {createdBooking && (
         <div className="bg-emerald-500 text-slate-950 p-5 rounded-3xl space-y-3 shadow-xl border border-emerald-400 animate-in fade-in slide-in-from-top duration-300">
           <div className="flex items-center gap-2">
             <Check className="w-6 h-6 bg-slate-950 text-emerald-400 p-1 rounded-full shrink-0" />
             <div>
-              <h4 className="font-black text-sm text-slate-950">Bokningen är sparad!</h4>
-              <p className="text-xs font-bold opacity-90">Klicka nedan för att skicka notis till Maria på WhatsApp.</p>
+              <h4 className="font-black text-sm text-slate-950">{txt.savedTitle}</h4>
+              <p className="text-xs font-bold opacity-90">{txt.savedSub}</p>
             </div>
           </div>
 
@@ -240,27 +328,27 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
             href={getWhatsAppUrl(createdBooking)}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-slate-950 hover:bg-slate-900 text-emerald-400 font-black py-3.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-lg"
+            className="w-full bg-slate-950 hover:bg-slate-900 text-emerald-400 font-black py-3.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-lg active:scale-98"
           >
             <MessageSquare className="w-4 h-4 fill-emerald-400 text-slate-950" />
-            Skicka WhatsApp-notis till Maria nu
+            {txt.whatsappBtn}
           </a>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
         <div className="border-b border-slate-100 pb-3">
-          <h3 className="text-base font-black text-slate-900">Skapa Ny Gästbokning</h3>
+          <h3 className="text-base font-black text-slate-900">{txt.title}</h3>
         </div>
 
         <div className="space-y-4 text-xs">
-          {/* LÅST FASTIGHET */}
+          {/* LÅST FASTIGHET (MED KARTNÅL MAPPIN EXAKT SOM I BOOKINGLIST) */}
           {selectedPropertyId ? (
             <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 flex items-center justify-between">
               <div className="space-y-0.5">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Fastighet</span>
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{txt.property}</span>
                 <p className="font-black text-slate-900 text-sm flex items-center gap-1.5">
-                  <Building className="w-4 h-4 text-sky-600 shrink-0" />
+                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
                   {currentProperty?.name}
                   {currentProperty?.address && (
                     <span className="text-xs font-bold text-slate-500">· {currentProperty.address}</span>
@@ -268,12 +356,14 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 </p>
               </div>
               <span className="text-[10px] font-extrabold bg-sky-100 text-sky-800 px-2.5 py-1 rounded-full border border-sky-200 flex items-center gap-1">
-                <Lock className="w-3 h-3 text-sky-600" /> Låst
+                <Lock className="w-3 h-3 text-sky-600" /> {txt.locked}
               </span>
             </div>
           ) : (
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Fastighet *</label>
+              <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-emerald-600" /> {txt.property} *
+              </label>
               <select
                 value={propertyId}
                 onChange={(e) => setPropertyId(e.target.value)}
@@ -291,11 +381,11 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
 
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-slate-500" /> Gästens namn / Bokningens titel *
+              <User className="w-3.5 h-3.5 text-slate-500" /> {txt.guestTitle}
             </label>
             <input
               type="text"
-              placeholder="T.ex. Familjen Svensson"
+              placeholder={txt.guestPlaceholder}
               value={bookingTitle}
               onChange={(e) => setBookingTitle(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-sky-500 transition"
@@ -308,7 +398,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="block font-bold text-sky-900 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-sky-600" /> Incheckning (Datum) *
+                  <Calendar className="w-3.5 h-3.5 text-sky-600" /> {txt.checkInDate}
                 </label>
                 <input
                   type="date"
@@ -321,7 +411,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
 
               <div>
                 <label className="block font-bold text-sky-900 mb-1 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-sky-600" /> Exakt ankomsttid (frivilligt)
+                  <Clock className="w-3.5 h-3.5 text-sky-600" /> {txt.exactArrival}
                 </label>
                 <input
                   type="time"
@@ -332,11 +422,8 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               </div>
             </div>
 
-            {/* KNAPPAR FÖR ANKOMSTTID */}
             <div>
-              <label className="block font-bold text-sky-950 mb-1.5 text-[11px]">
-                Ankomstfönster (Tid på dagen) *:
-              </label>
+              <label className="block font-bold text-sky-950 mb-1.5 text-[11px]">{txt.arrivalWindow}</label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
@@ -347,7 +434,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
                   }`}
                 >
-                  🌅 Förmiddag
+                  🌅 {txt.morning}
                 </button>
                 <button
                   type="button"
@@ -358,7 +445,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
                   }`}
                 >
-                  ☀️ Eftermiddag
+                  ☀️ {txt.afternoon}
                 </button>
                 <button
                   type="button"
@@ -369,7 +456,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
                   }`}
                 >
-                  🌙 Kväll
+                  🌙 {txt.evening}
                 </button>
               </div>
             </div>
@@ -380,7 +467,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="block font-bold text-amber-900 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-amber-600" /> Utcheckning (Datum) *
+                  <Calendar className="w-3.5 h-3.5 text-amber-600" /> {txt.checkOutDate}
                 </label>
                 <input
                   type="date"
@@ -394,7 +481,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
 
               <div>
                 <label className="block font-bold text-amber-900 mb-1 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-600" /> Exakt utcheckningstid (frivilligt)
+                  <Clock className="w-3.5 h-3.5 text-amber-600" /> {txt.exactDeparture}
                 </label>
                 <input
                   type="time"
@@ -405,11 +492,8 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
               </div>
             </div>
 
-            {/* KNAPPAR FÖR UTCHECKNINGSTID */}
             <div>
-              <label className="block font-bold text-amber-950 mb-1.5 text-[11px]">
-                Utcheckningsfönster (Städstart) *:
-              </label>
+              <label className="block font-bold text-amber-950 mb-1.5 text-[11px]">{txt.departureWindow}</label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
@@ -420,7 +504,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
                   }`}
                 >
-                  🌅 Förmiddag
+                  🌅 {txt.morning}
                 </button>
                 <button
                   type="button"
@@ -431,7 +515,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
                   }`}
                 >
-                  ☀️ Eftermiddag
+                  ☀️ {txt.afternoon}
                 </button>
                 <button
                   type="button"
@@ -442,7 +526,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
                   }`}
                 >
-                  🌙 Kväll
+                  🌙 {txt.evening}
                 </button>
               </div>
             </div>
@@ -451,7 +535,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
               <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Users className="w-3.5 h-3.5 text-slate-500" /> Antal gäster
+                <Users className="w-3.5 h-3.5 text-slate-500" /> {txt.guestsCount}
               </label>
               <input
                 type="number"
@@ -464,7 +548,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Sängkläder & Tvätt?</label>
+              <label className="block font-bold text-slate-700 mb-1">{txt.laundryLabel}</label>
               <button
                 type="button"
                 onClick={() => setLaundry(!laundry)}
@@ -474,26 +558,23 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                     : 'bg-slate-100 text-slate-600 border-slate-200'
                 }`}
               >
-                {laundry ? '🧺 Ja, tvätta lakan/handdukar' : '🚫 Nej, ingen tvätt'}
+                {laundry ? txt.laundryYes : txt.laundryNo}
               </button>
             </div>
           </div>
 
-          {/* INSTRUKTIONER TILL MARIA */}
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-              <FileText className="w-3.5 h-3.5 text-slate-500" /> Instruktioner till Maria (Svenska)
+              <FileText className="w-3.5 h-3.5 text-slate-500" /> {txt.notesLabel}
             </label>
             <textarea
               rows={3}
-              placeholder="T.ex. Kom ihåg att ställa ut terrassmöblerna och lämna extra handdukar..."
+              placeholder={txt.notesPlaceholder}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:bg-white focus:border-sky-500 transition"
             />
-            <p className="text-[10px] text-slate-400 mt-1">
-              Texten översätts automatiskt till spanska.
-            </p>
+            <p className="text-[10px] text-slate-400 mt-1">{txt.notesHelp}</p>
           </div>
         </div>
 
@@ -507,10 +588,10 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg shadow-sky-600/20 flex items-center justify-center gap-2 active:scale-98"
+          className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2 active:scale-98"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-          Spara & Schemalägg Städning
+          {txt.saveBtn}
         </button>
       </form>
     </div>

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
-import { APP_CONFIG } from '../lib/constants';
 import TaskList from './cleaner/TaskList';
 import PropertyList from './cleaner/PropertyList';
 import { Clock, Building, Sparkles } from 'lucide-react';
@@ -32,28 +31,25 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
   return (
     <div className="max-w-xl mx-auto px-4 space-y-4">
-      {/* ULTRAKOMPAKT BRAND HEADER */}
-      <div className="bg-slate-900/90 text-white p-3.5 rounded-2xl border border-slate-700/80 shadow-lg flex items-center justify-between gap-3">
+      {/* HEADER: STÄDIKON (SPARKLES) + REN TITEL (UTAN CLEANBOOK-UPPREPNING) */}
+      <div className="flex items-center justify-between bg-slate-900 p-3.5 px-4 rounded-2xl border border-slate-800 shadow-lg gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
-            <Sparkles className="w-5 h-5 text-sky-400" />
+          <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
+            <Sparkles className="w-4 h-4" />
           </div>
-          <div className="min-w-0 space-y-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-black text-xs text-white tracking-tight">{APP_CONFIG.name}</span>
-              <span className="text-[9px] uppercase font-black bg-sky-500/20 text-sky-400 px-1.5 py-0.2 rounded-md border border-sky-500/30">
-                Cleaner
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium truncate leading-tight">
-              {APP_CONFIG.tagline}
+          <div className="min-w-0">
+            <h2 className="font-black text-sm text-white truncate leading-tight">
+              Panel de Limpieza
+            </h2>
+            <p className="text-xs font-medium text-slate-400 truncate mt-0.5">
+              Gestión de tareas y propiedades
             </p>
           </div>
         </div>
       </div>
 
       {/* FLIKAR / REGLEGE */}
-      <div className="flex bg-slate-900/90 p-1.5 rounded-2xl border border-slate-700 text-xs font-black shadow-xl">
+      <div className="flex bg-slate-900 p-1 rounded-2xl border border-slate-800 text-xs font-black shadow-xl">
         <button
           type="button"
           onClick={() => setActiveTab('jobs')}
