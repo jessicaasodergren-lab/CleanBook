@@ -11,7 +11,6 @@ import {
   Lock,
   MessageSquare,
   Bell,
-  Clock,
   AlertTriangle,
   Check,
 } from 'lucide-react';
@@ -116,20 +115,21 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
 
   if (sortedBookings.length === 0) {
     return (
-      <div className="text-center py-12 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-8 space-y-2">
-        <p className="text-white font-black text-lg">Inga bokningar ännu</p>
-        <p className="text-slate-400 text-xs">Använd formuläret ovan för att lägga till din första gästvistelse.</p>
+      <div className="text-center py-10 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 space-y-2">
+        <p className="text-white font-black text-base">Inga bokningar ännu</p>
+        <p className="text-slate-400 text-xs">Använd formuläret för att lägga till din första gästvistelse.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      {/* FILTERBAR KOMPAKT */}
       <div className="flex bg-slate-800 p-1 rounded-2xl text-xs font-bold gap-1 border border-slate-700 shadow-md">
         <button
           type="button"
           onClick={() => setJobFilter('active')}
-          className={`flex-1 py-2.5 rounded-xl transition text-center font-black ${
+          className={`flex-1 py-2 rounded-xl transition text-center font-black ${
             jobFilter === 'active' ? 'bg-sky-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
@@ -139,7 +139,7 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
         <button
           type="button"
           onClick={() => setJobFilter('pending_only')}
-          className={`flex-1 py-2.5 rounded-xl transition text-center font-black flex items-center justify-center gap-1 ${
+          className={`flex-1 py-2 rounded-xl transition text-center font-black flex items-center justify-center gap-1 ${
             jobFilter === 'pending_only'
               ? 'bg-amber-400 text-slate-950 shadow'
               : pendingJobs.length > 0
@@ -147,7 +147,7 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span>🟡 Väntar på svar</span>
+          <span>🟡 Väntar</span>
           {pendingJobs.length > 0 && (
             <span className="bg-amber-500 text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-black">
               {pendingJobs.length}
@@ -158,7 +158,7 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
         <button
           type="button"
           onClick={() => setJobFilter('finished')}
-          className={`flex-1 py-2.5 rounded-xl transition text-center font-black ${
+          className={`flex-1 py-2 rounded-xl transition text-center font-black ${
             jobFilter === 'finished' ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
@@ -166,22 +166,11 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
         </button>
       </div>
 
-      <div className="flex items-center justify-between px-1 text-xs">
-        <span className="text-slate-300 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-          <Clock className="w-4 h-4 text-sky-400" />
-          {jobFilter === 'active' && 'Sorterat stigande efter incheckning'}
-          {jobFilter === 'pending_only' && 'Väntar på Marias svar'}
-          {jobFilter === 'finished' && 'Slutförda städningar'}
-        </span>
-        <span className="text-slate-400 font-medium">
-          {displayedJobs.length} {displayedJobs.length === 1 ? 'bokning' : 'bokningar'}
-        </span>
-      </div>
-
+      {/* BOKNINGSLISTA */}
       <div className="space-y-3">
         {displayedJobs.length === 0 ? (
-          <div className="text-center py-12 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-8 space-y-2">
-            <p className="text-white font-black text-lg">Inga bokningar här</p>
+          <div className="text-center py-10 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 space-y-2">
+            <p className="text-white font-black text-base">Inga bokningar här</p>
             <p className="text-slate-400 text-xs">Det finns inga gästvistelser i denna vy.</p>
           </div>
         ) : (
@@ -199,7 +188,7 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
             return (
               <div
                 key={b.id}
-                className={`rounded-3xl p-5 shadow-xl transition-all space-y-4 ${
+                className={`rounded-3xl p-4 sm:p-5 shadow-xl transition-all space-y-3 ${
                   isPending
                     ? 'bg-amber-50 text-slate-900 border-2 border-amber-400 shadow-amber-500/10'
                     : isFinished
@@ -207,8 +196,9 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                     : 'bg-white text-slate-900 border border-slate-200'
                 }`}
               >
+                {/* TOPP-INFO */}
                 <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       {isPending && (
                         <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm">
@@ -227,17 +217,17 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                       )}
 
                       {bookingIncidents.length > 0 && (
-                        <span className="bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
                           <Camera className="w-3 h-3 text-slate-500" />
-                          {bookingIncidents.length} {bookingIncidents.length === 1 ? 'foto' : 'foton'}
+                          {bookingIncidents.length}
                         </span>
                       )}
                     </div>
 
-                    <h3 className="font-black text-slate-900 text-lg leading-tight flex items-center gap-1.5 pt-1">
+                    <h3 className="font-black text-slate-900 text-base sm:text-lg leading-tight pt-0.5 truncate">
                       {b.booking_title}
                     </h3>
-                    <p className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                    <p className="text-xs font-bold text-slate-500 flex items-center gap-1 truncate">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="truncate">{b.property_address || b.property_name}</span>
                     </p>
@@ -246,19 +236,20 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                   <button
                     type="button"
                     onClick={() => toggleExpand(b.id)}
-                    className="p-2 bg-white/80 hover:bg-slate-100 rounded-2xl text-slate-600 transition border border-slate-200 shrink-0"
+                    className="p-1.5 bg-white/80 hover:bg-slate-100 rounded-xl text-slate-600 transition border border-slate-200 shrink-0"
                   >
-                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
                 </div>
 
+                {/* INSTRUKTIONSBLOCK */}
                 {b.notes && (
                   <div
                     onClick={() => toggleExpand(b.id)}
-                    className="bg-amber-100/90 border-l-4 border-amber-500 p-3.5 rounded-r-2xl text-xs cursor-pointer hover:bg-amber-200/80 transition shadow-sm space-y-1"
+                    className="bg-amber-100/90 border-l-4 border-amber-500 p-3 rounded-r-xl text-xs cursor-pointer hover:bg-amber-200/80 transition shadow-sm space-y-1"
                   >
-                    <div className="flex items-center gap-1.5 font-black text-amber-900 text-[11px] uppercase tracking-wider">
-                      <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                    <div className="flex items-center gap-1 font-black text-amber-900 text-[10px] uppercase tracking-wider">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                       <span>Dina extra instruktioner:</span>
                     </div>
 
@@ -267,14 +258,14 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                         <span className="whitespace-pre-line">{b.notes}</span>
                       ) : (
                         <span>
-                          {b.notes.length > 85 ? `${b.notes.slice(0, 85)}...` : b.notes}
+                          {b.notes.length > 75 ? `${b.notes.slice(0, 75)}...` : b.notes}
                         </span>
                       )}
                     </p>
 
                     {isExpanded && validNoteEs && validNoteEs !== b.notes && (
-                      <div className="pt-2 border-t border-amber-200/60 mt-2">
-                        <span className="text-[10px] font-extrabold text-amber-800 block uppercase">
+                      <div className="pt-1.5 border-t border-amber-200/60 mt-1.5">
+                        <span className="text-[9.5px] font-extrabold text-amber-800 block uppercase">
                           Spansk översättning (till Maria):
                         </span>
                         <p className="font-medium text-amber-900 italic leading-relaxed">{validNoteEs}</p>
@@ -283,31 +274,32 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                   </div>
                 )}
 
-                <div className="bg-white/90 rounded-2xl p-3.5 border border-slate-200/80 space-y-2 text-xs shadow-sm">
-                  <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-200/60">
+                {/* TIDER & SPECS */}
+                <div className="bg-white/90 rounded-2xl p-3 border border-slate-200/80 space-y-2 text-xs shadow-sm">
+                  <div className="grid grid-cols-2 gap-2 pb-1.5 border-b border-slate-200/60">
                     <div className="bg-sky-50/80 p-2 rounded-xl border border-sky-100">
                       <span className="text-[10px] font-black text-sky-900 uppercase block">
-                        Incheckning (Gäst anländer)
+                        Incheckning
                       </span>
-                      <span className="font-black text-sky-950 block text-sm">
+                      <span className="font-black text-sky-950 block text-xs">
                         {formatDate(b.check_in_date, 'sv')}
                       </span>
                       {arrivalTimeFormatted && (
-                        <span className="text-[11px] font-bold text-sky-700 block mt-0.5">
+                        <span className="text-[10.5px] font-bold text-sky-700 block mt-0.5">
                           {arrivalTimeFormatted}
                         </span>
                       )}
                     </div>
 
-                    <div>
+                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                        Utcheckning (Städstart)
+                        Utcheckning
                       </span>
-                      <span className="font-black text-slate-900 block text-sm">
+                      <span className="font-black text-slate-900 block text-xs">
                         {formatDate(b.check_out_date, 'sv')}
                       </span>
                       {departureTimeFormatted && (
-                        <span className="text-[11px] font-bold text-slate-500 block mt-0.5">
+                        <span className="text-[10.5px] font-bold text-slate-500 block mt-0.5">
                           {departureTimeFormatted}
                         </span>
                       )}
@@ -320,32 +312,33 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                   </div>
                 </div>
 
+                {/* EXPANDERAT INNEHÅLL */}
                 {isExpanded && (
-                  <div className="pt-3 border-t border-slate-200/80 space-y-3 text-xs animate-in fade-in duration-200">
+                  <div className="pt-2 border-t border-slate-200/80 space-y-2 text-xs animate-in fade-in duration-200">
                     {bookingIncidents.length > 0 && (
-                      <div className="bg-slate-100/70 border border-slate-200 p-3.5 rounded-2xl space-y-2">
+                      <div className="bg-slate-100/70 border border-slate-200 p-3 rounded-xl space-y-1.5">
                         <span className="font-black text-slate-900 uppercase text-[10px] block flex items-center gap-1">
                           <Camera className="w-3.5 h-3.5 text-slate-600" /> Marias fotorapport ({bookingIncidents.length}):
                         </span>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           {bookingIncidents.map((inc) => {
                             const photoList = parsePhotos(inc.photo_url);
                             return (
-                              <div key={inc.id} className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-sm">
+                              <div key={inc.id} className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-1.5 shadow-sm">
                                 {photoList.length > 0 && (
-                                  <div className="grid grid-cols-2 gap-2">
+                                  <div className="grid grid-cols-2 gap-1.5">
                                     {photoList.map((url, idx) => (
                                       <img
                                         key={idx}
                                         src={url}
                                         alt={`Foto ${idx + 1}`}
                                         onClick={() => setSelectedImage(url)}
-                                        className="w-full h-24 object-cover rounded-xl border border-slate-200 cursor-pointer hover:opacity-90 transition"
+                                        className="w-full h-20 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition"
                                       />
                                     ))}
                                   </div>
                                 )}
-                                <p className="font-bold text-slate-800 text-xs">{inc.note}</p>
+                                <p className="font-bold text-slate-800 text-[11px]">{inc.note}</p>
                               </div>
                             );
                           })}
@@ -353,14 +346,14 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                       </div>
                     )}
 
-                    <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                    <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                       {isPending ? (
                         <>
                           <a
                             href={getWhatsAppUrl(b)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-2xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 flex-1"
+                            className="py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 flex-1"
                           >
                             <MessageSquare className="w-4 h-4 fill-white" />
                             Avisera Maria på WhatsApp
@@ -370,14 +363,14 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
                             type="button"
                             onClick={() => handleDelete(b)}
                             disabled={deletingId === b.id}
-                            className="py-3 px-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-2xl transition flex items-center justify-center gap-1.5 border border-rose-200 active:scale-95"
+                            className="py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 border border-rose-200 active:scale-95"
                           >
-                            {deletingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 text-rose-600" />}
+                            {deletingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-600" />}
                             Ta bort
                           </button>
                         </>
                       ) : (
-                        <div className="w-full py-2.5 px-3.5 bg-slate-100 text-slate-500 font-bold text-[11px] rounded-2xl flex items-center justify-center gap-1.5 border border-slate-200">
+                        <div className="w-full py-2 px-3 bg-slate-100 text-slate-500 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 border border-slate-200">
                           <Lock className="w-3.5 h-3.5 text-slate-400" /> Låst (accepterad/utförd av Maria)
                         </div>
                       )}

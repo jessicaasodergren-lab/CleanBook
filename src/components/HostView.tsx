@@ -3,7 +3,7 @@ import { supabase, type Booking, type Incident, type Property } from '../lib/sup
 import BookingForm from './host/BookingForm';
 import BookingList from './host/BookingList';
 import CalendarView from './host/CalendarView';
-import { PlusCircle, List, Calendar as CalendarIcon, Loader2, Home, KeyRound } from 'lucide-react';
+import { PlusCircle, List, Calendar as CalendarIcon, Loader2, Home, KeyRound, RefreshCw } from 'lucide-react';
 
 export type HostLanguage = 'sv' | 'en' | 'da';
 
@@ -45,7 +45,7 @@ const hostTexts = {
     loginError: 'Forkert adgangskode. Tjek koden for din ejendom.',
     loginBtn: 'Log ind',
     changeProp: 'Skift ejendom',
-    tabNew: 'Ny booking',
+    tabNew: 'New booking',
     tabList: 'Mine bookinger',
     tabCal: 'Calendar',
   },
@@ -136,19 +136,19 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
     : bookings;
 
   return (
-    <div className="max-w-xl mx-auto px-4 space-y-4">
-      {/* INLOGGAD HEADER: HUS-IKON + FASTIGHET & ADRESS + BYT FASTIGHET */}
-      <div className="flex items-center justify-between bg-slate-900 p-3.5 px-4 rounded-2xl border border-slate-800 shadow-lg gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
-            <Home className="w-4 h-4" />
+    <div className="max-w-xl mx-auto px-2 sm:px-4 space-y-3">
+      {/* TYDLIG FASTIGHETSINDIKATOR HÖGST UPP + BYT FASTIGHET-KNAPP */}
+      <div className="flex items-center justify-between bg-slate-900/90 p-2.5 px-3.5 rounded-2xl border border-slate-800 shadow-lg gap-2 backdrop-blur-md">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
+            <Home className="w-3.5 h-3.5" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-black text-sm text-white truncate leading-tight">
-              {selectedProperty?.name}
+            <h2 className="font-black text-xs sm:text-sm text-white truncate leading-tight flex items-center gap-1.5">
+              <span>{selectedProperty?.name}</span>
             </h2>
-            {selectedProperty?.address && (
-              <p className="text-xs font-medium text-slate-400 truncate mt-0.5">
+            {selectedProperty?.address && selectedProperty.address.toLowerCase() !== selectedProperty.name.toLowerCase() && (
+              <p className="text-[11px] font-medium text-slate-400 truncate pt-0.5">
                 {selectedProperty.address}
               </p>
             )}
@@ -156,40 +156,48 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         </div>
 
         <button
+          type="button"
           onClick={() => setAuthenticated(false)}
-          className="text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 transition shrink-0 active:scale-95"
+          className="text-[11px] font-bold text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-2.5 py-1.5 rounded-xl border border-sky-500/30 transition shrink-0 active:scale-95 flex items-center gap-1"
         >
-          {txt.changeProp}
+          <RefreshCw className="w-3 h-3" />
+          <span>{txt.changeProp}</span>
         </button>
       </div>
 
-      {/* FLIKAR */}
-      <div className="flex bg-slate-900 p-1 rounded-2xl border border-slate-800 text-xs font-black shadow-xl">
+      {/* MOBILSMARTA COMPACT FLIKAR */}
+      <div className="flex bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs font-black shadow-xl backdrop-blur-md">
         <button
+          type="button"
           onClick={() => setActiveTab('create')}
-          className={`flex-1 py-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
-            activeTab === 'create' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+          className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
+            activeTab === 'create' ? 'bg-sky-500 text-slate-950 shadow-md font-black' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <PlusCircle className="w-4 h-4" /> {txt.tabNew}
+          <PlusCircle className="w-3.5 h-3.5" />
+          <span>{txt.tabNew}</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('list')}
-          className={`flex-1 py-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
-            activeTab === 'list' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+          className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
+            activeTab === 'list' ? 'bg-sky-500 text-slate-950 shadow-md font-black' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <List className="w-4 h-4" /> {txt.tabList} ({propertyBookings.length})
+          <List className="w-3.5 h-3.5" />
+          <span>{txt.tabList} ({propertyBookings.length})</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('calendar')}
-          className={`flex-1 py-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
-            activeTab === 'calendar' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+          className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
+            activeTab === 'calendar' ? 'bg-sky-500 text-slate-950 shadow-md font-black' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <CalendarIcon className="w-4 h-4" /> {txt.tabCal}
+          <CalendarIcon className="w-3.5 h-3.5" />
+          <span>{txt.tabCal}</span>
         </button>
       </div>
 
