@@ -4,7 +4,7 @@ import { APP_CONFIG } from '../lib/constants';
 import BookingForm from './host/BookingForm';
 import BookingList from './host/BookingList';
 import CalendarView from './host/CalendarView';
-import { PlusCircle, List, Calendar as CalendarIcon, KeyRound, Loader2, Building, Sparkles } from 'lucide-react';
+import { PlusCircle, List, Calendar as CalendarIcon, KeyRound, Loader2, Building, Home, Sparkles } from 'lucide-react';
 
 interface HostViewProps {
   bookings: Booking[];
@@ -104,7 +104,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh }: Ho
       <div className="bg-slate-900/90 text-white p-3.5 rounded-2xl border border-slate-700/80 shadow-lg flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-black shrink-0">
-            <Building className="w-5 h-5" />
+            <Home className="w-5 h-5" />
           </div>
           <div className="min-w-0 space-y-0.5">
             <div className="flex items-center gap-1.5 flex-wrap">

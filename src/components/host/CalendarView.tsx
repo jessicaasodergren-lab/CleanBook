@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Booking } from '../../lib/supabase';
-import { formatDate, APP_CONFIG, TIME_LABELS } from '../../lib/constants';
+import { supabase, type Booking } from '../../lib/supabase';
+import { formatDate, APP_CONFIG } from '../../lib/constants';
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,19 +14,43 @@ import {
   Building,
   CheckCircle2,
   Clock3,
+  Bell,
+  Trash2,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 
 interface CalendarViewProps {
   bookings: Booking[];
+  onRefresh?: () => void;
+}
+
+function getValidNote(notesEs: string | null | undefined, notesSv: string | null | undefined): string | null {
+  if (notesEs && !notesEs.toUpperCase().includes('QUERY LENGTH LIMIT') && !notesEs.toUpperCase().includes('MYMEMORY')) {
+    return notesEs;
+  }
+  return notesSv || null;
+}
+
+function formatTimeOrWindow(exactTime: string | null | undefined, timeWindow: string | null | undefined): string | null {
+  if (exactTime) {
+    return `kl ${exactTime}`;
+  }
+  if (timeWindow === 'morning') return '🌅 Förmiddag';
+  if (timeWindow === 'afternoon') return '☀️ Eftermiddag';
+  if (timeWindow === 'evening') return '🌙 Kväll';
+  return null;
 }
 
 function getWhatsAppUrl(b: Booking): string {
-  const phone = APP_CONFIG.mariaPhoneNumber || '46721886174';
+  const phone = APP_CONFIG.mariaPhoneNumber || '34600000000';
   const depDate = formatDate(b.departure_date, 'es');
   const depTime = b.departure_exact_time ? `kl ${b.departure_exact_time}` : '';
   const arrDate = formatDate(b.next_arrival_date, 'es');
   const arrTime = b.arrival_exact_time ? `kl ${b.arrival_exact_time}` : '';
-  const notesText = b.notes_es || b.notes;
+  
+  const validNoteEs = getValidNote(b.notes_es, b.notes);
+  const notesText = validNoteEs || b.notes;
 
   const msg = 
 `¡Hola Maria! 🧹
@@ -43,9 +67,10 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 }
 
-export default function CalendarView({ bookings }: CalendarViewProps) {
+export default function CalendarView({ bookings, onRefresh }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -74,44 +99,81 @@ export default function CalendarView({ bookings }: CalendarViewProps) {
     calendarGrid.push({ day, dateStr: dayStr });
   }
 
+  // Räkna statistik för aktuell månad
+  const monthStartStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const monthEndStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+
+  const monthBookings = bookings.filter(
+    (b) => (b.next_arrival_date && b.next_arrival_date >= monthStartStr && b.next_arrival_date <= monthEndStr) ||
+           (b.departure_date && b.departure_date >= monthStartStr && b.departure_date <= monthEndStr)
+  );
+
+  const pendingMonthCount = monthBookings.filter((b) => b.status === 'pending').length;
+  const acceptedMonthCount = monthBookings.filter((b) => b.status === 'accepted').length;
+  const finishedMonthCount = monthBookings.filter((b) => b.status === 'finished').length;
+
+  const handleDelete = async (b: Booking) => {
+    if (b.status !== 'pending') {
+      alert('Kan inte radera: Bokningen är redan accepterad av Maria eller utförd.');
+      return;
+    }
+    if (!window.confirm(`Är du säker på att du vill ta bort bokningen "${b.booking_title}"?`)) return;
+
+    setDeletingId(b.id);
+    await supabase.from('bookings').delete().eq('id', b.id);
+    setDeletingId(null);
+    setSelectedBooking(null);
+    if (onRefresh) onRefresh();
+  };
+
   return (
-    <div className="bg-white text-slate-900 rounded-3xl shadow-2xl p-5 border border-slate-200 space-y-4">
-      {/* KALENDER HEADER */}
+    <div className="bg-white text-slate-900 rounded-3xl shadow-2xl p-4 sm:p-5 border border-slate-200 space-y-4">
+      {/* 1. KALENDER HEADER & NAVIGERING (AVSKALAD OCH REN) */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5 text-sky-600" />
-          <h3 className="font-black text-slate-900 text-base">
-            {monthNamesSv[month]} {year}
-          </h3>
+          <div className="p-2 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100">
+            <CalendarIcon className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-black text-slate-900 text-base leading-tight">
+              {monthNamesSv[month]} {year}
+            </h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Bokningsöversikt
+            </p>
+          </div>
         </div>
 
+        {/* NAVIGERINGS-KNAPPAR */}
         <div className="flex items-center gap-1">
           <button
             onClick={goToToday}
-            className="px-2.5 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition mr-1"
+            className="px-3 py-1.5 text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition border border-slate-200 mr-1"
           >
             Idag
           </button>
-          <button onClick={prevMonth} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition">
-            <ChevronLeft className="w-5 h-5" />
+          <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 transition border border-slate-200">
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <button onClick={nextMonth} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition">
-            <ChevronRight className="w-5 h-5" />
+          <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 transition border border-slate-200">
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* VECKODAGAR */}
+      {/* 2. VECKODAGAR */}
       <div className="grid grid-cols-7 text-center font-black text-[11px] text-slate-400 uppercase tracking-wider">
         <div>Mån</div><div>Tis</div><div>Ons</div><div>Tor</div><div>Fre</div><div>Lör</div><div>Sön</div>
       </div>
 
-      {/* KALENDERGRID */}
-      <div className="grid grid-cols-7 gap-1">
+      {/* 3. KALENDERGRID */}
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
         {calendarGrid.map((item, idx) => {
-          if (!item) return <div key={`empty-${idx}`} className="h-20 bg-slate-50/50 rounded-xl" />;
+          if (!item) return <div key={`empty-${idx}`} className="h-20 sm:h-24 bg-slate-50/40 rounded-2xl" />;
 
           const isToday = item.dateStr === todayStr;
+
+          // Hämta bokningar som berör denna dag
           const dayBookings = bookings.filter((b) => {
             const start = b.next_arrival_date;
             const end = b.departure_date;
@@ -119,40 +181,55 @@ export default function CalendarView({ bookings }: CalendarViewProps) {
             return item.dateStr >= start && item.dateStr <= end;
           });
 
+          // Kontrollera om det är en bytardag / turnover
+          const isCheckOutDay = dayBookings.some((b) => b.departure_date === item.dateStr);
+          const isCheckInDay = dayBookings.some((b) => b.next_arrival_date === item.dateStr);
+          const isTurnover = isCheckOutDay && isCheckInDay && dayBookings.length > 1;
+
           return (
             <div
               key={item.dateStr}
-              className={`h-20 border rounded-xl p-1 flex flex-col justify-between overflow-hidden transition ${
-                isToday ? 'border-sky-500 bg-sky-50/30' : 'border-slate-100 bg-slate-50/30'
+              className={`min-h-[80px] sm:min-h-[96px] border rounded-2xl p-1 sm:p-1.5 flex flex-col justify-between transition-all ${
+                isToday
+                  ? 'border-sky-500 bg-sky-50/40 shadow-sm ring-2 ring-sky-500/20'
+                  : 'border-slate-100 bg-slate-50/30 hover:border-slate-200 hover:bg-slate-50/80'
               }`}
             >
               <div className="flex items-center justify-between">
                 <span
-                  className={`text-xs font-black w-5 h-5 flex items-center justify-center rounded-full ${
-                    isToday ? 'bg-sky-600 text-white' : 'text-slate-700'
+                  className={`text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-full ${
+                    isToday ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-700'
                   }`}
                 >
                   {item.day}
                 </span>
+
+                {isTurnover && (
+                  <span
+                    className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-500 text-slate-950 flex items-center gap-0.5 shadow-sm"
+                    title="Byte samma dag!"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Byte
+                  </span>
+                )}
               </div>
 
-              <div className="space-y-1 overflow-y-auto max-h-12">
+              <div className="space-y-1 overflow-y-auto max-h-14 sm:max-h-16 pt-1">
                 {dayBookings.map((b) => {
                   const isFinished = b.status === 'finished';
                   const isAccepted = b.status === 'accepted';
                   
-                  // FÄRGKODADE REMSOR PÅ STATUS
-                  const stripColor = isFinished
-                    ? 'bg-emerald-500 hover:bg-emerald-600'
+                  const pillStyle = isFinished
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
                     : isAccepted
-                    ? 'bg-sky-500 hover:bg-sky-600'
-                    : 'bg-amber-500 hover:bg-amber-600';
+                    ? 'bg-sky-500 hover:bg-sky-600 text-white'
+                    : 'bg-amber-400 hover:bg-amber-500 text-slate-950 font-black';
 
                   return (
                     <button
                       key={b.id}
                       onClick={() => setSelectedBooking(b)}
-                      className={`w-full text-left px-1.5 py-0.5 rounded text-[9px] font-black truncate block text-white transition shadow-sm ${stripColor}`}
+                      className={`w-full text-left px-1.5 py-1 rounded-lg text-[9.5px] font-black truncate block transition shadow-sm active:scale-95 ${pillStyle}`}
                     >
                       {b.booking_title}
                     </button>
@@ -164,7 +241,26 @@ export default function CalendarView({ bookings }: CalendarViewProps) {
         })}
       </div>
 
-      {/* BOKNINGSDETALJER MODAL */}
+      {/* 4. MÅNADSSUMMERING & FÄRGKODNING LÄNGST NED */}
+      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-600 font-bold">
+        <span>
+          Totalt i {monthNamesSv[month]}: <strong className="text-slate-900">{monthBookings.length} bokningar</strong>
+        </span>
+
+        <div className="flex items-center gap-2 text-[11px] flex-wrap">
+          <span className="text-amber-900 font-black flex items-center gap-1 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
+            🟡 {pendingMonthCount} väntar på svar
+          </span>
+          <span className="text-sky-900 font-black flex items-center gap-1 bg-sky-100 px-2.5 py-0.5 rounded-full border border-sky-300">
+            🔵 {acceptedMonthCount} accepterade
+          </span>
+          <span className="text-emerald-900 font-black flex items-center gap-1 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+            💚 {finishedMonthCount} slutförda
+          </span>
+        </div>
+      </div>
+
+      {/* 5. BOKNINGSDETALJER MODAL */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
           <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
@@ -187,8 +283,8 @@ export default function CalendarView({ bookings }: CalendarViewProps) {
               <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
                 <span className="font-bold text-slate-500">Status för städning:</span>
                 {selectedBooking.status === 'finished' && (
-                  <span className="text-[11px] font-black px-3 py-1 rounded-full uppercase bg-emerald-600 text-white flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Utförd städning
+                  <span className="text-[11px] font-black px-3 py-1 rounded-full uppercase bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Utförd städning
                   </span>
                 )}
                 {selectedBooking.status === 'accepted' && (
@@ -197,8 +293,8 @@ export default function CalendarView({ bookings }: CalendarViewProps) {
                   </span>
                 )}
                 {selectedBooking.status === 'pending' && (
-                  <span className="text-[11px] font-black px-3 py-1 rounded-full uppercase bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
-                    🟡 Väntar på Marias svar
+                  <span className="text-[11px] font-black px-3 py-1 rounded-full uppercase bg-amber-400 text-slate-950 flex items-center gap-1 shadow-sm">
+                    <Bell className="w-3.5 h-3.5 text-slate-950" /> Väntar på Marias svar
                   </span>
                 )}
               </div>
@@ -226,12 +322,10 @@ export default function CalendarView({ bookings }: CalendarViewProps) {
                     <CalendarIcon className="w-3.5 h-3.5 text-sky-600" />
                     {formatDate(selectedBooking.next_arrival_date, 'sv')}
                   </span>
-                  <span className="text-[11px] font-bold text-slate-600 block">
-                    Fönster: {TIME_LABELS.sv[selectedBooking.next_arrival_time_window || 'afternoon']}
-                  </span>
-                  {selectedBooking.arrival_exact_time && (
-                    <span className="text-[11px] font-bold text-slate-500 block flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-sky-600" /> Exakt: kl {selectedBooking.arrival_exact_time}
+                  {formatTimeOrWindow(selectedBooking.arrival_exact_time, selectedBooking.next_arrival_time_window) && (
+                    <span className="text-[11px] font-bold text-slate-600 block flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3 text-sky-600" />
+                      {formatTimeOrWindow(selectedBooking.arrival_exact_time, selectedBooking.next_arrival_time_window)}
                     </span>
                   )}
                 </div>
@@ -242,12 +336,10 @@ export default function CalendarView({ bookings }: CalendarViewProps) {
                     <CalendarIcon className="w-3.5 h-3.5 text-amber-600" />
                     {formatDate(selectedBooking.departure_date, 'sv')}
                   </span>
-                  <span className="text-[11px] font-bold text-slate-600 block">
-                    Fönster: {TIME_LABELS.sv[selectedBooking.departure_time_window || 'morning']}
-                  </span>
-                  {selectedBooking.departure_exact_time && (
-                    <span className="text-[11px] font-bold text-slate-500 block flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-amber-600" /> Exakt: kl {selectedBooking.departure_exact_time}
+                  {formatTimeOrWindow(selectedBooking.departure_exact_time, selectedBooking.departure_time_window) && (
+                    <span className="text-[11px] font-bold text-slate-600 block flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3 text-amber-600" />
+                      {formatTimeOrWindow(selectedBooking.departure_exact_time, selectedBooking.departure_time_window)}
                     </span>
                   )}
                 </div>
@@ -273,30 +365,48 @@ export default function CalendarView({ bookings }: CalendarViewProps) {
                   <p className="font-bold text-amber-950 leading-relaxed whitespace-pre-line">
                     {selectedBooking.notes}
                   </p>
-                  {selectedBooking.notes_es && (
+                  {getValidNote(selectedBooking.notes_es, selectedBooking.notes) !== selectedBooking.notes && (
                     <div className="pt-1.5 border-t border-amber-200/60">
                       <span className="text-[10px] font-extrabold text-amber-800 uppercase block">
                         Spansk översättning (till Maria):
                       </span>
                       <p className="font-medium text-amber-900 italic leading-relaxed">
-                        {selectedBooking.notes_es}
+                        {getValidNote(selectedBooking.notes_es, selectedBooking.notes)}
                       </p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* WHATSAPP KNAPP */}
-              <div className="pt-2">
-                <a
-                  href={getWhatsAppUrl(selectedBooking)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-2xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
-                >
-                  <MessageSquare className="w-4 h-4 fill-white" />
-                  Avisera Maria på WhatsApp
-                </a>
+              {/* ÅTGÄRDER (WHATSAPP ELLER TA BORT) */}
+              <div className="pt-2 flex flex-col gap-2">
+                {selectedBooking.status === 'pending' ? (
+                  <>
+                    <a
+                      href={getWhatsAppUrl(selectedBooking)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-2xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                    >
+                      <MessageSquare className="w-4 h-4 fill-white" />
+                      Avisera Maria på WhatsApp
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(selectedBooking)}
+                      disabled={deletingId === selectedBooking.id}
+                      className="w-full py-3 px-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-2xl transition flex items-center justify-center gap-1.5 border border-rose-200 active:scale-95"
+                    >
+                      {deletingId === selectedBooking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 text-rose-600" />}
+                      Ta bort denna bokning
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full py-2.5 px-3.5 bg-slate-100 text-slate-500 font-bold text-[11px] text-center rounded-2xl border border-slate-200">
+                    Låst (accepterad/utförd av Maria)
+                  </div>
+                )}
               </div>
             </div>
           </div>
