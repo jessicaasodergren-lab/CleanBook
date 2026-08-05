@@ -75,8 +75,10 @@ export default function TaskCard({
 
   const displayNote = getValidNote(b.notes_es, b.notes);
 
+  // Matchar fastigheten via property_id i första hand, annars namn/adress
   const matchedProp = properties.find(
     (p) =>
+      (b.property_id && p.id === b.property_id) ||
       p.name.toLowerCase() === b.property_name.toLowerCase() ||
       p.address.toLowerCase() === (b.property_address || '').toLowerCase()
   );
@@ -158,14 +160,13 @@ export default function TaskCard({
             )}
           </div>
 
-          {/* ADRESS & ANFITRIONA */}
+          {/* ADRESS & STÄDTID */}
           <div className="flex items-center justify-between gap-2 pt-0.5">
             <h3 className="font-black text-slate-900 text-base sm:text-lg leading-tight flex items-center gap-1.5 truncate">
               <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="truncate">{displayAddress}</span>
             </h3>
 
-            {/* STÄDERSKANS EGNA STÄDTID - DIREKT SYNLIG PÅ KORTET */}
             {estCleaningTime && (
               <span className="text-[11px] font-extrabold bg-sky-100 text-sky-900 border border-sky-300 px-2.5 py-1 rounded-xl flex items-center gap-1 shrink-0 shadow-sm">
                 <Timer className="w-3.5 h-3.5 text-sky-600" />
@@ -174,11 +175,12 @@ export default function TaskCard({
             )}
           </div>
           
-          {displayHost && displayHost !== 'Värd' && (
-            <p className="text-xs font-bold text-slate-500 flex items-center gap-1 pl-5">
+          {/* VÄRDENS NAMN (ALLTID SYNLIGT OM DET FINNS) */}
+          {displayHost && (
+            <p className="text-xs font-bold text-slate-600 flex items-center gap-1 pt-0.5">
               <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span>
-                {txt.hostLabel} {displayHost}
+                {txt.hostLabel || 'Anfitriona:'} {displayHost}
                 {b.property_name && displayAddress.toLowerCase() !== b.property_name.toLowerCase() && (
                   <span className="text-slate-400 font-medium"> ({b.property_name})</span>
                 )}

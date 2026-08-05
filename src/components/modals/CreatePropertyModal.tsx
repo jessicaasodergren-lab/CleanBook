@@ -37,16 +37,9 @@ export default function CreatePropertyModal({ isOpen, onClose, onCreated }: Crea
     }
 
     try {
-      await supabase.from('profiles').upsert({
-        id: session.user.id,
-        email: session.user.email,
-        role: 'host',
-        full_name: session.user.user_metadata?.full_name || '',
-      });
-
+      // Skapar fastigheten – hostName hämtas nu automatiskt från profiles via JOIN!
       const createdProp = await propertyService.createProperty({
         hostId: session.user.id,
-        hostName: session.user.user_metadata?.full_name || 'Värd',
         name: newPropName.trim(),
         address: newPropAddress.trim() || newPropName.trim(),
         kvm: newPropKvm.trim() || null,

@@ -3,25 +3,39 @@ import { supabase, type Property } from '../lib/supabase';
 
 export const propertyService = {
   /**
-   * Hämtar alla fastigheter som ägs av den inloggade värden
+   * Hämtar alla fastigheter som ägs av den inloggade värden och kopplar på värdens namn från profiles
    */
   async getHostProperties(userId: string): Promise<Property[]> {
-    const { data, error } = await supabase
+    // 1. Hämtar fastigheterna direkt utan beroende på databasrelationer
+    const { data: props, error: propErr } = await supabase
       .from('properties')
       .select('*')
       .eq('host_id', userId)
       .order('name');
 
-    if (error) throw error;
-    return (data as Property[]) || [];
+    if (propErr) throw propErr;
+    if (!props || props.length === 0) return [];
+
+    // 2. Hämtar värdens namn från profiles
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const hostName = profile?.full_name || 'Värd';
+
+    return props.map((p) => ({
+      ...p,
+      host_name: hostName,
+    })) as Property[];
   },
 
   /**
-   * Skapar en ny fastighet och genererar inbjudningskod
+   * Skapar en ny fastighet (utan host_name i databaskolumnen)
    */
   async createProperty(payload: {
     hostId: string;
-    hostName: string;
     name: string;
     address: string;
     kvm?: string | null;
@@ -37,22 +51,32 @@ export const propertyService = {
         host_id: payload.hostId,
         name: payload.name,
         address: payload.address || payload.name,
-        host_name: payload.hostName,
         invite_code: inviteCode,
         kvm: payload.kvm || null,
         rooms: payload.rooms || null,
         bathrooms: payload.bathrooms || null,
         property_notes: payload.property_notes || null,
       })
-      .select()
+      .select('*')
       .single();
 
     if (error) throw error;
-    return data as Property;
+
+    // Hämtar namnet på skaparen från profiles
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', payload.hostId)
+      .maybeSingle();
+
+    return {
+      ...(data as Property),
+      host_name: profile?.full_name || 'Värd',
+    };
   },
 
   /**
-   * Hämtar städerskans kopplade fastigheter inkl. privata anteckningar & städtid
+   * Hämtar städerskans kopplade fastigheter och slår ihop värdarnas namn säkert
    */
   async getCleanerProperties(cleanerId: string): Promise<Property[]> {
     const { data, error } = await supabase
@@ -61,12 +85,34 @@ export const propertyService = {
       .eq('cleaner_id', cleanerId);
 
     if (error) throw error;
+    if (!data) return [];
 
-    return (data || [])
+    // Samlar alla unika host_ids
+    const hostIds = Array.from(
+      new Set(data.map((item: any) => item.properties?.host_id).filter(Boolean))
+    );
+
+    let profileMap: Record<string, string> = {};
+    if (hostIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', hostIds);
+
+      if (profiles) {
+        profiles.forEach((pr) => {
+          if (pr.full_name) profileMap[pr.id] = pr.full_name;
+        });
+      }
+    }
+
+    return data
       .map((item: any) => {
         if (!item.properties) return null;
+        const hId = item.properties.host_id;
         return {
           ...item.properties,
+          host_name: profileMap[hId] || 'Värd',
           cleaning_time: item.cleaning_time,
           internal_notes: item.internal_notes,
         };
