@@ -24,13 +24,15 @@ export interface Property {
   name: string;
   address: string;
   invite_code?: string | null;
-  host_name?: string | null;
   kvm?: string | null;
   rooms?: string | null;
   bathrooms?: string | null;
-  cleaning_time?: string | null; // Valfri för gränssnittets ihopslagning
   property_notes?: string | null;
   created_at?: string;
+  // Virtuella fält som slås ihop i minnet av propertyService:
+  host_name?: string | null;
+  cleaning_time?: string | null;
+  internal_notes?: string | null;
 }
 
 export interface PropertyConnection {
@@ -38,7 +40,7 @@ export interface PropertyConnection {
   property_id: string;
   cleaner_id: string;
   internal_notes?: string | null;
-  cleaning_time?: string | null; // Städerskans egna beräknade städtid
+  cleaning_time?: string | null;
   created_at?: string;
   properties?: Property;
 }
@@ -48,7 +50,6 @@ export interface Booking {
   property_id?: string | null;
   property_name: string;
   property_address: string | null;
-  host_name: string | null;
   booking_title?: string;
   check_in_date: string;
   check_in_time_window: ArrivalTimeWindow | null;
@@ -64,6 +65,8 @@ export interface Booking {
   notes_es?: string | null;
   status: BookingStatus;
   created_at?: string;
+  // Virtuellt fält vid behov:
+  host_name?: string | null;
 }
 
 export interface Incident {
