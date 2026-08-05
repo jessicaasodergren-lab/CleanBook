@@ -24,9 +24,13 @@ import {
 } from 'lucide-react';
 
 interface BookingFormProps {
-  properties: Property[];
-  selectedPropertyId: string | null;
-  onBookingCreated: () => void;
+  properties?: Property[];
+  selectedPropertyId?: string | null;
+  propertyName?: string;
+  propertyAddress?: string;
+  propertyId?: string;
+  onBookingCreated?: () => void;
+  onSuccess?: () => void;
   lang?: HostLanguage;
 }
 
@@ -137,11 +141,27 @@ function getTimeWindowFromExactTime(timeStr: string): ArrivalTimeWindow | Depart
   return 'evening';
 }
 
-export default function BookingForm({ properties, selectedPropertyId, onBookingCreated, lang = 'sv' }: BookingFormProps) {
+export default function BookingForm({
+  properties = [],
+  selectedPropertyId,
+  propertyName,
+  propertyAddress,
+  propertyId: directPropertyId,
+  onBookingCreated,
+  onSuccess,
+  lang = 'sv',
+}: BookingFormProps) {
   const txt = formTexts[lang] || formTexts.sv;
 
-  const currentProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
-  const [propertyId, setPropertyId] = useState(currentProperty?.id || '');
+  // Bygg fastighetsobjektet oavsett om det skickas som lista eller enskild fastighet
+  const effectiveProperties: Property[] = properties.length > 0
+    ? properties
+    : directPropertyId
+    ? [{ id: directPropertyId, name: propertyName || '', address: propertyAddress || '', host_name: 'Värd' } as Property]
+    : [];
+
+  const currentProperty = effectiveProperties.find((p) => p.id === (selectedPropertyId || directPropertyId)) || effectiveProperties[0];
+  const [propertyId, setPropertyId] = useState(currentProperty?.id || directPropertyId || '');
 
   const [bookingTitle, setBookingTitle] = useState('');
 
@@ -184,7 +204,7 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
     setErrorMsg(null);
     setCreatedBooking(null);
 
-    const prop = properties.find((p) => p.id === (selectedPropertyId || propertyId)) || currentProperty;
+    const prop = effectiveProperties.find((p) => p.id === (selectedPropertyId || propertyId || directPropertyId)) || currentProperty;
     if (!prop) {
       setErrorMsg(txt.errNoProperty);
       return;
@@ -250,6 +270,7 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
     }
 
     const newBookingData = {
+      property_id: prop.id, // <-- KOPPLAD TILL NYA DATABASSCHEMAT!
       property_name: prop.name,
       property_address: prop.address || prop.name,
       host_name: prop.host_name || 'Värd',
@@ -286,7 +307,10 @@ export default function BookingForm({ properties, selectedPropertyId, onBookingC
       setCheckOutTimeWindow('');
       setCheckOutExactTime('');
       setNotes('');
-      onBookingCreated();
+      
+      // Anropa antingen onBookingCreated eller onSuccess
+      if (onBookingCreated) onBookingCreated();
+      if (onSuccess) onSuccess();
     }
   };
 
@@ -342,15 +366,15 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
         </div>
 
         <div className="space-y-4 text-xs">
-          {selectedPropertyId ? (
+          {(selectedPropertyId || directPropertyId) ? (
             <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 flex items-center justify-between">
               <div className="space-y-0.5">
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{txt.property}</span>
                 <p className="font-black text-slate-900 text-sm flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                  {currentProperty?.name}
-                  {currentProperty?.address && (
-                    <span className="text-xs font-bold text-slate-500">· {currentProperty.address}</span>
+                  {currentProperty?.name || propertyName}
+                  {(currentProperty?.address || propertyAddress) && (
+                    <span className="text-xs font-bold text-slate-500">· {currentProperty?.address || propertyAddress}</span>
                   )}
                 </p>
               </div>
@@ -369,7 +393,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-sky-500 transition"
                 required
               >
-                {properties.map((p) => (
+                {effectiveProperties.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.address})
                   </option>

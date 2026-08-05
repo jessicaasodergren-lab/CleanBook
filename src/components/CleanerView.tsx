@@ -16,9 +16,20 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
   const [activeTab, setActiveTab] = useState<'jobs' | 'calendar' | 'properties'>('jobs');
   const [properties, setProperties] = useState<Property[]>([]);
 
+  // Hämta fastigheter som är kopplade till städerskan
   const fetchProperties = useCallback(async () => {
-    const { data } = await supabase.from('properties').select('*').order('name');
-    if (data) setProperties(data as Property[]);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { data } = await supabase
+      .from('property_connections')
+      .select('properties(*)')
+      .eq('cleaner_id', session.user.id);
+
+    if (data) {
+      const props = data.map((item: any) => item.properties).filter(Boolean);
+      setProperties(props as Property[]);
+    }
   }, []);
 
   useEffect(() => {
@@ -32,7 +43,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
   return (
     <div className="max-w-xl mx-auto px-2 sm:px-4 space-y-3">
-      {/* ULTRA-KOMPAKT TOPPMENY (3 FLIKAR) */}
+      {/* ULTRA-KOMPAKT TOPPMENY (EXAKT SOM DU BYGGT DEN) */}
       <div className="flex bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs font-black shadow-xl backdrop-blur-md">
         <button
           type="button"
