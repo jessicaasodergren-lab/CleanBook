@@ -1,3 +1,4 @@
+// src/components/HostView.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
 import BookingForm from './host/BookingForm';
@@ -68,7 +69,6 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
   const [showAddPropModal, setShowAddPropModal] = useState(false);
   const [newPropName, setNewPropName] = useState('');
   const [newPropAddress, setNewPropAddress] = useState('');
-  const [newPropPasscode, setNewPropPasscode] = useState('');
   const [newPropKvm, setNewPropKvm] = useState('');
   const [newPropRooms, setNewPropRooms] = useState('');
   const [newPropBathrooms, setNewPropBathrooms] = useState('');
@@ -110,12 +110,12 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
   };
 
   const shareWhatsApp = (prop: Property) => {
-    const code = prop.invite_code || prop.passcode;
+    const code = prop.invite_code || '';
     const msg = `¡Hola! Te invito a conectarte a mi propiedad "${prop.name}" en CleanBook.\n\nCódigo de invitación: *${code}*`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  // Skapa fastighet som Host (Utan Tidsåtgång!)
+  // Skapa fastighet som Host
   const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPropName.trim()) return;
@@ -131,7 +131,6 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
     }
 
     try {
-      // Säkerställ att profilen finns i 'profiles'-tabellen först för att undvika FK-fel
       await supabase.from('profiles').upsert({
         id: session.user.id,
         email: session.user.email,
@@ -139,7 +138,6 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         full_name: session.user.user_metadata?.full_name || '',
       });
 
-      const generatedPasscode = newPropPasscode.trim().toUpperCase() || Math.random().toString(36).substring(2, 6).toUpperCase();
       const generatedInviteCode = `CLEAN-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
       const { data, error } = await supabase.from('properties').insert({
@@ -147,7 +145,6 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         name: newPropName.trim(),
         address: newPropAddress.trim() || newPropName.trim(),
         host_name: session.user.user_metadata?.full_name || 'Värd',
-        passcode: generatedPasscode,
         invite_code: generatedInviteCode,
         kvm: newPropKvm.trim() || null,
         rooms: newPropRooms.trim() || null,
@@ -160,7 +157,6 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
       if (data) {
         setNewPropName('');
         setNewPropAddress('');
-        setNewPropPasscode('');
         setNewPropKvm('');
         setNewPropRooms('');
         setNewPropBathrooms('');
@@ -286,9 +282,9 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
           <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800 flex items-center justify-between text-xs pt-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-slate-400 font-semibold">{txt.inviteCodeLabel}</span>
-              <span className="font-mono font-black text-emerald-400">{selectedProperty.invite_code || selectedProperty.passcode}</span>
+              <span className="font-mono font-black text-emerald-400">{selectedProperty.invite_code || ''}</span>
               <button
-                onClick={() => copyInviteCode(selectedProperty.invite_code || selectedProperty.passcode)}
+                onClick={() => copyInviteCode(selectedProperty.invite_code || '')}
                 className="text-slate-400 hover:text-white p-1"
                 title="Kopiera kod"
               >
@@ -344,7 +340,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         </div>
       )}
 
-      {/* MODAL: SKAPA FASTIGHET (UTAN TIDSÅTGÅNG) */}
+      {/* MODAL: SKAPA FASTIGHET */}
       {showAddPropModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
           <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
@@ -378,17 +374,6 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
                   value={newPropAddress}
                   onChange={(e) => setNewPropAddress(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium outline-none focus:bg-white focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Valfri passcode / dörrkod</label>
-                <input
-                  type="text"
-                  placeholder="T.ex. GV45"
-                  value={newPropPasscode}
-                  onChange={(e) => setNewPropPasscode(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono font-bold uppercase outline-none focus:bg-white focus:border-emerald-500"
                 />
               </div>
 
@@ -446,7 +431,6 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
                 />
               </div>
 
-              {/* RÖD FELMEDDELANDE-BOX SOM VISAS OM DATORN GER ETT FEL */}
               {addPropError && (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 font-bold text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />

@@ -103,17 +103,26 @@ export default function CleanerView({
 
   const txt = cleanerTexts[lang] || cleanerTexts.es;
 
+  // HÄMTAR FASTIGHETER OCH SLÅR IHOP STÄDERSKANS EGNA STÄDTID FÖR ENKELHETS SKULL
   const fetchProperties = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     const { data } = await supabase
       .from('property_connections')
-      .select('properties(*)')
+      .select('cleaning_time, internal_notes, properties(*)')
       .eq('cleaner_id', session.user.id);
 
     if (data) {
-      const props = data.map((item: any) => item.properties).filter(Boolean);
+      const props = data.map((item: any) => {
+        if (!item.properties) return null;
+        return {
+          ...item.properties,
+          cleaning_time: item.cleaning_time, // Hämtar städerskans egna angivna städtid från property_connections!
+          internal_notes: item.internal_notes,
+        };
+      }).filter(Boolean);
+
       setProperties(props as Property[]);
     }
   }, []);
@@ -150,7 +159,7 @@ export default function CleanerView({
       const { data: prop, error: propErr } = await supabase
         .from('properties')
         .select('id, name')
-        .or(`invite_code.eq.${code},passcode.eq.${code}`)
+        .eq('invite_code', code)
         .maybeSingle();
 
       if (propErr) throw propErr;

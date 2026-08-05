@@ -23,13 +23,12 @@ export interface Property {
   host_id?: string | null;
   name: string;
   address: string;
-  passcode: string;
   invite_code?: string | null;
   host_name?: string | null;
   kvm?: string | null;
   rooms?: string | null;
   bathrooms?: string | null;
-  cleaning_time?: string | null;
+  cleaning_time?: string | null; // Valfri för gränssnittets ihopslagning
   property_notes?: string | null;
   created_at?: string;
 }
@@ -39,7 +38,7 @@ export interface PropertyConnection {
   property_id: string;
   cleaner_id: string;
   internal_notes?: string | null;
-  cleaning_time?: string | null;
+  cleaning_time?: string | null; // Städerskans egna beräknade städtid
   created_at?: string;
   properties?: Property;
 }
