@@ -15,7 +15,23 @@ export const AuthView: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [imgError, setImgError] = useState(false);
 
-  const txt = translations.auth[lang] || translations.auth.en;
+  // Kraschsäker hämtning med inbyggd reservöversättning
+  const txt = translations?.auth?.[lang] || translations?.auth?.en || {
+    loginTab: isSignUp ? 'LOG IN' : 'LOG IN',
+    signupTab: 'CREATE ACCOUNT',
+    roleLabel: 'I am registering as:',
+    hostRole: 'Property Host',
+    cleanerRole: 'Cleaner / Agency',
+    nameLabel: 'Name',
+    namePlaceholder: 'Your name',
+    emailLabel: 'Email Address',
+    emailPlaceholder: 'name@example.com',
+    passwordLabel: 'Password (min. 6 characters)',
+    submitLogin: 'Log In',
+    submitSignup: 'Create Account',
+    accountCreatedMsg: 'Account created! You can now log in.',
+    errPassLength: 'Password must be at least 6 characters long.',
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +78,7 @@ export const AuthView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-10 sm:px-6 lg:px-8 text-slate-100">
-      {/* SPRÅKVÄLJARE */}
+      {/* SPRÅKVÄLJARE LÄNGST UPP */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md flex justify-end px-4 mb-4">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-1.5 flex items-center gap-1 text-xs">
           <Globe className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-0.5" />
