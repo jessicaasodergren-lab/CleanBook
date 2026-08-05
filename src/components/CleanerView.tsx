@@ -1,6 +1,8 @@
 // src/components/CleanerView.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
+import { propertyService } from '../services/propertyService';
+import { translations } from '../i18n/translations';
 import TaskList from './cleaner/TaskList';
 import CleanerCalendarView from './cleaner/CleanerCalendarView';
 import PropertyList from './cleaner/PropertyList';
@@ -16,72 +18,6 @@ interface CleanerViewProps {
   lang?: CleanerLanguage;
   onLangChange?: (newLang: CleanerLanguage) => void;
 }
-
-const cleanerTexts: Record<CleanerLanguage, any> = {
-  es: {
-    tabJobs: 'Tareas',
-    tabCalendar: 'Calendario',
-    tabProps: 'Propiedades',
-    welcomeTitle: '¡Bienvenida a CleanBook! 👋',
-    welcomeDesc: 'Para empezar a ver tus tareas de limpieza y el calendario, conecta tu primera propiedad en 3 sencillos pasos:',
-    step1: 'Pide el código:',
-    step1Desc: 'Solicita el código de invitación a la anfitriona (ej. CLEAN-88A2).',
-    step2: 'Pulsa en Conectar:',
-    step2Desc: 'Pulsa el botón inferior para introducir el código.',
-    step3: '¡Listo!',
-    step3Desc: 'Tus limpiezas y el calendario se actualizarán automáticamente.',
-    btnConnectNow: 'Conectar mi primera propiedad ahora',
-    modalTitle: 'Conectar nueva propiedad',
-    modalDesc: 'Introduce el código de invitación o clave secreta proporcionada por la anfitriona:',
-    placeholderCode: 'Ej. CLEAN-88A2 o GV45',
-    btnSubmitConnect: 'Conectar',
-    errInvalidCode: 'Código no válido. Verifica el código e inténtalo de nuevo.',
-    errAlreadyConnected: 'Esta propiedad ya está conectada a tu cuenta.',
-    successConnected: '¡Propiedad conectada con éxito!',
-  },
-  en: {
-    tabJobs: 'Tasks',
-    tabCalendar: 'Calendar',
-    tabProps: 'Properties',
-    welcomeTitle: 'Welcome to CleanBook! 👋',
-    welcomeDesc: 'To start viewing your cleaning tasks and calendar, connect your first property in 3 simple steps:',
-    step1: 'Ask for the code:',
-    step1Desc: 'Request the invite code from the host (e.g. CLEAN-88A2).',
-    step2: 'Click Connect:',
-    step2Desc: 'Click the button below to enter the code.',
-    step3: 'Done!',
-    step3Desc: 'Your cleanings and calendar will update automatically.',
-    btnConnectNow: 'Connect my first property now',
-    modalTitle: 'Connect new property',
-    modalDesc: 'Enter the invite code or access passcode provided by the host:',
-    placeholderCode: 'E.g. CLEAN-88A2 or GV45',
-    btnSubmitConnect: 'Connect',
-    errInvalidCode: 'Invalid code. Please check and try again.',
-    errAlreadyConnected: 'This property is already connected to your account.',
-    successConnected: 'Property connected successfully!',
-  },
-  sv: {
-    tabJobs: 'Uppdrag',
-    tabCalendar: 'Kalender',
-    tabProps: 'Fastigheter',
-    welcomeTitle: 'Välkommen till CleanBook! 👋',
-    welcomeDesc: 'För att börja se dina städuppdrag och kalendern, koppla din första fastighet i 3 enkla steg:',
-    step1: 'Be om koden:',
-    step1Desc: 'Be värden om inbjudningskoden (t.ex. CLEAN-88A2).',
-    step2: 'Klicka på Koppla:',
-    step2Desc: 'Klicka på knappen nedan för att skriva in koden.',
-    step3: 'Klart!',
-    step3Desc: 'Dina städningar och kalendern uppdateras automatiskt.',
-    btnConnectNow: 'Koppla min första fastighet nu',
-    modalTitle: 'Koppla ny fastighet',
-    modalDesc: 'Skriv in inbjudningskoden eller dörrkoden från värden:',
-    placeholderCode: 'T.ex. CLEAN-88A2 eller GV45',
-    btnSubmitConnect: 'Koppla fastighet',
-    errInvalidCode: 'Ogiltig kod. Kontrollera koden och försök igen.',
-    errAlreadyConnected: 'Denna fastighet är redan kopplad till ditt konto.',
-    successConnected: 'Fastigheten har kopplats!',
-  },
-};
 
 export default function CleanerView({
   bookings,
@@ -101,29 +37,18 @@ export default function CleanerView({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const txt = cleanerTexts[lang] || cleanerTexts.es;
+  const txt = translations.cleaner[lang] || translations.cleaner.es;
 
-  // HÄMTAR FASTIGHETER OCH SLÅR IHOP STÄDERSKANS EGNA STÄDTID FÖR ENKELHETS SKULL
   const fetchProperties = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { data } = await supabase
-      .from('property_connections')
-      .select('cleaning_time, internal_notes, properties(*)')
-      .eq('cleaner_id', session.user.id);
-
-    if (data) {
-      const props = data.map((item: any) => {
-        if (!item.properties) return null;
-        return {
-          ...item.properties,
-          cleaning_time: item.cleaning_time, // Hämtar städerskans egna angivna städtid från property_connections!
-          internal_notes: item.internal_notes,
-        };
-      }).filter(Boolean);
-
-      setProperties(props as Property[]);
+    try {
+      // Servicen ersätter direkt-anropet!
+      const props = await propertyService.getCleanerProperties(session.user.id);
+      setProperties(props);
+    } catch (err) {
+      console.error('Kunde inte hämta städerskans fastigheter:', err);
     }
   }, []);
 
@@ -140,9 +65,8 @@ export default function CleanerView({
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
-    const code = inviteCode.trim().toUpperCase();
+    if (!inviteCode.trim()) return;
 
-    if (!code) return;
     setConnecting(true);
 
     try {
@@ -156,36 +80,8 @@ export default function CleanerView({
         full_name: session.user.user_metadata?.full_name || '',
       });
 
-      const { data: prop, error: propErr } = await supabase
-        .from('properties')
-        .select('id, name')
-        .eq('invite_code', code)
-        .maybeSingle();
-
-      if (propErr) throw propErr;
-
-      if (!prop) {
-        setErrorMsg(txt.errInvalidCode);
-        setConnecting(false);
-        return;
-      }
-
-      const { error: connectErr } = await supabase
-        .from('property_connections')
-        .insert({
-          property_id: prop.id,
-          cleaner_id: session.user.id,
-        });
-
-      if (connectErr) {
-        if (connectErr.code === '23505') {
-          setErrorMsg(txt.errAlreadyConnected);
-        } else {
-          setErrorMsg('Error.');
-        }
-        setConnecting(false);
-        return;
-      }
+      // Servicen ersätter direkt-anropet!
+      await propertyService.connectByInviteCode(session.user.id, inviteCode);
 
       setSuccessMsg(txt.successConnected);
       setInviteCode('');
@@ -196,7 +92,9 @@ export default function CleanerView({
       }, 1200);
 
     } catch (err: any) {
-      setErrorMsg('Error.');
+      if (err.message === 'INVALID_CODE') setErrorMsg(txt.errInvalidCode);
+      else if (err.message === 'ALREADY_CONNECTED') setErrorMsg(txt.errAlreadyConnected);
+      else setErrorMsg('Error occurred');
     } finally {
       setConnecting(false);
     }
@@ -204,7 +102,7 @@ export default function CleanerView({
 
   return (
     <div className="max-w-xl mx-auto px-2 sm:px-4 space-y-3">
-      {/* SPRÅKVÄLJARE FÖR STÄDERSKAN */}
+      {/* SPRÅKVÄLJARE */}
       <div className="flex justify-end items-center gap-2">
         <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1 flex items-center gap-1 text-[11px]">
           <Globe className="w-3 h-3 text-slate-400 mr-0.5" />
@@ -265,7 +163,7 @@ export default function CleanerView({
         </button>
       </div>
 
-      {/* VÄLKOMST-KORT OM FASTIGHETER SAKNAS */}
+      {/* VÄLKOMST-KORT */}
       {properties.length === 0 && !loading && (
         <div className="bg-gradient-to-br from-sky-900/90 via-slate-900 to-slate-900 border-2 border-sky-500/50 rounded-3xl p-5 space-y-3.5 text-white shadow-2xl animate-in fade-in zoom-in duration-300">
           <div className="flex items-center gap-2 text-sky-400">
@@ -364,7 +262,7 @@ export default function CleanerView({
         </div>
       )}
 
-      {/* INNEHÅLL PÅ VALD FLIK */}
+      {/* FLIKINNEHÅLL */}
       {activeTab === 'jobs' ? (
         <TaskList
           bookings={bookings}

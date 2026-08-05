@@ -1,13 +1,15 @@
+// src/components/host/BookingForm.tsx
 import { useState } from 'react';
 import {
   supabase,
-  translateToSpanish,
   type Property,
   type Booking,
   type DepartureTimeWindow,
   type ArrivalTimeWindow,
 } from '../../lib/supabase';
-import { formatDate, APP_CONFIG } from '../../lib/constants';
+import { bookingService } from '../../services/bookingService';
+import { getBookingWhatsAppUrl } from '../../utils/whatsapp';
+import { formatDate } from '../../lib/constants';
 import type { HostLanguage } from '../HostView';
 import {
   Loader2,
@@ -153,7 +155,6 @@ export default function BookingForm({
 }: BookingFormProps) {
   const txt = formTexts[lang] || formTexts.sv;
 
-  // Bygg fastighetsobjektet oavsett om det skickas som lista eller enskild fastighet
   const effectiveProperties: Property[] = properties.length > 0
     ? properties
     : directPropertyId
@@ -164,13 +165,10 @@ export default function BookingForm({
   const [propertyId, setPropertyId] = useState(currentProperty?.id || directPropertyId || '');
 
   const [bookingTitle, setBookingTitle] = useState('');
-
-  // Incheckning
   const [checkInDate, setCheckInDate] = useState('');
   const [checkInTimeWindow, setCheckInTimeWindow] = useState<ArrivalTimeWindow | ''>('');
   const [checkInExactTime, setCheckInExactTime] = useState('');
 
-  // Utcheckning
   const [checkOutDate, setCheckOutDate] = useState('');
   const [checkOutTimeWindow, setCheckOutTimeWindow] = useState<DepartureTimeWindow | ''>('');
   const [checkOutExactTime, setCheckOutExactTime] = useState('');
@@ -227,76 +225,46 @@ export default function BookingForm({
 
     setSubmitting(true);
 
-    const { data: existingBookings } = await supabase
-      .from('bookings')
-      .select('id, booking_title, check_out_date, check_in_date')
-      .eq('property_name', prop.name);
+    try {
+      const { data: existingBookings } = await supabase
+        .from('bookings')
+        .select('id, booking_title, check_out_date, check_in_date')
+        .eq('property_name', prop.name);
 
-    if (existingBookings && existingBookings.length > 0) {
-      const overlappingBooking = existingBookings.find((b) => {
-        if (!b.check_out_date || !b.check_in_date) return false;
-        return checkOutDate < b.check_in_date && b.check_out_date < checkInDate;
+      if (existingBookings && existingBookings.length > 0) {
+        const overlappingBooking = existingBookings.find((b) => {
+          if (!b.check_out_date || !b.check_in_date) return false;
+          return checkOutDate < b.check_in_date && b.check_out_date < checkInDate;
+        });
+
+        if (overlappingBooking) {
+          setSubmitting(false);
+          setErrorMsg(
+            `Det finns redan en krockande bokning ("${overlappingBooking.booking_title}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.check_in_date, lang)} och ${formatDate(overlappingBooking.check_out_date, lang)}.`
+          );
+          return;
+        }
+      }
+
+      // Servicen sköter skapande & automatisk översättning till spanska!
+      const inserted = await bookingService.createBooking({
+        property_id: prop.id,
+        property_name: prop.name,
+        property_address: prop.address || prop.name,
+        host_name: prop.host_name || 'Värd',
+        booking_title: bookingTitle.trim(),
+        check_in_date: checkInDate,
+        check_in_time_window: checkInTimeWindow as ArrivalTimeWindow,
+        check_in_exact_time: checkInExactTime.trim() || null,
+        check_out_date: checkOutDate,
+        check_out_time_window: checkOutTimeWindow as DepartureTimeWindow,
+        check_out_exact_time: checkOutExactTime.trim() || null,
+        guests: Number(guests) || 1,
+        laundry: laundry,
+        notes: notes.trim() || null,
+        no_next_guest: false,
       });
 
-      if (overlappingBooking) {
-        setSubmitting(false);
-        setErrorMsg(
-          `Det finns redan en krockande bokning ("${overlappingBooking.booking_title}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.check_in_date, lang)} och ${formatDate(overlappingBooking.check_out_date, lang)}.`
-        );
-        return;
-      }
-    }
-
-    let notesEs: string | null = null;
-    const cleanNotes = notes.trim();
-
-    if (cleanNotes) {
-      try {
-        const safeTextToTranslate = cleanNotes.length > 450 ? cleanNotes.slice(0, 450) : cleanNotes;
-        const translated = await translateToSpanish(safeTextToTranslate);
-
-        if (
-          translated &&
-          !translated.toUpperCase().includes('QUERY LENGTH LIMIT') &&
-          !translated.toUpperCase().includes('MYMEMORY')
-        ) {
-          notesEs = translated;
-        } else {
-          notesEs = cleanNotes;
-        }
-      } catch (e) {
-        notesEs = cleanNotes;
-      }
-    }
-
-    const newBookingData = {
-      property_id: prop.id, // <-- KOPPLAD TILL NYA DATABASSCHEMAT!
-      property_name: prop.name,
-      property_address: prop.address || prop.name,
-      host_name: prop.host_name || 'Värd',
-      booking_title: bookingTitle.trim(),
-      check_in_date: checkInDate,
-      check_in_time_window: checkInTimeWindow,
-      check_in_exact_time: checkInExactTime.trim() || null,
-      check_out_date: checkOutDate,
-      check_out_time_window: checkOutTimeWindow,
-      check_out_exact_time: checkOutExactTime.trim() || null,
-      guests: Number(guests) || 1,
-      laundry: laundry,
-      notes: cleanNotes || null,
-      notes_es: notesEs || null,
-      status: 'pending' as const,
-      no_next_guest: false,
-    };
-
-    const { data, error } = await supabase.from('bookings').insert(newBookingData).select('*');
-
-    setSubmitting(false);
-
-    if (error) {
-      setErrorMsg(`Error: ${error.message}`);
-    } else {
-      const inserted = data && data.length > 0 ? (data[0] as Booking) : (newBookingData as Booking);
       setCreatedBooking(inserted);
 
       setBookingTitle('');
@@ -308,32 +276,13 @@ export default function BookingForm({
       setCheckOutExactTime('');
       setNotes('');
       
-      // Anropa antingen onBookingCreated eller onSuccess
       if (onBookingCreated) onBookingCreated();
       if (onSuccess) onSuccess();
+    } catch (err: any) {
+      setErrorMsg(`Error: ${err.message}`);
+    } finally {
+      setSubmitting(false);
     }
-  };
-
-  const getWhatsAppUrl = (b: Booking) => {
-    const phone = APP_CONFIG.mariaPhoneNumber || '34600000000';
-    const depDate = formatDate(b.check_out_date, 'es');
-    const depTime = b.check_out_exact_time ? `kl ${b.check_out_exact_time}` : '';
-    const arrDate = formatDate(b.check_in_date, 'es');
-    const arrTime = b.check_in_exact_time ? `kl ${b.check_in_exact_time}` : '';
-    const notesText = b.notes_es || b.notes;
-
-    const msg = `¡Hola Maria! 🧹
-Nueva reserva para gestionar en CleanBook:
-
-📍 *Propiedad:* ${b.property_name} (${b.property_address || b.property_name})
-📅 *Salida (Limpieza):* ${depDate} ${depTime}
-📅 *Entrada del huésped:* ${arrDate} ${arrTime}
-👥 *Huéspedes:* ${b.guests}
-🧺 *Lavar:* ${b.laundry ? 'SÍ' : 'NO'}
-${notesText ? `📝 *Instrucciones:* ${notesText}\n` : ''}
-Por favor, entra en CleanBook para aceptar la tarea.`;
-
-    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   };
 
   return (
@@ -349,7 +298,7 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
           </div>
 
           <a
-            href={getWhatsAppUrl(createdBooking)}
+            href={getBookingWhatsAppUrl(createdBooking)}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full bg-slate-950 hover:bg-slate-900 text-emerald-400 font-black py-3.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-lg active:scale-98"
@@ -416,7 +365,6 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
             />
           </div>
 
-          {/* INCHECKNING (GÄST ANKOMMER) */}
           <div className="bg-sky-50/60 p-3.5 rounded-2xl border border-sky-100 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
@@ -485,7 +433,6 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
             </div>
           </div>
 
-          {/* UTCHECKNING / STÄDSTART */}
           <div className="bg-amber-50/60 p-3.5 rounded-2xl border border-amber-100 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
