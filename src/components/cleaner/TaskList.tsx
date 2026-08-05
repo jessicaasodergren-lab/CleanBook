@@ -1,7 +1,9 @@
+// src/components/cleaner/TaskList.tsx
 import { useState } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../../lib/supabase';
 import { formatDate } from '../../lib/constants';
 import IncidentModal from './IncidentModal';
+import type { CleanerLanguage } from '../CleanerView';
 import {
   ChevronDown,
   ChevronUp,
@@ -26,7 +28,104 @@ interface TaskListProps {
   properties: Property[];
   loading: boolean;
   onRefresh: () => void;
+  lang?: CleanerLanguage;
 }
+
+const taskListTexts: Record<CleanerLanguage, any> = {
+  es: {
+    filterActive: '🧹 Activas',
+    filterPending: '🟡 Por Aceptar',
+    filterFinished: '💚 Completadas',
+    statusPending: 'Por aceptar',
+    statusAccepted: 'Aceptada',
+    statusFinished: 'Completada',
+    turnoverToday: '🔴 Cambio hoy mismo',
+    turnoverTomorrow: '🟠 Entrada mañana',
+    windowLabel: 'Ventana de Limpieza',
+    turnoverSameDayShort: '⚡ Pocas horas',
+    marginOneDayShort: '⏳ Margen 1 día',
+    daysMargin: 'días de margen',
+    departureLabel: '🚪 Salida de huésped',
+    arrivalLabel: '🔑 Próxima entrada',
+    noNextGuest: 'Sin próxima entrada',
+    guests: 'huéspedes',
+    laundryYes: '🧺 Lavar lencería',
+    laundryNo: '🚫 Sin colada',
+    btnAccept: 'Aceptar tarea',
+    btnComplete: 'Completado',
+    btnIncident: 'Incidencia / Daño',
+    btnReopen: 'Reabrir tarea',
+    instructionHost: 'Instrucción del anfitrión:',
+    houseInfo: 'Información de la casa:',
+    hostLabel: 'Anfitriona:',
+    photosLabel: 'Fotos enviadas:',
+    noTasksTitle: 'Sin tareas aquí',
+    noTasksDesc: 'No hay limpiezas encontradas en este filtro.',
+    errCannotCompleteEarly: 'No puedes completar esta tarea antes de la salida del huésped.',
+  },
+  en: {
+    filterActive: '🧹 Active',
+    filterPending: '🟡 To Accept',
+    filterFinished: '💚 Completed',
+    statusPending: 'To accept',
+    statusAccepted: 'Accepted',
+    statusFinished: 'Completed',
+    turnoverToday: '🔴 Turnover today',
+    turnoverTomorrow: '🟠 Arrival tomorrow',
+    windowLabel: 'Cleaning Window',
+    turnoverSameDayShort: '⚡ Same day',
+    marginOneDayShort: '⏳ 1 day margin',
+    daysMargin: 'days margin',
+    departureLabel: '🚪 Guest departure',
+    arrivalLabel: '🔑 Next arrival',
+    noNextGuest: 'No upcoming guest',
+    guests: 'guests',
+    laundryYes: '🧺 Wash linen',
+    laundryNo: '🚫 No laundry',
+    btnAccept: 'Accept task',
+    btnComplete: 'Completed',
+    btnIncident: 'Incident / Damage',
+    btnReopen: 'Reopen task',
+    instructionHost: 'Host instruction:',
+    houseInfo: 'House information:',
+    hostLabel: 'Host:',
+    photosLabel: 'Uploaded photos:',
+    noTasksTitle: 'No tasks here',
+    noTasksDesc: 'No cleanings found in this filter.',
+    errCannotCompleteEarly: 'You cannot complete this task before guest check-out.',
+  },
+  sv: {
+    filterActive: '🧹 Aktiva',
+    filterPending: '🟡 Väntar på svar',
+    filterFinished: '💚 Slutförda',
+    statusPending: 'Väntar på svar',
+    statusAccepted: 'Accepterad',
+    statusFinished: 'Slutförd',
+    turnoverToday: '🔴 Byte idag',
+    turnoverTomorrow: '🟠 Ankomst imorgon',
+    windowLabel: 'Städfönster',
+    turnoverSameDayShort: '⚡ Byte samma dag',
+    marginOneDayShort: '⏳ 1 dags marginal',
+    daysMargin: 'dagars marginal',
+    departureLabel: '🚪 Utcheckning gäst',
+    arrivalLabel: '🔑 Nästa incheckning',
+    noNextGuest: 'Ingen nästa incheckning',
+    guests: 'gäster',
+    laundryYes: '🧺 Tvätta lakan/handdukar',
+    laundryNo: '🚫 Ingen tvätt',
+    btnAccept: 'Acceptera uppdrag',
+    btnComplete: 'Slutförd',
+    btnIncident: 'Rapportera skada',
+    btnReopen: 'Återöppna uppdrag',
+    instructionHost: 'Värdens instruktion:',
+    houseInfo: 'Husinformation:',
+    hostLabel: 'Värd:',
+    photosLabel: 'Inskickade foton:',
+    noTasksTitle: 'Inga uppdrag här',
+    noTasksDesc: 'Hittade inga städningar i det här filtret.',
+    errCannotCompleteEarly: 'Du kan inte slutföra detta uppdrag före gästens utcheckning.',
+  },
+};
 
 function parsePhotos(photoUrl: string | null): string[] {
   if (!photoUrl) return [];
@@ -43,26 +142,16 @@ function getValidNote(notesEs: string | null | undefined, notesSv: string | null
   return notesSv || null;
 }
 
-function formatTimeOrWindowEs(exactTime: string | null | undefined, timeWindow: string | null | undefined): string | null {
-  if (exactTime) {
-    return `a las ${exactTime}`;
-  }
-  if (timeWindow === 'morning') return '🌅 Mañana';
-  if (timeWindow === 'afternoon') return '☀️ Tarde';
-  if (timeWindow === 'evening') return '🌙 Noche';
-  return null;
-}
-
-export default function TaskList({ bookings, incidents, properties, loading, onRefresh }: TaskListProps) {
+export default function TaskList({ bookings, incidents, properties, loading, onRefresh, lang = 'es' }: TaskListProps) {
   const [jobFilter, setJobFilter] = useState<'active' | 'pending_only' | 'finished'>('active');
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [openIncidentFor, setOpenIncidentFor] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ id: string; msg: string } | null>(null);
 
+  const txt = taskListTexts[lang] || taskListTexts.es;
   const todayYMD = new Date().toISOString().split('T')[0];
 
-  // Sortera alla bokningar kronologiskt efter utcheckning
   const sortedByDeparture = [...bookings].sort((a, b) => {
     const depA = a.check_out_date || '9999-99-99';
     const depB = b.check_out_date || '9999-99-99';
@@ -92,7 +181,7 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
     if (!b.vacant_now && b.check_out_date && todayYMD < b.check_out_date) {
       setActionError({
         id: b.id,
-        msg: `No puedes completar esta tarea antes de la salida del huésped (${formatDate(b.check_out_date, 'es')}).`,
+        msg: `${txt.errCannotCompleteEarly} (${formatDate(b.check_out_date, lang)}).`,
       });
       setTimeout(() => setActionError(null), 5000);
       return;
@@ -133,7 +222,6 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
     const displayHost = matchedProp?.host_name || b.host_name;
     const bookingIncidents = incidents.filter((i) => i.booking_id === b.id);
 
-    // FINN NÄSTA BOKNING I SAMMA FASTIGHET OCH BERÄKNA MARGINALEN I DAGAR
     const nextBooking = bookings.find((other) => {
       if (other.id === b.id) return false;
       if (other.property_name.toLowerCase() !== b.property_name.toLowerCase()) return false;
@@ -152,11 +240,6 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
     const isCriticalSameDay = daysGap === 0;
     const isUrgentNextDay = daysGap === 1;
 
-    const departureTimeFormatted = formatTimeOrWindowEs(b.check_out_exact_time, b.check_out_time_window);
-    const nextArrivalTimeFormatted = nextBooking
-      ? formatTimeOrWindowEs(nextBooking.check_in_exact_time, nextBooking.check_in_time_window)
-      : null;
-
     const cardStyle = isPending
       ? 'bg-amber-50 text-slate-900 border-2 border-amber-400 shadow-amber-500/10'
       : isFinished
@@ -165,39 +248,38 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
 
     return (
       <div key={b.id} className={`rounded-3xl p-4 sm:p-5 transition-all space-y-3 ${cardStyle}`}>
-        {/* 1. TOPP-INFO: ADRESS, VÄRD OCH BADGES */}
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               {isPending && (
                 <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                  <Bell className="w-3 h-3 text-slate-950" /> Por aceptar
+                  <Bell className="w-3 h-3 text-slate-950" /> {txt.statusPending}
                 </span>
               )}
 
               {isAccepted && (
                 <span className="bg-sky-100 text-sky-900 border border-sky-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  Aceptada
+                  {txt.statusAccepted}
                 </span>
               )}
 
               {isFinished && (
                 <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  Completada
+                  {txt.statusFinished}
                 </span>
               )}
 
               {isCriticalSameDay && (
                 <span className="bg-rose-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm">
                   <Flame className="w-3 h-3 text-white fill-white" />
-                  🔴 Cambio hoy mismo
+                  {txt.turnoverToday}
                 </span>
               )}
 
               {isUrgentNextDay && (
                 <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm">
                   <Hourglass className="w-3 h-3 text-slate-950" />
-                  🟠 Entrada mañana
+                  {txt.turnoverTomorrow}
                 </span>
               )}
 
@@ -209,18 +291,16 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
               )}
             </div>
 
-            {/* ADRESS SOM HUVUDRUBRIK */}
             <h3 className="font-black text-slate-900 text-base sm:text-lg leading-tight flex items-center gap-1.5 pt-0.5 truncate">
               <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{displayAddress}</span>
             </h3>
             
-            {/* VÄRD + FASTIGHETSNAMN */}
             {displayHost && displayHost !== 'Värd' && (
               <p className="text-xs font-bold text-slate-500 flex items-center gap-1 pl-5">
                 <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>
-                  Anfitriona: {displayHost}
+                  {txt.hostLabel} {displayHost}
                   {b.property_name && displayAddress.toLowerCase() !== b.property_name.toLowerCase() && (
                     <span className="text-slate-400 font-medium"> ({b.property_name})</span>
                   )}
@@ -238,7 +318,6 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
           </button>
         </div>
 
-        {/* 2. INSTRUKTIONSBOX */}
         {displayNote && (
           <div
             onClick={() => toggleExpand(b.id)}
@@ -246,7 +325,7 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
           >
             <div className="flex items-center gap-1 font-black text-amber-900 text-[10px] uppercase tracking-wider">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-              <span>Instrucción del anfitrión:</span>
+              <span>{txt.instructionHost}</span>
             </div>
 
             <p className="font-medium text-amber-950 leading-relaxed">
@@ -261,89 +340,72 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
           </div>
         )}
 
-        {/* 3. STÄDFÖNSTER (VENTANA DE LIMPIEZA) */}
         <div className="bg-white/90 rounded-2xl p-3 border border-slate-200/80 space-y-2.5 text-xs shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
             <span className="font-black text-[10px] uppercase tracking-wider text-slate-500">
-              Ventana de Limpieza
+              {txt.windowLabel}
             </span>
 
             {isCriticalSameDay && (
               <span className="text-[10px] font-black text-rose-700 bg-rose-100 px-2 py-0.2 rounded-md border border-rose-200">
-                ⚡ Pocas horas
+                {txt.turnoverSameDayShort}
               </span>
             )}
             {isUrgentNextDay && (
               <span className="text-[10px] font-black text-amber-900 bg-amber-100 px-2 py-0.2 rounded-md border border-amber-300">
-                ⏳ Margen 1 día
+                {txt.marginOneDayShort}
               </span>
             )}
             {daysGap !== null && daysGap > 1 && (
               <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.2 rounded-md border border-emerald-200 flex items-center gap-1">
                 <CalendarCheck className="w-3 h-3 text-emerald-600" />
-                {daysGap} días de margen
+                {daysGap} {txt.daysMargin}
               </span>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            {/* START: SALIDA DEL HUÉSPED */}
             <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 space-y-0.5">
               <span className="text-[10px] font-black text-slate-500 uppercase block">
-                🚪 Salida de huésped
+                {txt.departureLabel}
               </span>
               <span className="font-black text-slate-900 block text-xs">
-                {formatDate(b.check_out_date, 'es')}
+                {formatDate(b.check_out_date, lang)}
               </span>
-              {departureTimeFormatted && (
-                <span className="text-[10.5px] font-bold text-amber-800 block">
-                  {departureTimeFormatted}
-                </span>
-              )}
             </div>
 
-            {/* DEADLINE: PRÓXIMA ENTRADA */}
             <div className="bg-sky-50/80 p-2 rounded-xl border border-sky-200 space-y-0.5">
               <span className="text-[10px] font-black text-sky-900 uppercase block">
-                🔑 Próxima entrada
+                {txt.arrivalLabel}
               </span>
               {nextBooking ? (
-                <>
-                  <span className="font-black text-slate-900 block text-xs">
-                    {formatDate(nextBooking.check_in_date, 'es')}
-                  </span>
-                  {nextArrivalTimeFormatted && (
-                    <span className="text-[10.5px] font-bold text-sky-800 block">
-                      {nextArrivalTimeFormatted}
-                    </span>
-                  )}
-                </>
+                <span className="font-black text-slate-900 block text-xs">
+                  {formatDate(nextBooking.check_in_date, lang)}
+                </span>
               ) : (
                 <span className="text-[10.5px] font-extrabold text-slate-400 block pt-0.5 italic">
-                  Sin próxima entrada
+                  {txt.noNextGuest}
                 </span>
               )}
             </div>
           </div>
 
           <div className="flex items-center justify-between text-slate-600 font-bold pt-0.5">
-            <span>👥 {b.guests} huéspedes</span>
-            <span>{b.laundry ? '🧺 Lavar lencería' : '🚫 Sin colada'}</span>
-            {matchedProp?.cleaning_time && <span>⏱️ Est: {matchedProp.cleaning_time}</span>}
+            <span>👥 {b.guests} {txt.guests}</span>
+            <span>{b.laundry ? txt.laundryYes : txt.laundryNo}</span>
           </div>
         </div>
 
-        {/* 4. HUVUDAKTIONER */}
         <div className="flex items-center gap-2 pt-0.5">
           {isPending && (
             <button
               type="button"
               onClick={() => handleAcceptTask(b)}
               disabled={completingId === b.id}
-              className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 active:scale-98"
+              className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5 active:scale-98"
             >
               {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
-              Aceptar tarea
+              {txt.btnAccept}
             </button>
           )}
 
@@ -352,10 +414,10 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
               type="button"
               onClick={() => handleCompleteTask(b)}
               disabled={completingId === b.id}
-              className="flex-1 py-3 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs rounded-xl transition shadow-md shadow-sky-600/20 flex items-center justify-center gap-1.5 active:scale-98"
+              className="flex-1 py-3 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5 active:scale-98"
             >
               {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Completado
+              {txt.btnComplete}
             </button>
           )}
 
@@ -363,10 +425,9 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
             type="button"
             onClick={() => setOpenIncidentFor(b.id)}
             className="py-3 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 border border-slate-200 shrink-0 active:scale-95"
-            title="Solo si hay desperfectos o cosas rotas"
           >
             <Camera className="w-4 h-4 text-slate-500" />
-            <span>Incidencia / Daño</span>
+            <span>{txt.btnIncident}</span>
           </button>
         </div>
 
@@ -377,88 +438,17 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
           </div>
         )}
 
-        {/* 5. EXPANDERAT LÄGE */}
         {isExpanded && (
           <div className="pt-2 border-t border-slate-200 space-y-2 text-xs">
-            {matchedProp && (
-              <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2">
-                <span className="font-black text-slate-800 block text-[10px] uppercase tracking-wider">
-                  Información de la casa:
-                </span>
-
-                {(matchedProp.kvm || matchedProp.rooms || matchedProp.bathrooms || matchedProp.cleaning_time) && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center text-xs">
-                    {matchedProp.kvm && (
-                      <div className="bg-white p-1.5 rounded-lg border border-slate-200/80">
-                        <span className="text-[9.5px] font-bold text-slate-400 block uppercase">Superficie</span>
-                        <span className="font-extrabold text-slate-900">{matchedProp.kvm} m²</span>
-                      </div>
-                    )}
-                    {matchedProp.rooms && (
-                      <div className="bg-white p-1.5 rounded-lg border border-slate-200/80">
-                        <span className="text-[9.5px] font-bold text-slate-400 block uppercase">Habitaciones</span>
-                        <span className="font-extrabold text-slate-900">{matchedProp.rooms} hab</span>
-                      </div>
-                    )}
-                    {matchedProp.bathrooms && (
-                      <div className="bg-white p-1.5 rounded-lg border border-slate-200/80">
-                        <span className="text-[9.5px] font-bold text-slate-400 block uppercase">Baños</span>
-                        <span className="font-extrabold text-slate-900">{matchedProp.bathrooms} baños</span>
-                      </div>
-                    )}
-                    {matchedProp.cleaning_time && (
-                      <div className="bg-sky-50 p-1.5 rounded-lg border border-sky-200">
-                        <span className="text-[9.5px] font-bold text-sky-800 block uppercase">Tiempo est.</span>
-                        <span className="font-extrabold text-sky-950">{matchedProp.cleaning_time}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {matchedProp.property_notes && (
-                  <div className="pt-1 border-t border-slate-200/80 space-y-0.5">
-                    <span className="text-[9.5px] font-black text-slate-500 uppercase block">
-                      Notas fijas / Instrucciones permanentes:
-                    </span>
-                    <p className="font-bold text-slate-900 leading-relaxed whitespace-pre-line">
-                      {matchedProp.property_notes}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {bookingIncidents.length > 0 && (
-              <div className="bg-slate-100/70 border border-slate-200 p-3 rounded-xl space-y-1.5">
-                <span className="font-black text-slate-900 block text-[10px] uppercase tracking-wider">
-                  Fotos enviadas ({bookingIncidents.length}):
-                </span>
-                <div className="space-y-1.5">
-                  {bookingIncidents.map((inc) => (
-                    <div key={inc.id} className="bg-white p-2 rounded-lg border border-slate-200 space-y-1.5">
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {parsePhotos(inc.photo_url).map((url, idx) => (
-                          <img key={idx} src={url} alt={`Foto ${idx + 1}`} className="w-full h-20 object-cover rounded-lg" />
-                        ))}
-                      </div>
-                      <p className="font-bold text-slate-800 text-[11px]">{inc.note}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {isFinished && (
-              <div className="pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => handleReopenTask(b)}
-                  disabled={completingId === b.id}
-                  className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-1.5"
-                >
-                  {completingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />} Reabrir tarea
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => handleReopenTask(b)}
+                disabled={completingId === b.id}
+                className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+              >
+                {completingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />} {txt.btnReopen}
+              </button>
             )}
           </div>
         )}
@@ -468,7 +458,6 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
 
   return (
     <div className="space-y-3">
-      {/* FILTERBAR KOMPAKT */}
       <div className="flex bg-slate-800 p-1 rounded-2xl text-xs font-bold gap-1 border border-slate-700 shadow-md">
         <button
           type="button"
@@ -477,7 +466,7 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
             jobFilter === 'active' ? 'bg-sky-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          🧹 Activas ({activeJobs.length})
+          {txt.filterActive} ({activeJobs.length})
         </button>
 
         <button
@@ -486,17 +475,10 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
           className={`flex-1 py-2 rounded-xl transition text-center font-black flex items-center justify-center gap-1 ${
             jobFilter === 'pending_only'
               ? 'bg-amber-400 text-slate-950 shadow'
-              : pendingJobs.length > 0
-              ? 'text-amber-400 font-black'
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span>🟡 Por Aceptar</span>
-          {pendingJobs.length > 0 && (
-            <span className="bg-amber-500 text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-black">
-              {pendingJobs.length}
-            </span>
-          )}
+          <span>{txt.filterPending}</span>
         </button>
 
         <button
@@ -506,19 +488,18 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
             jobFilter === 'finished' ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
-          💚 Completadas ({finishedJobs.length})
+          {txt.filterFinished} ({finishedJobs.length})
         </button>
       </div>
 
-      {/* BOKNINGSLISTA */}
       {loading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="w-7 h-7 text-sky-400 animate-spin" />
         </div>
       ) : displayedJobs.length === 0 ? (
         <div className="text-center py-10 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 space-y-2">
-          <p className="text-white font-black text-base">Sin tareas aquí</p>
-          <p className="text-slate-400 text-xs">No hay limpiezas encontradas en este filtro.</p>
+          <p className="text-white font-black text-base">{txt.noTasksTitle}</p>
+          <p className="text-slate-400 text-xs">{txt.noTasksDesc}</p>
         </div>
       ) : (
         <div className="space-y-3">

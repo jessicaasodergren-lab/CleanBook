@@ -1,18 +1,96 @@
+// src/components/CleanerView.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
 import TaskList from './cleaner/TaskList';
 import CleanerCalendarView from './cleaner/CleanerCalendarView';
 import PropertyList from './cleaner/PropertyList';
-import { Clock, Building, Calendar as CalendarIcon, Sparkles, Key, Check, AlertCircle, Loader2, KeyRound, X } from 'lucide-react';
+import { Clock, Building, Calendar as CalendarIcon, Sparkles, Key, Check, AlertCircle, Loader2, KeyRound, X, Globe } from 'lucide-react';
+
+export type CleanerLanguage = 'es' | 'en' | 'sv';
 
 interface CleanerViewProps {
   bookings: Booking[];
   incidents: Incident[];
   loading: boolean;
   onRefresh: () => void;
+  lang?: CleanerLanguage;
+  onLangChange?: (newLang: CleanerLanguage) => void;
 }
 
-export default function CleanerView({ bookings, incidents, loading, onRefresh }: CleanerViewProps) {
+const cleanerTexts: Record<CleanerLanguage, any> = {
+  es: {
+    tabJobs: 'Tareas',
+    tabCalendar: 'Calendario',
+    tabProps: 'Propiedades',
+    welcomeTitle: '¡Bienvenida a CleanBook! 👋',
+    welcomeDesc: 'Para empezar a ver tus tareas de limpieza y el calendario, conecta tu primera propiedad en 3 sencillos pasos:',
+    step1: 'Pide el código:',
+    step1Desc: 'Solicita el código de invitación a la anfitriona (ej. CLEAN-88A2).',
+    step2: 'Pulsa en Conectar:',
+    step2Desc: 'Pulsa el botón inferior para introducir el código.',
+    step3: '¡Listo!',
+    step3Desc: 'Tus limpiezas y el calendario se actualizarán automáticamente.',
+    btnConnectNow: 'Conectar mi primera propiedad ahora',
+    modalTitle: 'Conectar nueva propiedad',
+    modalDesc: 'Introduce el código de invitación o clave secreta proporcionada por la anfitriona:',
+    placeholderCode: 'Ej. CLEAN-88A2 o GV45',
+    btnSubmitConnect: 'Conectar',
+    errInvalidCode: 'Código no válido. Verifica el código e inténtalo de nuevo.',
+    errAlreadyConnected: 'Esta propiedad ya está conectada a tu cuenta.',
+    successConnected: '¡Propiedad conectada con éxito!',
+  },
+  en: {
+    tabJobs: 'Tasks',
+    tabCalendar: 'Calendar',
+    tabProps: 'Properties',
+    welcomeTitle: 'Welcome to CleanBook! 👋',
+    welcomeDesc: 'To start viewing your cleaning tasks and calendar, connect your first property in 3 simple steps:',
+    step1: 'Ask for the code:',
+    step1Desc: 'Request the invite code from the host (e.g. CLEAN-88A2).',
+    step2: 'Click Connect:',
+    step2Desc: 'Click the button below to enter the code.',
+    step3: 'Done!',
+    step3Desc: 'Your cleanings and calendar will update automatically.',
+    btnConnectNow: 'Connect my first property now',
+    modalTitle: 'Connect new property',
+    modalDesc: 'Enter the invite code or access passcode provided by the host:',
+    placeholderCode: 'E.g. CLEAN-88A2 or GV45',
+    btnSubmitConnect: 'Connect',
+    errInvalidCode: 'Invalid code. Please check and try again.',
+    errAlreadyConnected: 'This property is already connected to your account.',
+    successConnected: 'Property connected successfully!',
+  },
+  sv: {
+    tabJobs: 'Uppdrag',
+    tabCalendar: 'Kalender',
+    tabProps: 'Fastigheter',
+    welcomeTitle: 'Välkommen till CleanBook! 👋',
+    welcomeDesc: 'För att börja se dina städuppdrag och kalendern, koppla din första fastighet i 3 enkla steg:',
+    step1: 'Be om koden:',
+    step1Desc: 'Be värden om inbjudningskoden (t.ex. CLEAN-88A2).',
+    step2: 'Klicka på Koppla:',
+    step2Desc: 'Klicka på knappen nedan för att skriva in koden.',
+    step3: 'Klart!',
+    step3Desc: 'Dina städningar och kalendern uppdateras automatiskt.',
+    btnConnectNow: 'Koppla min första fastighet nu',
+    modalTitle: 'Koppla ny fastighet',
+    modalDesc: 'Skriv in inbjudningskoden eller dörrkoden från värden:',
+    placeholderCode: 'T.ex. CLEAN-88A2 eller GV45',
+    btnSubmitConnect: 'Koppla fastighet',
+    errInvalidCode: 'Ogiltig kod. Kontrollera koden och försök igen.',
+    errAlreadyConnected: 'Denna fastighet är redan kopplad till ditt konto.',
+    successConnected: 'Fastigheten har kopplats!',
+  },
+};
+
+export default function CleanerView({
+  bookings,
+  incidents,
+  loading,
+  onRefresh,
+  lang = 'es',
+  onLangChange,
+}: CleanerViewProps) {
   const [activeTab, setActiveTab] = useState<'jobs' | 'calendar' | 'properties'>('jobs');
   const [properties, setProperties] = useState<Property[]>([]);
 
@@ -22,6 +100,8 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
   const [connecting, setConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const txt = cleanerTexts[lang] || cleanerTexts.es;
 
   const fetchProperties = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -58,9 +138,8 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No hay sesión activa');
+      if (!session) throw new Error('No session');
 
-      // Säkerställ att städerskans profil finns i 'profiles' först
       await supabase.from('profiles').upsert({
         id: session.user.id,
         email: session.user.email,
@@ -68,7 +147,6 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
         full_name: session.user.user_metadata?.full_name || '',
       });
 
-      // 1. Sök efter fastigheten baserat på invite_code eller passcode
       const { data: prop, error: propErr } = await supabase
         .from('properties')
         .select('id, name')
@@ -78,12 +156,11 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
       if (propErr) throw propErr;
 
       if (!prop) {
-        setErrorMsg('Código no válido. Verifica el código e inténtalo de nuevo.');
+        setErrorMsg(txt.errInvalidCode);
         setConnecting(false);
         return;
       }
 
-      // 2. Skapa kopplingen i property_connections
       const { error: connectErr } = await supabase
         .from('property_connections')
         .insert({
@@ -93,16 +170,15 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
       if (connectErr) {
         if (connectErr.code === '23505') {
-          setErrorMsg('Esta propiedad ya está conectada a tu cuenta.');
+          setErrorMsg(txt.errAlreadyConnected);
         } else {
-          console.error('Connect error:', connectErr);
-          setErrorMsg('Error al conectar con la propiedad. Por favor inténtalo de nuevo.');
+          setErrorMsg('Error.');
         }
         setConnecting(false);
         return;
       }
 
-      setSuccessMsg(`¡Propiedad "${prop.name}" conectada con éxito!`);
+      setSuccessMsg(txt.successConnected);
       setInviteCode('');
       setTimeout(() => {
         setShowConnectModal(false);
@@ -111,8 +187,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
       }, 1200);
 
     } catch (err: any) {
-      console.error('Error in handleConnectProperty:', err);
-      setErrorMsg('Error al conectar la propiedad.');
+      setErrorMsg('Error.');
     } finally {
       setConnecting(false);
     }
@@ -120,6 +195,31 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
   return (
     <div className="max-w-xl mx-auto px-2 sm:px-4 space-y-3">
+      {/* SPRÅKVÄLJARE FÖR STÄDERSKAN */}
+      <div className="flex justify-end items-center gap-2">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1 flex items-center gap-1 text-[11px]">
+          <Globe className="w-3 h-3 text-slate-400 mr-0.5" />
+          <button
+            onClick={() => onLangChange?.('es')}
+            className={`px-1.5 py-0.5 rounded font-bold ${lang === 'es' ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+          >
+            🇪🇸 ES
+          </button>
+          <button
+            onClick={() => onLangChange?.('en')}
+            className={`px-1.5 py-0.5 rounded font-bold ${lang === 'en' ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+          >
+            🇬🇧 EN
+          </button>
+          <button
+            onClick={() => onLangChange?.('sv')}
+            className={`px-1.5 py-0.5 rounded font-bold ${lang === 'sv' ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+          >
+            🇸🇪 SV
+          </button>
+        </div>
+      </div>
+
       {/* TOPPMENY */}
       <div className="flex bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs font-black shadow-xl backdrop-blur-md">
         <button
@@ -130,7 +230,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
-          <span>Tareas ({bookings.length})</span>
+          <span>{txt.tabJobs} ({bookings.length})</span>
         </button>
 
         <button
@@ -141,7 +241,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
           }`}
         >
           <CalendarIcon className="w-3.5 h-3.5" />
-          <span>Calendario</span>
+          <span>{txt.tabCalendar}</span>
         </button>
 
         <button
@@ -152,7 +252,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
           }`}
         >
           <Building className="w-3.5 h-3.5" />
-          <span>Propiedades ({properties.length})</span>
+          <span>{txt.tabProps} ({properties.length})</span>
         </button>
       </div>
 
@@ -161,25 +261,25 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
         <div className="bg-gradient-to-br from-sky-900/90 via-slate-900 to-slate-900 border-2 border-sky-500/50 rounded-3xl p-5 space-y-3.5 text-white shadow-2xl animate-in fade-in zoom-in duration-300">
           <div className="flex items-center gap-2 text-sky-400">
             <Sparkles className="w-5 h-5 shrink-0" />
-            <h3 className="font-black text-base">¡Bienvenida a CleanBook! 👋</h3>
+            <h3 className="font-black text-base">{txt.welcomeTitle}</h3>
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed font-medium">
-            Para empezar a ver tus tareas de limpieza y el calendario, conecta tu primera propiedad en 3 sencillos pasos:
+            {txt.welcomeDesc}
           </p>
 
           <div className="bg-slate-950/80 rounded-2xl p-3.5 space-y-2 border border-sky-500/20 text-xs">
             <div className="flex items-start gap-2">
               <span className="font-bold text-sky-400 shrink-0">1.</span>
-              <p className="text-slate-200"><strong>Pide el código:</strong> Solicita el código de invitación a la anfitriona (ej. <span className="font-mono text-emerald-400">CLEAN-88A2</span>).</p>
+              <p className="text-slate-200"><strong>{txt.step1}</strong> {txt.step1Desc}</p>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-sky-400 shrink-0">2.</span>
-              <p className="text-slate-200"><strong>Pulsa en Conectar:</strong> Pulsa el botón inferior para introducir el código.</p>
+              <p className="text-slate-200"><strong>{txt.step2}</strong> {txt.step2Desc}</p>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-sky-400 shrink-0">3.</span>
-              <p className="text-slate-200"><strong>¡Listo!</strong> Tus limpiezas y el calendario se actualizarán automáticamente.</p>
+              <p className="text-slate-200"><strong>{txt.step3}</strong> {txt.step3Desc}</p>
             </div>
           </div>
 
@@ -193,7 +293,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
             className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-black py-3.5 rounded-2xl text-xs transition shadow-lg flex items-center justify-center gap-1.5 active:scale-95"
           >
             <Key className="w-4 h-4" />
-            <span>Conectar mi primera propiedad ahora</span>
+            <span>{txt.btnConnectNow}</span>
           </button>
         </div>
       )}
@@ -204,7 +304,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
           <div className="bg-white text-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-black text-sm text-slate-900 flex items-center gap-1.5">
-                <Key className="w-4 h-4 text-sky-600" /> Conectar nueva propiedad
+                <Key className="w-4 h-4 text-sky-600" /> {txt.modalTitle}
               </h3>
               <button onClick={() => setShowConnectModal(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
                 <X className="w-5 h-5" />
@@ -213,13 +313,13 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
 
             <form onSubmit={handleConnectProperty} className="p-5 space-y-4">
               <p className="text-xs text-slate-600 leading-relaxed">
-                Introduce el código de invitación o clave secreta proporcionada por la anfitriona:
+                {txt.modalDesc}
               </p>
 
               <div>
                 <input
                   type="text"
-                  placeholder="Ej. CLEAN-88A2 o GV45"
+                  placeholder={txt.placeholderCode}
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center font-mono font-black text-lg uppercase text-slate-900 outline-none focus:bg-white focus:border-sky-500 transition"
@@ -248,7 +348,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
                 className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2 active:scale-98"
               >
                 {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                Conectar
+                {txt.btnSubmitConnect}
               </button>
             </form>
           </div>
@@ -263,6 +363,7 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
           properties={properties}
           loading={loading}
           onRefresh={handleRefreshAll}
+          lang={lang}
         />
       ) : activeTab === 'calendar' ? (
         <CleanerCalendarView
@@ -270,9 +371,10 @@ export default function CleanerView({ bookings, incidents, loading, onRefresh }:
           incidents={incidents}
           properties={properties}
           onRefresh={handleRefreshAll}
+          lang={lang}
         />
       ) : (
-        <PropertyList properties={properties} onRefresh={handleRefreshAll} />
+        <PropertyList properties={properties} onRefresh={handleRefreshAll} lang={lang} />
       )}
     </div>
   );

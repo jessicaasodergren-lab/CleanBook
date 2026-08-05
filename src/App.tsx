@@ -1,9 +1,8 @@
-// src/App.tsx
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, type Booking, type Incident } from './lib/supabase';
 import { APP_CONFIG } from './lib/constants';
 import HostView, { type HostLanguage } from './components/HostView';
-import CleanerView from './components/CleanerView';
+import CleanerView, { type CleanerLanguage } from './components/CleanerView';
 import { AuthView } from './components/AuthView';
 import { Sparkles, LogOut } from 'lucide-react';
 
@@ -14,13 +13,13 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
 
   const [hostLang, setHostLang] = useState<HostLanguage>('sv');
+  const [cleanerLang, setCleanerLang] = useState<CleanerLanguage>('es');
   const [imgError, setImgError] = useState(false);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
-  // Hämtar profilen och ställer in sparat språk
   const fetchUserProfile = async (sessionUser: any) => {
     try {
       const userId = sessionUser.id;
@@ -36,7 +35,7 @@ export default function App() {
       if (!data) {
         const assignedRole = userMeta?.role || 'host';
         const fullName = userMeta?.full_name || '';
-        const savedLang = userMeta?.language || 'sv';
+        const savedLang = userMeta?.language || (assignedRole === 'host' ? 'sv' : 'es');
 
         const { data: newProfile } = await supabase
           .from('profiles')
@@ -52,12 +51,16 @@ export default function App() {
 
         setUserRole(newProfile?.role || assignedRole);
         setUserName(newProfile?.full_name || fullName);
-        if (newProfile?.language) setHostLang(newProfile.language as HostLanguage);
+        if (newProfile?.language) {
+          if (assignedRole === 'host') setHostLang(newProfile.language as HostLanguage);
+          else setCleanerLang(newProfile.language as CleanerLanguage);
+        }
       } else {
         setUserRole(data.role);
         setUserName(data.full_name || '');
-        if (data.language && (data.language === 'sv' || data.language === 'en' || data.language === 'da')) {
-          setHostLang(data.language as HostLanguage);
+        if (data.language) {
+          if (data.role === 'host') setHostLang(data.language as HostLanguage);
+          else setCleanerLang(data.language as CleanerLanguage);
         }
       }
     } catch (err) {
@@ -67,9 +70,15 @@ export default function App() {
     }
   };
 
-  // Ändra och spara värdens valda språk i databasen
   const handleHostLangChange = async (newLang: HostLanguage) => {
     setHostLang(newLang);
+    if (session?.user?.id) {
+      await supabase.from('profiles').update({ language: newLang }).eq('id', session.user.id);
+    }
+  };
+
+  const handleCleanerLangChange = async (newLang: CleanerLanguage) => {
+    setCleanerLang(newLang);
     if (session?.user?.id) {
       await supabase.from('profiles').update({ language: newLang }).eq('id', session.user.id);
     }
@@ -237,6 +246,8 @@ export default function App() {
             incidents={incidents}
             loading={loadingData}
             onRefresh={fetchAll}
+            lang={cleanerLang}
+            onLangChange={handleCleanerLangChange}
           />
         )}
       </main>

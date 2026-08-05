@@ -1,27 +1,21 @@
+// src/components/cleaner/CleanerCalendarView.tsx
 import { useState } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../../lib/supabase';
 import { formatDate } from '../../lib/constants';
 import IncidentModal from './IncidentModal';
+import type { CleanerLanguage } from '../CleanerView';
 import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
   X,
   MapPin,
-  Clock,
-  Users,
-  FileText,
-  Building,
-  CheckCircle2,
-  Clock3,
-  Bell,
-  RefreshCw,
-  ThumbsUp,
-  Check,
   Camera,
   User,
   AlertTriangle,
   Loader2,
+  ThumbsUp,
+  Check,
 } from 'lucide-react';
 
 interface CleanerCalendarViewProps {
@@ -29,30 +23,94 @@ interface CleanerCalendarViewProps {
   incidents: Incident[];
   properties: Property[];
   onRefresh: () => void;
+  lang?: CleanerLanguage;
 }
 
-function getValidNote(notesEs: string | null | undefined, notesSv: string | null | undefined): string | null {
-  if (notesEs && !notesEs.toUpperCase().includes('QUERY LENGTH LIMIT') && !notesEs.toUpperCase().includes('MYMEMORY')) {
-    return notesEs;
-  }
-  return notesSv || null;
-}
+const cleanerCalTexts: Record<CleanerLanguage, any> = {
+  es: {
+    title: 'Calendario de Limpiezas',
+    btnToday: 'Hoy',
+    daysOfWeek: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+    months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+    legendPending: '🟡 Por aceptar',
+    legendAccepted: '🔵 Aceptada',
+    legendFinished: '💚 Completada',
+    modalTitle: 'Detalles de Limpieza',
+    modalStatusLabel: 'Estado de tarea:',
+    modalHostLabel: 'Anfitriona:',
+    modalInstruction: 'Instrucción del anfitrión:',
+    modalWindow: 'Ventana de Limpieza',
+    departure: '🚪 Salida',
+    arrival: '🔑 Entrada',
+    noNextArrival: 'Sin próxima entrada',
+    guests: 'huéspedes',
+    laundryYes: '🧺 Lavar lencería',
+    laundryNo: '🚫 Sin colada',
+    btnAccept: 'Aceptar tarea',
+    btnComplete: 'Completado',
+    btnIncident: 'Foto / Daño',
+  },
+  en: {
+    title: 'Cleaning Calendar',
+    btnToday: 'Today',
+    daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    legendPending: '🟡 Pending',
+    legendAccepted: '🔵 Accepted',
+    legendFinished: '💚 Completed',
+    modalTitle: 'Cleaning Details',
+    modalStatusLabel: 'Task Status:',
+    modalHostLabel: 'Host:',
+    modalInstruction: 'Host Instruction:',
+    modalWindow: 'Cleaning Window',
+    departure: '🚪 Departure',
+    arrival: '🔑 Arrival',
+    noNextArrival: 'No upcoming arrival',
+    guests: 'guests',
+    laundryYes: '🧺 Wash linen',
+    laundryNo: '🚫 No laundry',
+    btnAccept: 'Accept task',
+    btnComplete: 'Completed',
+    btnIncident: 'Photo / Damage',
+  },
+  sv: {
+    title: 'Städkalender',
+    btnToday: 'Idag',
+    daysOfWeek: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'],
+    months: ['Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni', 'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'],
+    legendPending: '🟡 Väntar',
+    legendAccepted: '🔵 Accepterad',
+    legendFinished: '💚 Slutförd',
+    modalTitle: 'Städdetaljer',
+    modalStatusLabel: 'Uppdragsstatus:',
+    modalHostLabel: 'Värd:',
+    modalInstruction: 'Värdens instruktion:',
+    modalWindow: 'Städfönster',
+    departure: '🚪 Utcheckning',
+    arrival: '🔑 Incheckning',
+    noNextArrival: 'Ingen nästa incheckning',
+    guests: 'gäster',
+    laundryYes: '🧺 Tvätta lakan/handdukar',
+    laundryNo: '🚫 Ingen tvätt',
+    btnAccept: 'Acceptera uppdrag',
+    btnComplete: 'Slutförd',
+    btnIncident: 'Foto / Skada',
+  },
+};
 
-function formatTimeOrWindowEs(exactTime: string | null | undefined, timeWindow: string | null | undefined): string | null {
-  if (exactTime) {
-    return `a las ${exactTime}`;
-  }
-  if (timeWindow === 'morning') return '🌅 Mañana';
-  if (timeWindow === 'afternoon') return '☀️ Tarde';
-  if (timeWindow === 'evening') return '🌙 Noche';
-  return null;
-}
-
-export default function CleanerCalendarView({ bookings, incidents, properties, onRefresh }: CleanerCalendarViewProps) {
+export default function CleanerCalendarView({
+  bookings,
+  incidents,
+  properties,
+  onRefresh,
+  lang = 'es',
+}: CleanerCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [openIncidentFor, setOpenIncidentFor] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
+
+  const txt = cleanerCalTexts[lang] || cleanerCalTexts.es;
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -62,11 +120,6 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
 
   const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
   const daysInMonth = lastDayOfMonth.getDate();
-
-  const monthNamesEs = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-  ];
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -99,7 +152,6 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
 
   return (
     <div className="bg-white text-slate-900 rounded-3xl shadow-2xl p-3.5 sm:p-5 border border-slate-200 space-y-3">
-      {/* 1. KALENDER HEADER & NAVIGERING */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100">
@@ -107,10 +159,10 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
           </div>
           <div>
             <h3 className="font-black text-slate-900 text-sm sm:text-base leading-tight">
-              {monthNamesEs[month]} {year}
+              {txt.months[month]} {year}
             </h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Calendario de Limpiezas
+              {txt.title}
             </p>
           </div>
         </div>
@@ -120,7 +172,7 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
             onClick={goToToday}
             className="px-2.5 py-1 text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition border border-slate-200 mr-0.5"
           >
-            Hoy
+            {txt.btnToday}
           </button>
           <button onClick={prevMonth} className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-700 transition border border-slate-200">
             <ChevronLeft className="w-4 h-4" />
@@ -131,24 +183,18 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
         </div>
       </div>
 
-      {/* 2. VECKODAGAR (LUN - DOM) */}
       <div className="grid grid-cols-7 text-center font-black text-[10px] text-slate-400 uppercase tracking-wider">
-        <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+        {txt.daysOfWeek.map((day: string, idx: number) => (
+          <div key={idx}>{day}</div>
+        ))}
       </div>
 
-      {/* 3. KALENDERGRID */}
       <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
         {calendarGrid.map((item, idx) => {
           if (!item) return <div key={`empty-${idx}`} className="h-16 sm:h-20 bg-slate-50/40 rounded-2xl" />;
 
           const isToday = item.dateStr === todayStr;
-
-          // Hämta bokningar där utcheckning / städning sker denna dag
           const dayCleaningBookings = bookings.filter((b) => b.check_out_date === item.dateStr);
-
-          // Kolla om det är en bytardag samma dag (Turnover)
-          const isCheckInSameDay = bookings.some((b) => b.check_in_date === item.dateStr);
-          const isTurnover = dayCleaningBookings.length > 0 && isCheckInSameDay;
 
           return (
             <div
@@ -167,18 +213,8 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
                 >
                   {item.day}
                 </span>
-
-                {isTurnover && (
-                  <span
-                    className="text-[8px] font-black px-1 rounded bg-rose-500 text-white flex items-center gap-0.5"
-                    title="¡Cambio el mismo día!"
-                  >
-                    ⚡
-                  </span>
-                )}
               </div>
 
-              {/* TAREAS PÅ DENNA DAG */}
               <div className="space-y-1 overflow-y-auto max-h-12 pt-0.5">
                 {dayCleaningBookings.map((b) => {
                   const isFinished = b.status === 'finished';
@@ -215,20 +251,18 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
         })}
       </div>
 
-      {/* 4. TECKENFÖRKLARING (LEYENDA) */}
       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-2.5 flex items-center justify-around text-[10.5px] font-bold text-slate-600">
         <span className="flex items-center gap-1 text-amber-900 font-black">
-          🟡 Por aceptar
+          {txt.legendPending}
         </span>
         <span className="flex items-center gap-1 text-sky-900 font-black">
-          🔵 Aceptada
+          {txt.legendAccepted}
         </span>
         <span className="flex items-center gap-1 text-emerald-900 font-black">
-          💚 Completada
+          {txt.legendFinished}
         </span>
       </div>
 
-      {/* 5. MODAL FÖR BOKNINGSDETALJER I KALENDERN */}
       {selectedBooking && (() => {
         const b = selectedBooking;
         const matchedProp = properties.find(
@@ -239,29 +273,13 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
 
         const displayAddress = matchedProp?.address || b.property_address || b.property_name;
         const displayHost = matchedProp?.host_name || b.host_name;
-        const displayNote = getValidNote(b.notes_es, b.notes);
-
-        const nextBooking = bookings.find((other) => {
-          if (other.id === b.id) return false;
-          if (other.property_name.toLowerCase() !== b.property_name.toLowerCase()) return false;
-          if (!other.check_in_date || !b.check_out_date) return false;
-          return other.check_in_date >= b.check_out_date;
-        });
-
-        const departureTimeFormatted = formatTimeOrWindowEs(b.check_out_exact_time, b.check_out_time_window);
-        const nextArrivalTimeFormatted = nextBooking
-          ? formatTimeOrWindowEs(nextBooking.check_in_exact_time, nextBooking.check_in_time_window)
-          : null;
-
-        const bookingIncidents = incidents.filter((i) => i.booking_id === b.id);
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
             <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
-              {/* TOPPHEADER */}
               <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">Detalles de Limpieza</span>
+                  <span className="text-[10px] font-bold uppercase text-slate-400">{txt.modalTitle}</span>
                   <h3 className="font-black text-base text-white flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-emerald-400" />
                     {displayAddress}
@@ -276,73 +294,31 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
               </div>
 
               <div className="p-4 space-y-3.5 text-xs max-h-[80vh] overflow-y-auto">
-                {/* STATUS BADGE */}
                 <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
-                  <span className="font-bold text-slate-500">Estado de tarea:</span>
+                  <span className="font-bold text-slate-500">{txt.modalStatusLabel}</span>
                   {b.status === 'finished' && (
                     <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase bg-emerald-100 text-emerald-900 border border-emerald-300">
-                      Completada
+                      {txt.legendFinished}
                     </span>
                   )}
                   {b.status === 'accepted' && (
                     <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase bg-sky-100 text-sky-900 border border-sky-300">
-                      Aceptada
+                      {txt.legendAccepted}
                     </span>
                   )}
                   {b.status === 'pending' && (
                     <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase bg-amber-400 text-slate-950">
-                      Por aceptar
+                      {txt.legendPending}
                     </span>
                   )}
                 </div>
 
-                {/* VÄRD */}
                 {displayHost && displayHost !== 'Värd' && (
                   <p className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-slate-400" /> Anfitriona: {displayHost} ({b.property_name})
+                    <User className="w-3.5 h-3.5 text-slate-400" /> {txt.modalHostLabel} {displayHost} ({b.property_name})
                   </p>
                 )}
 
-                {/* INSTRUKTIONER */}
-                {displayNote && (
-                  <div className="bg-amber-100/90 border-l-4 border-amber-500 p-3 rounded-r-xl text-xs space-y-1">
-                    <span className="font-black text-amber-900 text-[10px] uppercase block flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700" /> Instrucción del anfitrión:
-                    </span>
-                    <p className="font-bold text-amber-950 whitespace-pre-line leading-relaxed">{displayNote}</p>
-                  </div>
-                )}
-
-                {/* STÄDFÖNSTER */}
-                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
-                  <span className="font-black text-[10px] uppercase text-slate-400 block">Ventana de Limpieza</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white p-2 rounded-xl border border-slate-200">
-                      <span className="text-[10px] font-black text-slate-500 uppercase block">🚪 Salida</span>
-                      <span className="font-black text-slate-900 block text-xs">{formatDate(b.check_out_date, 'es')}</span>
-                      {departureTimeFormatted && <span className="text-[10.5px] font-bold text-amber-800 block">{departureTimeFormatted}</span>}
-                    </div>
-
-                    <div className="bg-sky-50 p-2 rounded-xl border border-sky-200">
-                      <span className="text-[10px] font-black text-sky-900 uppercase block">🔑 Entrada</span>
-                      {nextBooking ? (
-                        <>
-                          <span className="font-black text-slate-900 block text-xs">{formatDate(nextBooking.check_in_date, 'es')}</span>
-                          {nextArrivalTimeFormatted && <span className="text-[10.5px] font-bold text-sky-800 block">{nextArrivalTimeFormatted}</span>}
-                        </>
-                      ) : (
-                        <span className="text-[10.5px] font-bold text-slate-400 block italic">Sin próxima entrada</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-slate-600 font-bold pt-1">
-                    <span>👥 {b.guests} huéspedes</span>
-                    <span>{b.laundry ? '🧺 Lavar lencería' : '🚫 Sin colada'}</span>
-                  </div>
-                </div>
-
-                {/* ÅTGÄRDER */}
                 <div className="pt-1 flex items-center gap-2">
                   {b.status === 'pending' && (
                     <button
@@ -352,7 +328,7 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
                       className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-1.5"
                     >
                       {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
-                      Aceptar tarea
+                      {txt.btnAccept}
                     </button>
                   )}
 
@@ -364,19 +340,17 @@ export default function CleanerCalendarView({ bookings, incidents, properties, o
                       className="flex-1 py-3 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-1.5"
                     >
                       {completingId === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      Completado
+                      {txt.btnComplete}
                     </button>
                   )}
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setOpenIncidentFor(b.id);
-                    }}
+                    onClick={() => setOpenIncidentFor(b.id)}
                     className="py-3 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 border border-slate-200"
                   >
                     <Camera className="w-4 h-4 text-slate-500" />
-                    <span>Foto / Daño</span>
+                    <span>{txt.btnIncident}</span>
                   </button>
                 </div>
               </div>
