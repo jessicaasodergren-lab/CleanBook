@@ -126,10 +126,11 @@ export const propertyService = {
   async connectByInviteCode(cleanerId: string, code: string): Promise<void> {
     const formattedCode = code.trim().toUpperCase();
 
+    // Söker enbart mot invite_code
     const { data: prop, error: propErr } = await supabase
       .from('properties')
       .select('id')
-      .or(`invite_code.eq.${formattedCode},passcode.eq.${formattedCode}`)
+      .eq('invite_code', formattedCode)
       .maybeSingle();
 
     if (propErr) throw propErr;

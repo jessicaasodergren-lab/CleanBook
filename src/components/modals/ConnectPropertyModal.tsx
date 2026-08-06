@@ -19,7 +19,7 @@ export default function ConnectPropertyModal({ isOpen, onClose, onConnected, lan
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const txt = translations.cleaner[lang] || translations.cleaner.es;
+  const txt = (translations as any)?.cleaner?.[lang] || (translations as any)?.cleaner?.es || {};
 
   if (!isOpen) return null;
 
@@ -44,7 +44,7 @@ export default function ConnectPropertyModal({ isOpen, onClose, onConnected, lan
 
       await propertyService.connectByInviteCode(session.user.id, inviteCode);
 
-      setSuccessMsg(txt.successConnected);
+      setSuccessMsg(txt.successConnected || '¡Propiedad conectada con éxito!');
       setInviteCode('');
       setTimeout(() => {
         onClose();
@@ -53,9 +53,13 @@ export default function ConnectPropertyModal({ isOpen, onClose, onConnected, lan
       }, 1200);
 
     } catch (err: any) {
-      if (err.message === 'INVALID_CODE') setErrorMsg(txt.errInvalidCode);
-      else if (err.message === 'ALREADY_CONNECTED') setErrorMsg(txt.errAlreadyConnected);
-      else setErrorMsg('Error');
+      if (err.message === 'INVALID_CODE') {
+        setErrorMsg(txt.errInvalidCode || 'Código no válido.');
+      } else if (err.message === 'ALREADY_CONNECTED') {
+        setErrorMsg(txt.errAlreadyConnected || 'Esta propiedad ya está conectada.');
+      } else {
+        setErrorMsg(err.message || 'Error occurred');
+      }
     } finally {
       setConnecting(false);
     }
@@ -66,7 +70,7 @@ export default function ConnectPropertyModal({ isOpen, onClose, onConnected, lan
       <div className="bg-white text-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-black text-sm text-slate-900 flex items-center gap-1.5">
-            <Key className="w-4 h-4 text-sky-600" /> {txt.modalTitle}
+            <Key className="w-4 h-4 text-sky-600" /> {txt.modalTitle || 'Conectar nueva propiedad'}
           </h3>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
             <X className="w-5 h-5" />
@@ -75,13 +79,13 @@ export default function ConnectPropertyModal({ isOpen, onClose, onConnected, lan
 
         <form onSubmit={handleConnectProperty} className="p-5 space-y-4">
           <p className="text-xs text-slate-600 leading-relaxed">
-            {txt.modalDesc}
+            {txt.modalDesc || 'Introduce el código de invitación proporcionado por la anfitriona:'}
           </p>
 
           <div>
             <input
               type="text"
-              placeholder={txt.placeholderCode}
+              placeholder={txt.placeholderCode || 'Ej. CLEAN-88A2'}
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
               className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center font-mono font-black text-lg uppercase text-slate-900 outline-none focus:bg-white focus:border-sky-500 transition"
@@ -110,7 +114,7 @@ export default function ConnectPropertyModal({ isOpen, onClose, onConnected, lan
             className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2 active:scale-98"
           >
             {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-            {txt.btnSubmitConnect}
+            {txt.btnSubmitConnect || 'Conectar'}
           </button>
         </form>
       </div>

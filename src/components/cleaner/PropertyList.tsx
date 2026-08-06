@@ -13,25 +13,67 @@ interface PropertyListProps {
   lang?: CleanerLanguage;
 }
 
-export default function PropertyList({ properties, onRefresh, lang = 'es' }: PropertyListProps) {
+// Inbyggda reservöversättningar för att förhindra krasch vid saknade i18n-nycklar
+const defaultPropListTexts: Record<CleanerLanguage, any> = {
+  es: {
+    title: 'Propiedades conectadas',
+    subtitleSingle: 'propiedad vinculada a tu cuenta',
+    subtitlePlural: 'propiedades vinculadas a tu cuenta',
+    btnConnectCode: 'Conectar código',
+    noPropsTitle: 'Sin propiedades conectadas',
+    noPropsDesc: 'Usa el botón superior para vincular tu primera propiedad.',
+  },
+  en: {
+    title: 'Connected Properties',
+    subtitleSingle: 'property linked to your account',
+    subtitlePlural: 'properties linked to your account',
+    btnConnectCode: 'Connect code',
+    noPropsTitle: 'No connected properties',
+    noPropsDesc: 'Use the button above to link your first property.',
+  },
+  sv: {
+    title: 'Kopplade fastigheter',
+    subtitleSingle: 'fastighet kopplad till ditt konto',
+    subtitlePlural: 'fastigheter kopplade till ditt konto',
+    btnConnectCode: 'Koppla med kod',
+    noPropsTitle: 'Inga kopplade fastigheter',
+    noPropsDesc: 'Använd knappen ovan för att koppla din första fastighet.',
+  },
+};
+
+export default function PropertyList({ properties = [], onRefresh, lang = 'es' }: PropertyListProps) {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [connectionsMap, setConnectionsMap] = useState<Record<string, any>>({});
 
-  const txt = translations.propertyList[lang] || translations.propertyList.es;
+  // Kraschsäker hämtning med inbyggd reservöversättning
+  const txt =
+    (translations as any)?.propertyList?.[lang] ||
+    (translations as any)?.propertyList?.es ||
+    defaultPropListTexts[lang] ||
+    defaultPropListTexts.es;
 
   const fetchConnections = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    const { data } = await supabase
-      .from('property_connections')
-      .select('id, property_id, internal_notes, cleaning_time')
-      .eq('cleaner_id', session.user.id);
+      const { data, error } = await supabase
+        .from('property_connections')
+        .select('id, property_id, internal_notes, cleaning_time')
+        .eq('cleaner_id', session.user.id);
 
-    if (data) {
-      const map: Record<string, any> = {};
-      data.forEach((item: any) => { map[item.property_id] = item; });
-      setConnectionsMap(map);
+      if (error) {
+        console.error('Kunde inte hämta property_connections:', error);
+        return;
+      }
+
+      if (data) {
+        const map: Record<string, any> = {};
+        data.forEach((item: any) => { map[item.property_id] = item; });
+        setConnectionsMap(map);
+      }
+    } catch (err) {
+      console.error('Fel vid hämtning av anslutningar:', err);
     }
   };
 

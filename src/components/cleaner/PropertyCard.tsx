@@ -35,6 +35,66 @@ interface PropertyCardProps {
   onRefresh: () => void;
 }
 
+const defaultCardTexts: Record<CleanerLanguage, any> = {
+  es: {
+    noTimeSet: 'Sin tiempo fijado',
+    anfitriona: 'Anfitriona:',
+    saveError: 'Error al guardar los datos',
+    confirmDisconnect: '¿Estás segura de que deseas desconectar la propiedad',
+    specSurface: 'Superficie',
+    specRooms: 'Habitaciones',
+    specBathrooms: 'Baños',
+    hostNotes: 'Instrucciones fijas del anfitrión',
+    myInternalSection: 'Mis notas privadas y tiempo (privado)',
+    savedNotice: '¡Guardado!',
+    editModalTimeLabel: 'Mi tiempo de limpieza estimado:',
+    editModalTimePlaceholder: 'Ej. 3h 30min',
+    editModalNotesLabel: 'Mis notas privadas:',
+    editModalNotesPlaceholder: 'Ej. Dar dos vueltas a la llave, fregona extra...',
+    editModalNotesHelp: 'Estas notas solo son visibles para ti, no para la anfitriona.',
+    btnSaveNotes: 'Guardar notas y tiempo',
+    btnDisconnect: 'Desconectar propiedad',
+  },
+  en: {
+    noTimeSet: 'No time set',
+    anfitriona: 'Host:',
+    saveError: 'Error saving data',
+    confirmDisconnect: 'Are you sure you want to disconnect property',
+    specSurface: 'Surface',
+    specRooms: 'Rooms',
+    specBathrooms: 'Bathrooms',
+    hostNotes: 'Fixed host instructions',
+    myInternalSection: 'My private notes & time (private)',
+    savedNotice: 'Saved!',
+    editModalTimeLabel: 'My estimated cleaning time:',
+    editModalTimePlaceholder: 'E.g. 3h 30min',
+    editModalNotesLabel: 'My private notes:',
+    editModalNotesPlaceholder: 'E.g. Turn key twice, extra mop needed...',
+    editModalNotesHelp: 'These notes are only visible to you, not the host.',
+    btnSaveNotes: 'Save notes & time',
+    btnDisconnect: 'Disconnect property',
+  },
+  sv: {
+    noTimeSet: 'Ej angiven tid',
+    anfitriona: 'Värd:',
+    saveError: 'Kunde inte spara uppgifter',
+    confirmDisconnect: 'Är du säker på att du vill koppla från fastigheten',
+    specSurface: 'Yta',
+    specRooms: 'Rum',
+    specBathrooms: 'Badrum',
+    hostNotes: 'Värdens fasta instruktioner',
+    myInternalSection: 'Mina privata anteckningar & tid (privat)',
+    savedNotice: 'Sparat!',
+    editModalTimeLabel: 'Min beräknade städtid:',
+    editModalTimePlaceholder: 'T.ex. 3t 30min',
+    editModalNotesLabel: 'Mina privata anteckningar:',
+    editModalNotesPlaceholder: 'T.ex. Lås två varv, extra mopp behövs...',
+    editModalNotesHelp: 'Dessa anteckningar syns bara för dig, inte för värden.',
+    btnSaveNotes: 'Spara anteckningar och tid',
+    btnDisconnect: 'Koppla från fastighet',
+  },
+};
+
 export default function PropertyCard({
   property: p,
   connectionData,
@@ -49,7 +109,13 @@ export default function PropertyCard({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-  const txt = translations.propertyList[lang] || translations.propertyList.es;
+  // Kraschsäker sammanslagning av översättningar
+  const fallback = defaultCardTexts[lang] || defaultCardTexts.es;
+  const txt = {
+    ...fallback,
+    ...((translations as any)?.propertyList?.[lang] || (translations as any)?.propertyList?.es || {}),
+  };
+
   const displayTime = connectionData?.cleaning_time || p.cleaning_time || txt.noTimeSet;
 
   const handleSaveInline = async () => {

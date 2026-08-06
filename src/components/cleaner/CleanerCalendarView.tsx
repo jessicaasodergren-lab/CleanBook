@@ -16,6 +16,8 @@ import {
   Loader2,
   ThumbsUp,
   Check,
+  Clock,
+  CalendarCheck,
 } from 'lucide-react';
 
 interface CleanerCalendarViewProps {
@@ -40,6 +42,7 @@ const cleanerCalTexts: Record<CleanerLanguage, any> = {
     modalHostLabel: 'Anfitriona:',
     modalInstruction: 'Instrucción del anfitrión:',
     modalWindow: 'Ventana de Limpieza',
+    modalNextArrival: 'Próxima entrada (Límite):',
     departure: '🚪 Salida',
     arrival: '🔑 Entrada',
     noNextArrival: 'Sin próxima entrada',
@@ -49,6 +52,10 @@ const cleanerCalTexts: Record<CleanerLanguage, any> = {
     btnAccept: 'Aceptar tarea',
     btnComplete: 'Completado',
     btnIncident: 'Foto / Daño',
+    turnoverSameDay: '⚡ Cambio hoy',
+    windowLabel: '🧹 Ventana',
+    departureShort: '🚪 Salida',
+    arrivalShort: '🔑 Entrada',
   },
   en: {
     title: 'Cleaning Calendar',
@@ -63,6 +70,7 @@ const cleanerCalTexts: Record<CleanerLanguage, any> = {
     modalHostLabel: 'Host:',
     modalInstruction: 'Host Instruction:',
     modalWindow: 'Cleaning Window',
+    modalNextArrival: 'Next arrival (Deadline):',
     departure: '🚪 Departure',
     arrival: '🔑 Arrival',
     noNextArrival: 'No upcoming arrival',
@@ -72,6 +80,10 @@ const cleanerCalTexts: Record<CleanerLanguage, any> = {
     btnAccept: 'Accept task',
     btnComplete: 'Completed',
     btnIncident: 'Photo / Damage',
+    turnoverSameDay: '⚡ Turnover',
+    windowLabel: '🧹 Window',
+    departureShort: '🚪 Departure',
+    arrivalShort: '🔑 Arrival',
   },
   sv: {
     title: 'Städkalender',
@@ -86,6 +98,7 @@ const cleanerCalTexts: Record<CleanerLanguage, any> = {
     modalHostLabel: 'Värd:',
     modalInstruction: 'Värdens instruktion:',
     modalWindow: 'Städfönster',
+    modalNextArrival: 'Nästa incheckning (Deadline):',
     departure: '🚪 Utcheckning',
     arrival: '🔑 Incheckning',
     noNextArrival: 'Ingen nästa incheckning',
@@ -95,8 +108,31 @@ const cleanerCalTexts: Record<CleanerLanguage, any> = {
     btnAccept: 'Acceptera uppdrag',
     btnComplete: 'Slutförd',
     btnIncident: 'Foto / Skada',
+    turnoverSameDay: '⚡ Byte idag',
+    windowLabel: '🧹 Städfönster',
+    departureShort: '🚪 Utcheckning',
+    arrivalShort: '🔑 Incheckning',
   },
 };
+
+// Hjälpfunktion för att räkna ut städfönstret för en bokning
+function getBookingWindowInfo(b: Booking, allBookings: Booking[]) {
+  const samePropBookings = allBookings.filter(
+    (other) =>
+      other.id !== b.id &&
+      (other.property_id === b.property_id ||
+        other.property_name.toLowerCase() === b.property_name.toLowerCase())
+  );
+
+  const nextBooking = samePropBookings
+    .filter((other) => other.check_in_date >= b.check_out_date)
+    .sort((a, b) => a.check_in_date.localeCompare(b.check_in_date))[0];
+
+  const windowStart = b.check_out_date;
+  const windowEnd = nextBooking ? nextBooking.check_in_date : null;
+
+  return { nextBooking, windowStart, windowEnd };
+}
 
 export default function CleanerCalendarView({
   bookings,
@@ -194,7 +230,29 @@ export default function CleanerCalendarView({
           if (!item) return <div key={`empty-${idx}`} className="h-16 sm:h-20 bg-slate-50/40 rounded-2xl" />;
 
           const isToday = item.dateStr === todayStr;
-          const dayCleaningBookings = bookings.filter((b) => b.check_out_date === item.dateStr);
+
+          // Hitta alla städfönster som berör detta datum i kalendern
+          const dayItems = bookings.reduce<
+            { booking: Booking; type: 'same_day' | 'start' | 'end' | 'between' }[]
+          >((acc, b) => {
+            const { windowStart, windowEnd } = getBookingWindowInfo(b, bookings);
+
+            const isStart = item.dateStr === windowStart;
+            const isEnd = windowEnd ? item.dateStr === windowEnd : false;
+            const isBetween = windowEnd ? item.dateStr > windowStart && item.dateStr < windowEnd : false;
+
+            if (isStart && isEnd) {
+              acc.push({ booking: b, type: 'same_day' });
+            } else if (isStart) {
+              acc.push({ booking: b, type: 'start' });
+            } else if (isEnd) {
+              acc.push({ booking: b, type: 'end' });
+            } else if (isBetween) {
+              acc.push({ booking: b, type: 'between' });
+            }
+
+            return acc;
+          }, []);
 
           return (
             <div
@@ -216,7 +274,7 @@ export default function CleanerCalendarView({
               </div>
 
               <div className="space-y-1 overflow-y-auto max-h-12 pt-0.5">
-                {dayCleaningBookings.map((b) => {
+                {dayItems.map(({ booking: b, type }) => {
                   const isFinished = b.status === 'finished';
                   const isAccepted = b.status === 'accepted';
 
@@ -227,7 +285,12 @@ export default function CleanerCalendarView({
                   );
 
                   const displayName = matchedProp?.address || b.property_address || b.property_name;
-                  
+
+                  let labelPrefix = txt.windowLabel;
+                  if (type === 'same_day') labelPrefix = txt.turnoverSameDay;
+                  else if (type === 'start') labelPrefix = txt.departureShort;
+                  else if (type === 'end') labelPrefix = txt.arrivalShort;
+
                   const pillStyle = isFinished
                     ? 'bg-emerald-500 text-white'
                     : isAccepted
@@ -236,12 +299,12 @@ export default function CleanerCalendarView({
 
                   return (
                     <button
-                      key={b.id}
+                      key={`${b.id}-${type}`}
                       onClick={() => setSelectedBooking(b)}
-                      className={`w-full text-left px-1 py-0.5 rounded-lg text-[9px] font-extrabold truncate block transition shadow-sm active:scale-95 ${pillStyle}`}
-                      title={displayName}
+                      className={`w-full text-left px-1 py-0.5 rounded-lg text-[8.5px] sm:text-[9px] font-extrabold truncate block transition shadow-sm active:scale-95 ${pillStyle}`}
+                      title={`${labelPrefix}: ${displayName}`}
                     >
-                      🧹 {displayName}
+                      {labelPrefix} {displayName}
                     </button>
                   );
                 })}
@@ -273,6 +336,8 @@ export default function CleanerCalendarView({
 
         const displayAddress = matchedProp?.address || b.property_address || b.property_name;
         const displayHost = matchedProp?.host_name || b.host_name;
+
+        const { nextBooking } = getBookingWindowInfo(b, bookings);
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
@@ -313,8 +378,38 @@ export default function CleanerCalendarView({
                   )}
                 </div>
 
+                {/* VISNING AV STÄDFÖNSTER / DATUM */}
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-500">{txt.departure}:</span>
+                    <span className="font-black text-slate-900">
+                      {formatDate(b.check_out_date, lang)} ({b.check_out_time_window})
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
+                    <span className="font-bold text-slate-500">{txt.modalNextArrival}</span>
+                    <span className="font-black text-emerald-700">
+                      {nextBooking
+                        ? `${formatDate(nextBooking.check_in_date, lang)} (${nextBooking.check_in_time_window})`
+                        : txt.noNextArrival}
+                    </span>
+                  </div>
+                </div>
+
+                {b.notes_es || b.notes ? (
+                  <div className="bg-amber-50/80 p-3 rounded-2xl border border-amber-200 text-xs space-y-1">
+                    <span className="font-bold text-amber-900 block">{txt.modalInstruction}</span>
+                    <p className="text-slate-800 font-medium whitespace-pre-line">{b.notes_es || b.notes}</p>
+                  </div>
+                ) : null}
+
+                <div className="flex items-center justify-between text-slate-600 font-bold px-1">
+                  <span>{b.laundry ? txt.laundryYes : txt.laundryNo}</span>
+                  <span>{b.guests} {txt.guests}</span>
+                </div>
+
                 {displayHost && displayHost !== 'Värd' && (
-                  <p className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                  <p className="text-xs font-bold text-slate-600 flex items-center gap-1 border-t border-slate-100 pt-2">
                     <User className="w-3.5 h-3.5 text-slate-400" /> {txt.modalHostLabel} {displayHost} ({b.property_name})
                   </p>
                 )}
