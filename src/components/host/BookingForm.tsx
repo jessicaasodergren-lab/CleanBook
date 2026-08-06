@@ -24,6 +24,8 @@ import {
   MessageSquare,
   MapPin,
   Lock,
+  PlusCircle,
+  Sparkles,
 } from 'lucide-react';
 
 interface BookingFormProps {
@@ -105,10 +107,22 @@ export default function BookingForm({
     }
   };
 
+  const handleResetForm = () => {
+    setCreatedBooking(null);
+    setBookingTitle('');
+    setCheckInDate('');
+    setCheckInTimeWindow('');
+    setCheckInExactTime('');
+    setCheckOutDate('');
+    setCheckOutTimeWindow('');
+    setCheckOutExactTime('');
+    setNotes('');
+    setSendWhatsAppDirectly(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-    setCreatedBooking(null);
 
     const prop = effectiveProperties.find((p) => p.id === (selectedPropertyId || propertyId || directPropertyId)) || currentProperty;
     if (!prop) {
@@ -203,16 +217,6 @@ export default function BookingForm({
         window.open(waUrl, '_blank');
       }
 
-      setBookingTitle('');
-      setCheckInDate('');
-      setCheckInTimeWindow('');
-      setCheckInExactTime('');
-      setCheckOutDate('');
-      setCheckOutTimeWindow('');
-      setCheckOutExactTime('');
-      setNotes('');
-      setSendWhatsAppDirectly(false);
-      
       if (onBookingCreated) onBookingCreated();
       if (onSuccess) onSuccess();
     } catch (err: any) {
@@ -222,30 +226,72 @@ export default function BookingForm({
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {createdBooking && (
-        <div className="bg-emerald-500 text-slate-950 p-5 rounded-3xl space-y-3 shadow-xl border border-emerald-400 animate-in fade-in slide-in-from-top duration-300">
-          <div className="flex items-center gap-2">
-            <Check className="w-6 h-6 bg-slate-950 text-emerald-400 p-1 rounded-full shrink-0" />
-            <div>
-              <h4 className="font-black text-sm text-slate-950">{txt.savedTitle}</h4>
-              <p className="text-xs font-bold opacity-90">{txt.savedSub}</p>
-            </div>
+  // 🌟 BEKRÄFTELSESKÄRM OM BOKNINGEN JUST SKAPADES 🌟
+  if (createdBooking) {
+    return (
+      <div className="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6 border border-slate-800 text-center animate-in fade-in zoom-in-95 duration-300">
+        <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40 shadow-lg shadow-emerald-500/10">
+          <Check className="w-9 h-9 stroke-[3]" />
+        </div>
+
+        <div className="space-y-1">
+          <h3 className="text-xl font-black text-white flex items-center justify-center gap-2">
+            {txt.savedTitle}
+          </h3>
+          <p className="text-xs font-bold text-slate-400 max-w-xs mx-auto">
+            {txt.savedSub}
+          </p>
+        </div>
+
+        {/* SAMMANFATTNINGSKORT */}
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 text-left space-y-2 text-xs">
+          <div className="flex items-center justify-between border-b border-slate-700/60 pb-2">
+            <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">Fastighet</span>
+            <span className="font-black text-white text-xs">{createdBooking.property_name}</span>
           </div>
 
+          {createdBooking.booking_title && (
+            <div className="flex items-center justify-between border-b border-slate-700/60 pb-2">
+              <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">Gäst / Titel</span>
+              <span className="font-black text-sky-400 text-xs">{createdBooking.booking_title}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-0.5">
+            <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">Datum</span>
+            <span className="font-bold text-emerald-400 text-xs">
+              {formatDate(createdBooking.check_in_date, lang)} ➔ {formatDate(createdBooking.check_out_date, lang)}
+            </span>
+          </div>
+        </div>
+
+        {/* ÅTGÄRDSKNAPPAR */}
+        <div className="space-y-2.5 pt-2">
           <a
             href={getBookingWhatsAppUrl(createdBooking)}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-slate-950 hover:bg-slate-900 text-emerald-400 font-black py-3.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-lg active:scale-98"
+            className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 active:scale-98"
           >
-            <MessageSquare className="w-4 h-4 fill-emerald-400 text-slate-950" />
+            <MessageSquare className="w-4 h-4 fill-slate-950 text-emerald-500" />
             {txt.whatsappBtn}
           </a>
-        </div>
-      )}
 
+          <button
+            type="button"
+            onClick={handleResetForm}
+            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 border border-slate-700 active:scale-98"
+          >
+            <PlusCircle className="w-4 h-4 text-slate-400" />
+            {txt.btnCreateAnother}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
       <form onSubmit={handleSubmit} className="bg-white text-slate-900 p-5 sm:p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
         <div className="border-b border-slate-100 pb-3">
           <h3 className="text-base font-black text-slate-900">{txt.title}</h3>
@@ -301,7 +347,6 @@ export default function BookingForm({
             />
           </div>
 
-          {/* INCHECKNING: Datum & Ankomsttid bredvid varandra även på mobil */}
           <div className="bg-sky-50/60 p-3.5 rounded-2xl border border-sky-100 space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -372,7 +417,6 @@ export default function BookingForm({
             </div>
           </div>
 
-          {/* UTCHECKNING: Datum & Utcheckningstid bredvid varandra även på mobil */}
           <div className="bg-amber-50/60 p-3.5 rounded-2xl border border-amber-100 space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -444,7 +488,6 @@ export default function BookingForm({
             </div>
           </div>
 
-          {/* GÄSTER & TVÄTT: Bredvid varandra även på mobil */}
           <div className="grid grid-cols-2 gap-2 pt-1">
             <div>
               <label className="block font-bold text-slate-700 mb-1 truncate flex items-center gap-1">
