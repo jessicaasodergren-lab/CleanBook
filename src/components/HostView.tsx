@@ -149,7 +149,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 text-sky-400 animate-spin" /></div>
         ) : activeTab === 'create' ? (
-          <BookingForm properties={properties} selectedPropertyId={selectedProperty.id} onBookingCreated={onRefresh} lang={lang} />
+          <BookingForm properties={properties} selectedPropertyId={selectedProperty.id} existingBookings={propertyBookings} onBookingCreated={onRefresh} lang={lang} />
         ) : activeTab === 'list' ? (
           <BookingList bookings={propertyBookings} incidents={incidents} onRefresh={onRefresh} />
         ) : (

@@ -31,6 +31,7 @@ interface BookingFormProps {
   propertyName?: string;
   propertyAddress?: string;
   propertyId?: string;
+  existingBookings?: Booking[];
   onBookingCreated?: () => void;
   onSuccess?: () => void;
   lang?: HostLanguage;
@@ -149,6 +150,7 @@ export default function BookingForm({
   propertyName,
   propertyAddress,
   propertyId: directPropertyId,
+  existingBookings: initialBookings = [],
   onBookingCreated,
   onSuccess,
   lang = 'sv',
@@ -226,21 +228,47 @@ export default function BookingForm({
     setSubmitting(true);
 
     try {
-      const { data: existingBookings } = await supabase
-        .from('bookings')
-        .select('id, booking_title, check_out_date, check_in_date')
-        .eq('property_name', prop.name);
+      // 1. Samla alla kända bokningar för fastigheten (både från props och färsk Supabase-fråga)
+      let candidateBookings: { id?: string; booking_title?: string; check_in_date: string; check_out_date: string }[] = [...initialBookings];
 
-      if (existingBookings && existingBookings.length > 0) {
-        const overlappingBooking = existingBookings.find((b) => {
+      // Gör även en säker sökning mot Supabase på BÅDE property_id och property_name
+      const { data: dbBookings, error: fetchErr } = await supabase
+        .from('bookings')
+        .select('id, booking_title, check_out_date, check_in_date, property_id, property_name')
+        .or(`property_id.eq.${prop.id},property_name.eq.${prop.name}`);
+
+      if (fetchErr) {
+        console.error('Fel vid hämtning av existerande bokningar för överlappskontroll:', fetchErr);
+      }
+
+      if (dbBookings && dbBookings.length > 0) {
+        const map = new Map();
+        [...candidateBookings, ...dbBookings].forEach((b) => {
+          if (b.id) map.set(b.id, b);
+        });
+        candidateBookings = Array.from(map.values());
+      }
+
+      // 2. Utför överlappskontroll med rensade datumsträngar
+      if (candidateBookings.length > 0) {
+        const newStart = checkInDate.trim();
+        const newEnd = checkOutDate.trim();
+
+        const overlappingBooking = candidateBookings.find((b) => {
           if (!b.check_out_date || !b.check_in_date) return false;
-          return checkOutDate < b.check_in_date && b.check_out_date < checkInDate;
+
+          const existingStart = b.check_in_date.split('T')[0].trim();
+          const existingEnd = b.check_out_date.split('T')[0].trim();
+
+          // Överlappning uppstår om ny incheckning sker FÖRE befintlig utcheckning
+          // OCH ny utcheckning sker EFTER befintlig incheckning.
+          return newStart < existingEnd && newEnd > existingStart;
         });
 
         if (overlappingBooking) {
           setSubmitting(false);
           setErrorMsg(
-            `Det finns redan en krockande bokning ("${overlappingBooking.booking_title}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.check_in_date, lang)} och ${formatDate(overlappingBooking.check_out_date, lang)}.`
+            `Det finns redan en krockande bokning ("${overlappingBooking.booking_title || 'Gäst'}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.check_in_date, lang)} och ${formatDate(overlappingBooking.check_out_date, lang)}.`
           );
           return;
         }
