@@ -74,6 +74,16 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
     onRefresh();
   };
 
+  const activeIncidentBooking = openIncidentFor ? bookings.find((b) => b.id === openIncidentFor) : null;
+  const activeMatchedProp = activeIncidentBooking
+    ? properties.find(
+        (p) =>
+          (activeIncidentBooking.property_id && p.id === activeIncidentBooking.property_id) ||
+          p.name.toLowerCase() === activeIncidentBooking.property_name.toLowerCase() ||
+          p.address.toLowerCase() === (activeIncidentBooking.property_address || '').toLowerCase()
+      )
+    : null;
+
   return (
     <div className="space-y-3">
       {/* FILTERKNAPPAR */}
@@ -145,9 +155,11 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
       {openIncidentFor && (
         <IncidentModal
           bookingId={openIncidentFor}
+          propertyName={activeIncidentBooking?.property_name}
+          hostPhone={activeMatchedProp?.host_phone}
+          lang={lang}
           onClose={() => setOpenIncidentFor(null)}
           onSaved={() => {
-            setOpenIncidentFor(null);
             onRefresh();
           }}
         />

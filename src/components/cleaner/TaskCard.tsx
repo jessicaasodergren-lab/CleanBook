@@ -1,4 +1,4 @@
-// src/components/cleaner/TaskCard.tsx
+// I src/components/cleaner/TaskCard.tsx
 import { useState } from 'react';
 import type { Booking, Incident, Property } from '../../lib/supabase';
 import { formatDate } from '../../lib/constants';
@@ -28,6 +28,7 @@ import {
   StickyNote,
   X,
   Clock,
+  Phone,
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -175,15 +176,28 @@ export default function TaskCard({
           </div>
           
           {displayHost && (
-            <p className="text-xs font-bold text-slate-600 flex items-center gap-1 pt-0.5">
-              <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span>
-                {txt.hostLabel || 'Anfitriona:'} {displayHost}
-                {b.property_name && displayAddress.toLowerCase() !== b.property_name.toLowerCase() && (
-                  <span className="text-slate-400 font-medium"> ({b.property_name})</span>
-                )}
-              </span>
-            </p>
+            <div className="text-xs font-bold text-slate-600 flex items-center justify-between gap-1 pt-0.5 flex-wrap">
+              <div className="flex items-center gap-1 truncate">
+                <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">
+                  {txt.hostLabel || 'Anfitriona:'} {displayHost}
+                  {b.property_name && displayAddress.toLowerCase() !== b.property_name.toLowerCase() && (
+                    <span className="text-slate-400 font-medium"> ({b.property_name})</span>
+                  )}
+                </span>
+              </div>
+
+              {matchedProp?.host_phone && (
+                <a
+                  href={`https://wa.me/${matchedProp.host_phone.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg hover:bg-emerald-100 transition shrink-0"
+                >
+                  <Phone className="w-2.5 h-2.5 text-emerald-600" /> WhatsApp
+                </a>
+              )}
+            </div>
           )}
         </div>
 

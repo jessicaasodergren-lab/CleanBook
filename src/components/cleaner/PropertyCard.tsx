@@ -21,6 +21,8 @@ import {
   Loader2,
   Unlink,
   Clock,
+  Phone,
+  User,
 } from 'lucide-react';
 
 interface ConnectionData {
@@ -41,6 +43,7 @@ const defaultCardTexts: Record<CleanerLanguage, any> = {
   es: {
     noTimeSet: 'Sin tiempo fijado',
     anfitriona: 'Anfitriona:',
+    noPhoneSet: 'Sin teléfono registrado',
     saveError: 'Error al guardar los datos',
     confirmDisconnect: '¿Estás segura de que deseas desconectar la propiedad',
     specSurface: 'Superficie',
@@ -61,6 +64,7 @@ const defaultCardTexts: Record<CleanerLanguage, any> = {
   en: {
     noTimeSet: 'No time set',
     anfitriona: 'Host:',
+    noPhoneSet: 'No phone registered',
     saveError: 'Error saving data',
     confirmDisconnect: 'Are you sure you want to disconnect property',
     specSurface: 'Surface',
@@ -81,6 +85,7 @@ const defaultCardTexts: Record<CleanerLanguage, any> = {
   sv: {
     noTimeSet: 'Ej angiven tid',
     anfitriona: 'Värd:',
+    noPhoneSet: 'Inget tel.nr registrerat',
     saveError: 'Kunde inte spara uppgifter',
     confirmDisconnect: 'Är du säker på att du vill koppla från fastigheten',
     specSurface: 'Yta',
@@ -170,11 +175,6 @@ export default function PropertyCard({
           <div className="min-w-0 flex-1">
             <h5 className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate">
               {p.name}
-              {p.host_name && (
-                <span className="text-slate-500 font-semibold text-xs ml-1.5">
-                  ({txt.anfitriona} {p.host_name})
-                </span>
-              )}
             </h5>
 
             {p.address && (
@@ -200,6 +200,32 @@ export default function PropertyCard({
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
+      </div>
+
+      {/* VÄRD OCH WHATSAPP-KNAPP (TYDLIG RUTA) */}
+      <div className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200/80 p-2.5 rounded-xl text-xs">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <User className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span className="font-bold text-slate-800 truncate">
+            {txt.anfitriona} {p.host_name || 'Värd'}
+          </span>
+        </div>
+
+        {p.host_phone ? (
+          <a
+            href={`https://wa.me/${p.host_phone.replace(/[^0-9]/g, '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-[10px] font-black text-emerald-800 bg-emerald-200 hover:bg-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-300 flex items-center gap-1 transition shrink-0 shadow-sm"
+          >
+            <Phone className="w-3 h-3 text-emerald-700" /> WhatsApp
+          </a>
+        ) : (
+          <span className="text-[10px] font-semibold text-slate-400 italic shrink-0">
+            ({txt.noPhoneSet})
+          </span>
+        )}
       </div>
 
       {/* EXPANDERADE DETALJER */}

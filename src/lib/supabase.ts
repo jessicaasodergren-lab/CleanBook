@@ -15,7 +15,15 @@ export interface Profile {
   email: string;
   role: 'host' | 'agency_admin' | 'agency_cleaner';
   full_name?: string | null;
+  phone?: string | null;
   language?: 'sv' | 'en' | 'da' | 'es' | null;
+}
+
+export interface CleanerInfo {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  email: string;
 }
 
 export interface Property {
@@ -32,8 +40,10 @@ export interface Property {
   created_at?: string;
   // Virtuella fält som slås ihop i minnet av propertyService:
   host_name?: string | null;
+  host_phone?: string | null;
   cleaning_time?: string | null;
   internal_notes?: string | null;
+  cleaners?: CleanerInfo[]; // Kopplade städerskor/städfirmor
 }
 
 export interface PropertyConnection {

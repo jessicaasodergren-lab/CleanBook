@@ -17,6 +17,7 @@ import {
   Bell,
   AlertTriangle,
   Check,
+  UserCheck,
 } from 'lucide-react';
 
 interface BookingCardProps {
@@ -178,7 +179,18 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
       </div>
 
       {isExpanded && (
-        <div className="pt-2 border-t border-slate-200/80 space-y-2 text-xs animate-in fade-in duration-200">
+        <div className="pt-2 border-t border-slate-200/80 space-y-2.5 text-xs animate-in fade-in duration-200">
+          {/* BESTÄLLD TILL / KOPPLAD STÄDERSKA */}
+          <div className="bg-sky-50/60 border border-sky-100 p-2.5 rounded-xl flex items-center gap-2">
+            <UserCheck className="w-4 h-4 text-sky-600 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] font-black text-sky-900 uppercase block">Fastighetens städfirma:</span>
+              <span className="font-bold text-slate-800 text-xs truncate block">
+                {b.property_name} (Automatisk koppling via fastighet)
+              </span>
+            </div>
+          </div>
+
           {bookingIncidents.length > 0 && (
             <div className="bg-slate-100/70 border border-slate-200 p-3 rounded-xl space-y-1.5">
               <span className="font-black text-slate-900 uppercase text-[10px] block flex items-center gap-1">

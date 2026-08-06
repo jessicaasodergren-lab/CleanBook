@@ -6,7 +6,7 @@ import { translations } from '../i18n/translations';
 import TaskList from './cleaner/TaskList';
 import CleanerCalendarView from './cleaner/CleanerCalendarView';
 import PropertyList from './cleaner/PropertyList';
-import { Clock, Building, Calendar as CalendarIcon, Sparkles, Key, Check, AlertCircle, Loader2, KeyRound, X, Globe } from 'lucide-react';
+import { Clock, Building, Calendar as CalendarIcon, Sparkles, Key, Check, AlertCircle, Loader2, KeyRound, X } from 'lucide-react';
 
 export type CleanerLanguage = 'es' | 'en' | 'sv';
 
@@ -16,7 +16,6 @@ interface CleanerViewProps {
   loading: boolean;
   onRefresh: () => void;
   lang?: CleanerLanguage;
-  onLangChange?: (newLang: CleanerLanguage) => void;
 }
 
 export default function CleanerView({
@@ -25,7 +24,6 @@ export default function CleanerView({
   loading,
   onRefresh,
   lang = 'es',
-  onLangChange,
 }: CleanerViewProps) {
   const [activeTab, setActiveTab] = useState<'jobs' | 'calendar' | 'properties'>('jobs');
   const [properties, setProperties] = useState<Property[]>([]);
@@ -64,7 +62,6 @@ export default function CleanerView({
     if (!session) return;
 
     try {
-      // Servicen ersätter direkt-anropet!
       const props = await propertyService.getCleanerProperties(session.user.id);
       setProperties(props);
     } catch (err) {
@@ -100,7 +97,6 @@ export default function CleanerView({
         full_name: session.user.user_metadata?.full_name || '',
       });
 
-      // Servicen ersätter direkt-anropet!
       await propertyService.connectByInviteCode(session.user.id, inviteCode);
 
       setSuccessMsg(txt.successConnected);
@@ -122,31 +118,6 @@ export default function CleanerView({
 
   return (
     <div className="max-w-xl mx-auto px-2 sm:px-4 space-y-3">
-      {/* SPRÅKVÄLJARE */}
-      <div className="flex justify-end items-center gap-2">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1 flex items-center gap-1 text-[11px]">
-          <Globe className="w-3 h-3 text-slate-400 mr-0.5" />
-          <button
-            onClick={() => onLangChange?.('es')}
-            className={`px-1.5 py-0.5 rounded font-bold ${lang === 'es' ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
-          >
-            🇪🇸 ES
-          </button>
-          <button
-            onClick={() => onLangChange?.('en')}
-            className={`px-1.5 py-0.5 rounded font-bold ${lang === 'en' ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
-          >
-            🇬🇧 EN
-          </button>
-          <button
-            onClick={() => onLangChange?.('sv')}
-            className={`px-1.5 py-0.5 rounded font-bold ${lang === 'sv' ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
-          >
-            🇸🇪 SV
-          </button>
-        </div>
-      </div>
-
       {/* TOPPMENY */}
       <div className="flex bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs font-black shadow-xl backdrop-blur-md">
         <button

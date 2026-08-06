@@ -1,16 +1,18 @@
+// src/App.tsx
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, type Booking, type Incident } from './lib/supabase';
+import { supabase, type Booking, type Incident, type Profile } from './lib/supabase';
 import { APP_CONFIG } from './lib/constants';
 import HostView, { type HostLanguage } from './components/HostView';
 import CleanerView, { type CleanerLanguage } from './components/CleanerView';
 import { AuthView } from './components/AuthView';
-import { Sparkles, LogOut } from 'lucide-react';
+import ProfileModal from './components/modals/ProfileModal';
+import { Sparkles, LogOut, User } from 'lucide-react';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
-  const [userRole, setUserRole] = useState<'host' | 'agency_admin' | 'agency_cleaner' | null>(null);
-  const [userName, setUserName] = useState<string>('');
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const [hostLang, setHostLang] = useState<HostLanguage>('sv');
   const [cleanerLang, setCleanerLang] = useState<CleanerLanguage>('es');
@@ -28,7 +30,7 @@ export default function App() {
 
       let { data } = await supabase
         .from('profiles')
-        .select('role, full_name, language')
+        .select('*')
         .eq('id', userId)
         .maybeSingle();
 
@@ -49,15 +51,13 @@ export default function App() {
           .select()
           .single();
 
-        setUserRole(newProfile?.role || assignedRole);
-        setUserName(newProfile?.full_name || fullName);
+        setUserProfile(newProfile);
         if (newProfile?.language) {
           if (assignedRole === 'host') setHostLang(newProfile.language as HostLanguage);
           else setCleanerLang(newProfile.language as CleanerLanguage);
         }
       } else {
-        setUserRole(data.role);
-        setUserName(data.full_name || '');
+        setUserProfile(data);
         if (data.language) {
           if (data.role === 'host') setHostLang(data.language as HostLanguage);
           else setCleanerLang(data.language as CleanerLanguage);
@@ -67,20 +67,6 @@ export default function App() {
       console.error('Kunde inte hämta profil:', err);
     } finally {
       setAuthLoading(false);
-    }
-  };
-
-  const handleHostLangChange = async (newLang: HostLanguage) => {
-    setHostLang(newLang);
-    if (session?.user?.id) {
-      await supabase.from('profiles').update({ language: newLang }).eq('id', session.user.id);
-    }
-  };
-
-  const handleCleanerLangChange = async (newLang: CleanerLanguage) => {
-    setCleanerLang(newLang);
-    if (session?.user?.id) {
-      await supabase.from('profiles').update({ language: newLang }).eq('id', session.user.id);
     }
   };
 
@@ -99,8 +85,7 @@ export default function App() {
       if (session) {
         fetchUserProfile(session.user);
       } else {
-        setUserRole(null);
-        setUserName('');
+        setUserProfile(null);
         setAuthLoading(false);
       }
     });
@@ -109,14 +94,14 @@ export default function App() {
   }, []);
 
   const fetchAll = useCallback(async () => {
-    if (!session || !userRole) return;
+    if (!session || !userProfile) return;
     setLoadingData(true);
 
     try {
       const userId = session.user.id;
       let targetPropertyIds: string[] = [];
 
-      if (userRole === 'host') {
+      if (userProfile.role === 'host') {
         const { data: props } = await supabase
           .from('properties')
           .select('id')
@@ -158,13 +143,13 @@ export default function App() {
     } finally {
       setLoadingData(false);
     }
-  }, [session, userRole]);
+  }, [session, userProfile]);
 
   useEffect(() => {
-    if (session && userRole) {
+    if (session && userProfile) {
       fetchAll();
     }
-  }, [session, userRole, fetchAll]);
+  }, [session, userProfile, fetchAll]);
 
   const handleSignOut = () => {
     supabase.auth.signOut();
@@ -182,6 +167,8 @@ export default function App() {
   if (!session) {
     return <AuthView />;
   }
+
+  const userRole = userProfile?.role || 'host';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
@@ -210,13 +197,15 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="text-xs font-bold text-slate-200">{userName || session.user.email}</span>
-              <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
-                {userRole === 'host' ? 'Fastighetsvärd' : 'Städerska'}
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowProfileModal(true)}
+              title="Min Profil & Inställningar"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700/80 shadow-md active:scale-95"
+            >
+              <User className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">{userProfile?.full_name || 'Profil'}</span>
+            </button>
 
             <button
               onClick={handleSignOut}
@@ -224,7 +213,7 @@ export default function App() {
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700/80 shadow-md active:scale-95"
             >
               <LogOut className="w-3.5 h-3.5 text-rose-400" />
-              <span>Logga ut</span>
+              <span className="hidden sm:inline">Logga ut</span>
             </button>
           </div>
         </div>
@@ -238,7 +227,6 @@ export default function App() {
             loading={loadingData}
             onRefresh={fetchAll}
             lang={hostLang}
-            onLangChange={handleHostLangChange}
           />
         ) : (
           <CleanerView
@@ -247,10 +235,16 @@ export default function App() {
             loading={loadingData}
             onRefresh={fetchAll}
             lang={cleanerLang}
-            onLangChange={handleCleanerLangChange}
           />
         )}
       </main>
+
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        profile={userProfile}
+        onProfileUpdated={() => fetchUserProfile(session.user)}
+      />
     </div>
   );
 }
