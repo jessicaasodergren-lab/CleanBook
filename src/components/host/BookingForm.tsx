@@ -42,7 +42,7 @@ const formTexts = {
     title: 'Skapa Ny Gästbokning',
     property: 'Fastighet',
     locked: 'Låst',
-    guestTitle: 'Gästens namn / Bokningens titel *',
+    guestTitle: 'Gästens namn / Bokningens titel (frivilligt)',
     guestPlaceholder: 'T.ex. Familjen Svensson',
     checkInDate: 'Incheckning (Datum) *',
     exactArrival: 'Exakt ankomsttid (frivilligt)',
@@ -65,7 +65,7 @@ const formTexts = {
     savedSub: 'Klicka nedan för att skicka notis till Maria på WhatsApp.',
     whatsappBtn: 'Skicka WhatsApp-notis till Maria nu',
     errNoProperty: 'Hittade ingen giltig fastighet.',
-    errRequired: 'Fyll i alla obligatoriska fält (Gästnamn, Incheckning och Utcheckning).',
+    errRequired: 'Fyll i alla obligatoriska fält (Incheckning och Utcheckning).',
     errWindowRequired: 'Vänligen välj ett ankomstfönster och ett utcheckningsfönster.',
     errDepartureBeforeArrival: 'Utcheckningsdatumet kan inte vara före incheckningsdatumet.',
   },
@@ -73,7 +73,7 @@ const formTexts = {
     title: 'Create New Guest Booking',
     property: 'Property',
     locked: 'Locked',
-    guestTitle: 'Guest Name / Booking Title *',
+    guestTitle: 'Guest Name / Booking Title (optional)',
     guestPlaceholder: 'E.g. The Smith Family',
     checkInDate: 'Check-in (Date) *',
     exactArrival: 'Exact arrival time (optional)',
@@ -96,7 +96,7 @@ const formTexts = {
     savedSub: 'Click below to notify Maria on WhatsApp.',
     whatsappBtn: 'Send WhatsApp notification to Maria now',
     errNoProperty: 'No valid property found.',
-    errRequired: 'Please fill in all required fields (Guest Name, Check-in, and Check-out).',
+    errRequired: 'Please fill in all required fields (Check-in and Check-out).',
     errWindowRequired: 'Please select an arrival window and a departure window.',
     errDepartureBeforeArrival: 'Check-out date cannot be before check-in date.',
   },
@@ -104,7 +104,7 @@ const formTexts = {
     title: 'Opret ny gæstebooking',
     property: 'Ejendom',
     locked: 'Låst',
-    guestTitle: 'Gæstens navn / Bookingens titel *',
+    guestTitle: 'Gæstens navn / Bookingens titel (valgfrit)',
     guestPlaceholder: 'F.eks. Familien Hansen',
     checkInDate: 'Indtjekning (Dato) *',
     exactArrival: 'Præcis ankomsttid (valgfrit)',
@@ -127,7 +127,7 @@ const formTexts = {
     savedSub: 'Klik nedenfor for at sende besked til Maria på WhatsApp.',
     whatsappBtn: 'Send WhatsApp-notifikation til Maria nu',
     errNoProperty: 'Ingen gyldig ejendom fundet.',
-    errRequired: 'Udfyld venligst alle obligatoriske felter (Gæstenavn, Indtjekning og Udtjekning).',
+    errRequired: 'Udfyld venligst alle obligatoriske felter (Indtjekning og Udtjekning).',
     errWindowRequired: 'Vælg venligst et ankomstvindue og et udtjekningsvindue.',
     errDepartureBeforeArrival: 'Udtjekningsdatoen kan ikke være før indtjekningsdatoen.',
   },
@@ -210,7 +210,7 @@ export default function BookingForm({
       return;
     }
 
-    if (!checkInDate || !checkOutDate || !bookingTitle.trim()) {
+    if (!checkInDate || !checkOutDate) {
       setErrorMsg(txt.errRequired);
       return;
     }
@@ -267,8 +267,11 @@ export default function BookingForm({
 
         if (overlappingBooking) {
           setSubmitting(false);
+          const titleStr = overlappingBooking.booking_title?.trim()
+            ? ` ("${overlappingBooking.booking_title}")`
+            : '';
           setErrorMsg(
-            `Det finns redan en krockande bokning ("${overlappingBooking.booking_title || 'Gäst'}") för ${prop.name} mellan datumen ${formatDate(overlappingBooking.check_in_date, lang)} och ${formatDate(overlappingBooking.check_out_date, lang)}.`
+            `Det finns redan en krockande bokning${titleStr} för ${prop.name} mellan datumen ${formatDate(overlappingBooking.check_in_date, lang)} och ${formatDate(overlappingBooking.check_out_date, lang)}.`
           );
           return;
         }
@@ -389,7 +392,6 @@ export default function BookingForm({
               value={bookingTitle}
               onChange={(e) => setBookingTitle(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-sky-500 transition"
-              required
             />
           </div>
 
