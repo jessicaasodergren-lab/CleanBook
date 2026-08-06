@@ -10,6 +10,7 @@ import {
 import { bookingService } from '../../services/bookingService';
 import { getBookingWhatsAppUrl } from '../../utils/whatsapp';
 import { formatDate } from '../../lib/constants';
+import { translations } from '../../i18n/translations';
 import type { HostLanguage } from '../HostView';
 import {
   Loader2,
@@ -37,102 +38,6 @@ interface BookingFormProps {
   lang?: HostLanguage;
 }
 
-const formTexts = {
-  sv: {
-    title: 'Skapa Ny Gästbokning',
-    property: 'Fastighet',
-    locked: 'Låst',
-    guestTitle: 'Gästens namn / Bokningens titel (frivilligt)',
-    guestPlaceholder: 'T.ex. Familjen Svensson',
-    checkInDate: 'Incheckning (Datum) *',
-    exactArrival: 'Exakt ankomsttid (frivilligt)',
-    arrivalWindow: 'Ankomstfönster (Tid på dagen) *',
-    morning: 'Förmiddag',
-    afternoon: 'Eftermiddag',
-    evening: 'Kväll',
-    checkOutDate: 'Utcheckning (Datum) *',
-    exactDeparture: 'Exakt utcheckningstid (frivilligt)',
-    departureWindow: 'Utcheckningsfönster (Städstart) *',
-    guestsCount: 'Antal gäster',
-    laundryLabel: 'Sängkläder & Tvätt?',
-    laundryYes: '🧺 Ja, tvätta lakan/handdukar',
-    laundryNo: '🚫 Nej, ingen tvätt',
-    notesLabel: 'Instruktioner till Maria',
-    notesPlaceholder: 'T.ex. Kom ihåg att ställa ut terrassmöblerna...',
-    notesHelp: 'Texten översätts automatiskt till spanska.',
-    saveBtn: 'Spara & Schemalägg Städning',
-    savedTitle: 'Bokningen är sparad!',
-    savedSub: 'Klicka nedan för att skicka notis till Maria på WhatsApp.',
-    whatsappBtn: 'Skicka WhatsApp-notis till Maria nu',
-    errNoProperty: 'Hittade ingen giltig fastighet.',
-    errRequired: 'Fyll i alla obligatoriska fält (Incheckning och Utcheckning).',
-    errWindowRequired: 'Vänligen välj ett ankomstfönster och ett utcheckningsfönster.',
-    errDepartureBeforeArrival: 'Utcheckningsdatumet kan inte vara före incheckningsdatumet.',
-  },
-  en: {
-    title: 'Create New Guest Booking',
-    property: 'Property',
-    locked: 'Locked',
-    guestTitle: 'Guest Name / Booking Title (optional)',
-    guestPlaceholder: 'E.g. The Smith Family',
-    checkInDate: 'Check-in (Date) *',
-    exactArrival: 'Exact arrival time (optional)',
-    arrivalWindow: 'Arrival Window (Time of day) *',
-    morning: 'Morning',
-    afternoon: 'Afternoon',
-    evening: 'Evening',
-    checkOutDate: 'Check-out (Date) *',
-    exactDeparture: 'Exact departure time (optional)',
-    departureWindow: 'Departure Window (Cleaning start) *',
-    guestsCount: 'Number of guests',
-    laundryLabel: 'Bed linen & Laundry?',
-    laundryYes: '🧺 Yes, wash linen/towels',
-    laundryNo: '🚫 No laundry',
-    notesLabel: 'Instructions for Maria',
-    notesPlaceholder: 'E.g. Remember to put out the terrace furniture...',
-    notesHelp: 'Text is automatically translated to Spanish.',
-    saveBtn: 'Save & Schedule Cleaning',
-    savedTitle: 'Booking saved!',
-    savedSub: 'Click below to notify Maria on WhatsApp.',
-    whatsappBtn: 'Send WhatsApp notification to Maria now',
-    errNoProperty: 'No valid property found.',
-    errRequired: 'Please fill in all required fields (Check-in and Check-out).',
-    errWindowRequired: 'Please select an arrival window and a departure window.',
-    errDepartureBeforeArrival: 'Check-out date cannot be before check-in date.',
-  },
-  da: {
-    title: 'Opret ny gæstebooking',
-    property: 'Ejendom',
-    locked: 'Låst',
-    guestTitle: 'Gæstens navn / Bookingens titel (valgfrit)',
-    guestPlaceholder: 'F.eks. Familien Hansen',
-    checkInDate: 'Indtjekning (Dato) *',
-    exactArrival: 'Præcis ankomsttid (valgfrit)',
-    arrivalWindow: 'Ankomstvindue (Tid på dagen) *',
-    morning: 'Formiddag',
-    afternoon: 'Eftermiddag',
-    evening: 'Aften',
-    checkOutDate: 'Udtjekning (Dato) *',
-    exactDeparture: 'Præcis udtjekningstid (valgfrit)',
-    departureWindow: 'Udtjekningsvindue (Rengøringsstart) *',
-    guestsCount: 'Antal gæster',
-    laundryLabel: 'Sengelinned & Vask?',
-    laundryYes: '🧺 Ja, vask linned/håndklæder',
-    laundryNo: '🚫 Ingen vask',
-    notesLabel: 'Instruktioner til Maria',
-    notesPlaceholder: 'F.eks. Husk at stille terrassemøblerne ud...',
-    notesHelp: 'Teksten oversættes automatisk til spansk.',
-    saveBtn: 'Gem & planlæg rengøring',
-    savedTitle: 'Bookingen er gemt!',
-    savedSub: 'Klik nedenfor for at sende besked til Maria på WhatsApp.',
-    whatsappBtn: 'Send WhatsApp-notifikation til Maria nu',
-    errNoProperty: 'Ingen gyldig ejendom fundet.',
-    errRequired: 'Udfyld venligst alle obligatoriske felter (Indtjekning og Udtjekning).',
-    errWindowRequired: 'Vælg venligst et ankomstvindue og et udtjekningsvindue.',
-    errDepartureBeforeArrival: 'Udtjekningsdatoen kan ikke være før indtjekningsdatoen.',
-  },
-};
-
 function getTimeWindowFromExactTime(timeStr: string): ArrivalTimeWindow | DepartureTimeWindow | null {
   if (!timeStr) return null;
   const [hoursStr] = timeStr.split(':');
@@ -155,7 +60,7 @@ export default function BookingForm({
   onSuccess,
   lang = 'sv',
 }: BookingFormProps) {
-  const txt = formTexts[lang] || formTexts.sv;
+  const txt = translations.bookingForm[lang] || translations.bookingForm.sv;
 
   const effectiveProperties: Property[] = properties.length > 0
     ? properties
@@ -178,6 +83,7 @@ export default function BookingForm({
   const [guests, setGuests] = useState(2);
   const [laundry, setLaundry] = useState(true);
   const [notes, setNotes] = useState('');
+  const [sendWhatsAppDirectly, setSendWhatsAppDirectly] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -228,10 +134,9 @@ export default function BookingForm({
     setSubmitting(true);
 
     try {
-      // 1. Samla alla kända bokningar för fastigheten (både från props och färsk Supabase-fråga)
+      // 1. Samla alla kända bokningar för fastigheten
       let candidateBookings: { id?: string; booking_title?: string; check_in_date: string; check_out_date: string }[] = [...initialBookings];
 
-      // Gör även en säker sökning mot Supabase på BÅDE property_id och property_name
       const { data: dbBookings, error: fetchErr } = await supabase
         .from('bookings')
         .select('id, booking_title, check_out_date, check_in_date, property_id, property_name')
@@ -260,8 +165,6 @@ export default function BookingForm({
           const existingStart = b.check_in_date.split('T')[0].trim();
           const existingEnd = b.check_out_date.split('T')[0].trim();
 
-          // Överlappning uppstår om ny incheckning sker FÖRE befintlig utcheckning
-          // OCH ny utcheckning sker EFTER befintlig incheckning.
           return newStart < existingEnd && newEnd > existingStart;
         });
 
@@ -298,6 +201,12 @@ export default function BookingForm({
 
       setCreatedBooking(inserted);
 
+      // Skicka avisering direkt om kryssrutan är ikryssad
+      if (sendWhatsAppDirectly) {
+        const waUrl = getBookingWhatsAppUrl(inserted);
+        window.open(waUrl, '_blank');
+      }
+
       setBookingTitle('');
       setCheckInDate('');
       setCheckInTimeWindow('');
@@ -306,6 +215,7 @@ export default function BookingForm({
       setCheckOutTimeWindow('');
       setCheckOutExactTime('');
       setNotes('');
+      setSendWhatsAppDirectly(false);
       
       if (onBookingCreated) onBookingCreated();
       if (onSuccess) onSuccess();
@@ -575,6 +485,20 @@ export default function BookingForm({
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:bg-white focus:border-sky-500 transition"
             />
             <p className="text-[10px] text-slate-400 mt-1">{txt.notesHelp}</p>
+          </div>
+
+          {/* Val att skicka WhatsApp direkt */}
+          <div className="bg-emerald-50/70 border border-emerald-200 p-3 rounded-2xl flex items-center gap-2.5">
+            <input
+              type="checkbox"
+              id="sendWhatsAppDirectly"
+              checked={sendWhatsAppDirectly}
+              onChange={(e) => setSendWhatsAppDirectly(e.target.checked)}
+              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0"
+            />
+            <label htmlFor="sendWhatsAppDirectly" className="text-xs font-bold text-slate-800 cursor-pointer select-none">
+              {txt.sendWhatsAppDirectly}
+            </label>
           </div>
         </div>
 

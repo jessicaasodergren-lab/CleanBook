@@ -57,7 +57,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
 
   const handleDelete = async () => {
     if (b.status !== 'pending') {
-      alert('Kan inte radera: Bokningen är redan accepterad av Maria eller utförd.');
+      alert('Kan inte radera: Bokningen är redan accepterad av städfirmana eller utförd.');
       return;
     }
     if (!window.confirm(`Är du säker på att du vill ta bort bokningen "${b.booking_title}"?`)) return;
@@ -83,12 +83,12 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
           <div className="flex items-center gap-2 flex-wrap">
             {isPending && (
               <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                <Bell className="w-3 h-3 text-slate-950" /> Väntar på Marias svar
+                <Bell className="w-3 h-3 text-slate-950" /> Väntar på städfirmans svar
               </span>
             )}
             {isAccepted && (
               <span className="bg-sky-100 text-sky-900 border border-sky-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                <Check className="w-3 h-3 text-sky-600" /> Accepterad av Maria
+                <Check className="w-3 h-3 text-sky-600" /> Accepterad av städfirma
               </span>
             )}
             {isFinished && (
@@ -144,7 +144,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
           {isExpanded && validNoteEs && validNoteEs !== b.notes && (
             <div className="pt-1.5 border-t border-amber-200/60 mt-1.5">
               <span className="text-[9.5px] font-extrabold text-amber-800 block uppercase">
-                Spansk översättning (till Maria):
+                Spansk översättning:
               </span>
               <p className="font-medium text-amber-900 italic leading-relaxed">{validNoteEs}</p>
             </div>
@@ -182,7 +182,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
           {bookingIncidents.length > 0 && (
             <div className="bg-slate-100/70 border border-slate-200 p-3 rounded-xl space-y-1.5">
               <span className="font-black text-slate-900 uppercase text-[10px] block flex items-center gap-1">
-                <Camera className="w-3.5 h-3.5 text-slate-600" /> Marias fotorapport ({bookingIncidents.length}):
+                <Camera className="w-3.5 h-3.5 text-slate-600" /> Fotorapport ({bookingIncidents.length}):
               </span>
               <div className="space-y-1.5">
                 {bookingIncidents.map((inc) => {
@@ -220,7 +220,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
                   className="py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 flex-1"
                 >
                   <MessageSquare className="w-4 h-4 fill-white" />
-                  Avisera Maria på WhatsApp
+                  Avisera städfirma på WhatsApp
                 </a>
 
                 <button
@@ -235,7 +235,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
               </>
             ) : (
               <div className="w-full py-2 px-3 bg-slate-100 text-slate-500 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 border border-slate-200">
-                <Lock className="w-3.5 h-3.5 text-slate-400" /> Låst (accepterad/utförd av Maria)
+                <Lock className="w-3.5 h-3.5 text-slate-400" /> Låst (accepterad/utförd av städfirma)
               </div>
             )}
           </div>

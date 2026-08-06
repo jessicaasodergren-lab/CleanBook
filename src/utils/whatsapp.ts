@@ -12,7 +12,7 @@ export function getBookingWhatsAppUrl(booking: Booking, phone: string = APP_CONF
   const notesText = getValidNote(booking.notes_es, booking.notes);
 
   const msg = 
-`¡Hola Maria! 🧹
+`¡Hola! 🧹
 Nueva reserva para gestionar en CleanBook:
 
 📍 *Propiedad:* ${booking.property_name} (${booking.property_address || booking.property_name})
