@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { Property } from '../../lib/supabase';
 import { propertyService } from '../../services/propertyService';
+import { formatDate } from '../../lib/constants';
 import { translations } from '../../i18n/translations';
 import type { CleanerLanguage } from '../CleanerView';
 import {
@@ -19,6 +20,7 @@ import {
   AlertCircle,
   Loader2,
   Unlink,
+  Clock,
 } from 'lucide-react';
 
 interface ConnectionData {
@@ -45,6 +47,7 @@ const defaultCardTexts: Record<CleanerLanguage, any> = {
     specRooms: 'Habitaciones',
     specBathrooms: 'Baños',
     hostNotes: 'Instrucciones fijas del anfitrión',
+    notesUpdatedAt: 'Actualizado',
     myInternalSection: 'Mis notas privadas y tiempo (privado)',
     savedNotice: '¡Guardado!',
     editModalTimeLabel: 'Mi tiempo de limpieza estimado:',
@@ -64,6 +67,7 @@ const defaultCardTexts: Record<CleanerLanguage, any> = {
     specRooms: 'Rooms',
     specBathrooms: 'Bathrooms',
     hostNotes: 'Fixed host instructions',
+    notesUpdatedAt: 'Updated',
     myInternalSection: 'My private notes & time (private)',
     savedNotice: 'Saved!',
     editModalTimeLabel: 'My estimated cleaning time:',
@@ -83,6 +87,7 @@ const defaultCardTexts: Record<CleanerLanguage, any> = {
     specRooms: 'Rum',
     specBathrooms: 'Badrum',
     hostNotes: 'Värdens fasta instruktioner',
+    notesUpdatedAt: 'Uppdaterades',
     myInternalSection: 'Mina privata anteckningar & tid (privat)',
     savedNotice: 'Sparat!',
     editModalTimeLabel: 'Min beräknade städtid:',
@@ -109,7 +114,6 @@ export default function PropertyCard({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-  // Kraschsäker sammanslagning av översättningar
   const fallback = defaultCardTexts[lang] || defaultCardTexts.es;
   const txt = {
     ...fallback,
@@ -232,12 +236,23 @@ export default function PropertyCard({
             </div>
           )}
 
+          {/* VÄRDENS FASTA INSTRUKTIONER + TIDSSTÄMPEL */}
           {p.property_notes && (
             <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
-              <span className="font-black text-slate-700 uppercase text-[10px] tracking-wider block flex items-center gap-1">
-                <StickyNote className="w-3.5 h-3.5 text-slate-500" /> {txt.hostNotes}
-              </span>
-              <p className="font-bold text-slate-900 leading-relaxed whitespace-pre-line">
+              <div className="flex items-center justify-between">
+                <span className="font-black text-slate-700 uppercase text-[10px] tracking-wider block flex items-center gap-1">
+                  <StickyNote className="w-3.5 h-3.5 text-slate-500" /> {txt.hostNotes}
+                </span>
+
+                {p.notes_updated_at && (
+                  <span className="text-[9.5px] font-bold text-slate-400 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    {txt.notesUpdatedAt || 'Uppdaterades'}: {formatDate(p.notes_updated_at, lang)}
+                  </span>
+                )}
+              </div>
+
+              <p className="font-bold text-slate-900 leading-relaxed whitespace-pre-line pt-0.5">
                 {p.property_notes}
               </p>
             </div>

@@ -28,6 +28,7 @@ export interface Property {
   rooms?: string | null;
   bathrooms?: string | null;
   property_notes?: string | null;
+  notes_updated_at?: string | null;
   created_at?: string;
   // Virtuella fält som slås ihop i minnet av propertyService:
   host_name?: string | null;
@@ -65,7 +66,6 @@ export interface Booking {
   notes_es?: string | null;
   status: BookingStatus;
   created_at?: string;
-  // Virtuellt fält vid behov:
   host_name?: string | null;
 }
 

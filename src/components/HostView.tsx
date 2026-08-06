@@ -5,10 +5,11 @@ import { propertyService } from '../services/propertyService';
 import { translations } from '../i18n/translations';
 import { getPropertyInviteWhatsAppUrl } from '../utils/whatsapp';
 import CreatePropertyModal from './modals/CreatePropertyModal';
+import EditPropertyModal from './modals/EditPropertyModal';
 import BookingForm from './host/BookingForm';
 import BookingList from './host/BookingList';
 import CalendarView from './host/CalendarView';
-import { PlusCircle, List, Calendar as CalendarIcon, Loader2, Home, Share2, Copy, Check, Plus, Globe } from 'lucide-react';
+import { PlusCircle, List, Calendar as CalendarIcon, Loader2, Home, Share2, Copy, Check, Plus, Globe, Pencil } from 'lucide-react';
 
 export type HostLanguage = 'sv' | 'en' | 'da';
 
@@ -27,8 +28,8 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
   const [activeTab, setActiveTab] = useState<'create' | 'list' | 'calendar'>('create');
   const [copiedCode, setCopiedCode] = useState(false);
   const [showAddPropModal, setShowAddPropModal] = useState(false);
+  const [showEditPropModal, setShowEditPropModal] = useState(false);
 
-  // Kraschsäker hämtning av texter med inbyggd reservöversättning
   const txt = translations?.host?.[lang] || translations?.host?.sv || {
     tabNew: 'Ny bokning',
     tabList: 'Mina bokningar',
@@ -43,11 +44,17 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
     try {
       const data = await propertyService.getHostProperties(session.user.id);
       setProperties(data);
-      if (data.length > 0 && !selectedProperty) setSelectedProperty(data[0]);
+      if (data.length > 0) {
+        setSelectedProperty((prev) => {
+          if (!prev) return data[0];
+          const updatedCurrent = data.find((p) => p.id === prev.id);
+          return updatedCurrent || data[0];
+        });
+      }
     } catch (err) {
       console.error('Kunde inte hämta fastigheter:', err);
     }
-  }, [selectedProperty]);
+  }, []);
 
   useEffect(() => { fetchProperties(); }, [fetchProperties]);
 
@@ -61,7 +68,6 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
     ? bookings.filter((b) => b.property_id === selectedProperty.id || b.property_name.toLowerCase() === selectedProperty.name.toLowerCase())
     : bookings;
 
-  // Visa fulladdningsskärm endast vid första inladdningen när inga fastigheter hämtats än
   if (loading && properties.length === 0) {
     return (
       <div className="flex justify-center py-12">
@@ -96,14 +102,23 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         </div>
       )}
 
-      {/* FASTIGHETSINDIKATOR */}
+      {/* FASTIGHETSINDIKATOR MED REDIGERA-KNAPP */}
       {selectedProperty && (
         <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 shadow-lg space-y-2 backdrop-blur-md">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center font-black shrink-0"><Home className="w-4 h-4" /></div>
               <div className="min-w-0">
-                <h2 className="font-black text-xs sm:text-sm text-white truncate">{selectedProperty.name}</h2>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="font-black text-xs sm:text-sm text-white truncate">{selectedProperty.name}</h2>
+                  <button
+                    onClick={() => setShowEditPropModal(true)}
+                    className="p-1 bg-slate-800 hover:bg-slate-700 text-sky-400 rounded-lg transition border border-slate-700/80 shrink-0"
+                    title="Redigera fastighet"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
                 {selectedProperty.address && <p className="text-[11px] text-slate-400 truncate pt-0.5">{selectedProperty.address}</p>}
               </div>
             </div>
@@ -114,7 +129,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
                   {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               )}
-              <button onClick={() => setShowAddPropModal(true)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl transition border border-slate-700"><Plus className="w-3.5 h-3.5" /></button>
+              <button onClick={() => setShowAddPropModal(true)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl transition border border-slate-700" title="Ny fastighet"><Plus className="w-3.5 h-3.5" /></button>
             </div>
           </div>
 
@@ -142,7 +157,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         </div>
       )}
 
-      {/* MODAL */}
+      {/* MODAL FÖR SKAPA FASTIGHET */}
       <CreatePropertyModal
         isOpen={showAddPropModal}
         onClose={() => setShowAddPropModal(false)}
@@ -153,7 +168,19 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         }}
       />
 
-      {/* FLIK-INNEHÅLL - Bevarar tillståndet utan att slänga bort komponenten vid bakgrundsladdningar */}
+      {/* MODAL FÖR REDIGERA FASTIGHET */}
+      <EditPropertyModal
+        property={selectedProperty}
+        isOpen={showEditPropModal}
+        onClose={() => setShowEditPropModal(false)}
+        onUpdated={(updatedProp) => {
+          setSelectedProperty(updatedProp);
+          fetchProperties();
+          onRefresh();
+        }}
+      />
+
+      {/* FLIK-INNEHÅLL */}
       {selectedProperty && (
         activeTab === 'create' ? (
           <BookingForm

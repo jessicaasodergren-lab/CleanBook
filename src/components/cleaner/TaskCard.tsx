@@ -27,6 +27,7 @@ import {
   Lock,
   StickyNote,
   X,
+  Clock,
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -75,7 +76,6 @@ export default function TaskCard({
 
   const displayNote = getValidNote(b.notes_es, b.notes);
 
-  // Matchar fastigheten via property_id i första hand, annars namn/adress
   const matchedProp = properties.find(
     (p) =>
       (b.property_id && p.id === b.property_id) ||
@@ -160,7 +160,6 @@ export default function TaskCard({
             )}
           </div>
 
-          {/* ADRESS & STÄDTID */}
           <div className="flex items-center justify-between gap-2 pt-0.5">
             <h3 className="font-black text-slate-900 text-base sm:text-lg leading-tight flex items-center gap-1.5 truncate">
               <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -175,7 +174,6 @@ export default function TaskCard({
             )}
           </div>
           
-          {/* VÄRDENS NAMN (ALLTID SYNLIGT OM DET FINNS) */}
           {displayHost && (
             <p className="text-xs font-bold text-slate-600 flex items-center gap-1 pt-0.5">
               <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -331,13 +329,23 @@ export default function TaskCard({
             </div>
           )}
 
-          {/* VÄRDENS FASTA INSTRUKTIONER FÖR HUSET */}
+          {/* VÄRDENS FASTA INSTRUKTIONER FÖR HUSET MED TIDSSTÄMPEL */}
           {matchedProp?.property_notes && (
             <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1">
-              <span className="font-black text-slate-700 uppercase text-[10px] tracking-wider block flex items-center gap-1">
-                <StickyNote className="w-3.5 h-3.5 text-slate-500" /> Notas fijas de la casa:
-              </span>
-              <p className="font-bold text-slate-900 leading-relaxed whitespace-pre-line">
+              <div className="flex items-center justify-between">
+                <span className="font-black text-slate-700 uppercase text-[10px] tracking-wider block flex items-center gap-1">
+                  <StickyNote className="w-3.5 h-3.5 text-slate-500" /> Notas fijas de la casa:
+                </span>
+
+                {matchedProp.notes_updated_at && (
+                  <span className="text-[9.5px] font-bold text-slate-400 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    Actualizado: {formatDate(matchedProp.notes_updated_at, lang)}
+                  </span>
+                )}
+              </div>
+
+              <p className="font-bold text-slate-900 leading-relaxed whitespace-pre-line pt-0.5">
                 {matchedProp.property_notes}
               </p>
             </div>

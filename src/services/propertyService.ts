@@ -6,7 +6,6 @@ export const propertyService = {
    * Hämtar alla fastigheter som ägs av den inloggade värden och kopplar på värdens namn från profiles
    */
   async getHostProperties(userId: string): Promise<Property[]> {
-    // 1. Hämtar fastigheterna direkt utan beroende på databasrelationer
     const { data: props, error: propErr } = await supabase
       .from('properties')
       .select('*')
@@ -16,7 +15,6 @@ export const propertyService = {
     if (propErr) throw propErr;
     if (!props || props.length === 0) return [];
 
-    // 2. Hämtar värdens namn från profiles
     const { data: profile } = await supabase
       .from('profiles')
       .select('full_name')
@@ -44,6 +42,7 @@ export const propertyService = {
     property_notes?: string | null;
   }): Promise<Property> {
     const inviteCode = `CLEAN-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const nowIso = new Date().toISOString();
 
     const { data, error } = await supabase
       .from('properties')
@@ -56,13 +55,13 @@ export const propertyService = {
         rooms: payload.rooms || null,
         bathrooms: payload.bathrooms || null,
         property_notes: payload.property_notes || null,
+        notes_updated_at: payload.property_notes ? nowIso : null,
       })
       .select('*')
       .single();
 
     if (error) throw error;
 
-    // Hämtar namnet på skaparen från profiles
     const { data: profile } = await supabase
       .from('profiles')
       .select('full_name')
@@ -73,6 +72,41 @@ export const propertyService = {
       ...(data as Property),
       host_name: profile?.full_name || 'Värd',
     };
+  },
+
+  /**
+   * Uppdaterar en befintlig fastighet som Värd och stämplar tidsangivelse
+   */
+  async updateProperty(
+    propertyId: string,
+    payload: {
+      name: string;
+      address: string;
+      kvm?: string | null;
+      rooms?: string | null;
+      bathrooms?: string | null;
+      property_notes?: string | null;
+    }
+  ): Promise<Property> {
+    const nowIso = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('properties')
+      .update({
+        name: payload.name.trim(),
+        address: payload.address.trim() || payload.name.trim(),
+        kvm: payload.kvm?.trim() || null,
+        rooms: payload.rooms?.trim() || null,
+        bathrooms: payload.bathrooms?.trim() || null,
+        property_notes: payload.property_notes?.trim() || null,
+        notes_updated_at: nowIso,
+      })
+      .eq('id', propertyId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data as Property;
   },
 
   /**
@@ -87,7 +121,6 @@ export const propertyService = {
     if (error) throw error;
     if (!data) return [];
 
-    // Samlar alla unika host_ids
     const hostIds = Array.from(
       new Set(data.map((item: any) => item.properties?.host_id).filter(Boolean))
     );
@@ -126,7 +159,6 @@ export const propertyService = {
   async connectByInviteCode(cleanerId: string, code: string): Promise<void> {
     const formattedCode = code.trim().toUpperCase();
 
-    // Söker enbart mot invite_code
     const { data: prop, error: propErr } = await supabase
       .from('properties')
       .select('id')
