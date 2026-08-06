@@ -134,7 +134,6 @@ export default function BookingForm({
     setSubmitting(true);
 
     try {
-      // 1. Samla alla kända bokningar för fastigheten
       let candidateBookings: { id?: string; booking_title?: string; check_in_date: string; check_out_date: string }[] = [...initialBookings];
 
       const { data: dbBookings, error: fetchErr } = await supabase
@@ -154,7 +153,6 @@ export default function BookingForm({
         candidateBookings = Array.from(map.values());
       }
 
-      // 2. Utför överlappskontroll med rensade datumsträngar
       if (candidateBookings.length > 0) {
         const newStart = checkInDate.trim();
         const newEnd = checkOutDate.trim();
@@ -180,7 +178,6 @@ export default function BookingForm({
         }
       }
 
-      // Servicen sköter skapande & automatisk översättning till spanska!
       const inserted = await bookingService.createBooking({
         property_id: prop.id,
         property_name: prop.name,
@@ -201,7 +198,6 @@ export default function BookingForm({
 
       setCreatedBooking(inserted);
 
-      // Skicka avisering direkt om kryssrutan är ikryssad
       if (sendWhatsAppDirectly) {
         const waUrl = getBookingWhatsAppUrl(inserted);
         window.open(waUrl, '_blank');
@@ -250,7 +246,7 @@ export default function BookingForm({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
+      <form onSubmit={handleSubmit} className="bg-white text-slate-900 p-5 sm:p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-200">
         <div className="border-b border-slate-100 pb-3">
           <h3 className="text-base font-black text-slate-900">{txt.title}</h3>
         </div>
@@ -305,11 +301,13 @@ export default function BookingForm({
             />
           </div>
 
+          {/* INCHECKNING: Datum & Ankomsttid bredvid varandra även på mobil */}
           <div className="bg-sky-50/60 p-3.5 rounded-2xl border border-sky-100 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block font-bold text-sky-900 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-sky-600" /> {txt.checkInDate}
+                <label className="block font-bold text-sky-900 mb-1 truncate flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                  <span className="truncate">{txt.checkInDate}</span>
                 </label>
                 <input
                   type="date"
@@ -321,8 +319,9 @@ export default function BookingForm({
               </div>
 
               <div>
-                <label className="block font-bold text-sky-900 mb-1 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-sky-600" /> {txt.exactArrival}
+                <label className="block font-bold text-sky-900 mb-1 truncate flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                  <span className="truncate">{txt.exactArrival}</span>
                 </label>
                 <input
                   type="time"
@@ -339,7 +338,7 @@ export default function BookingForm({
                 <button
                   type="button"
                   onClick={() => setCheckInTimeWindow('morning')}
-                  className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
                     checkInTimeWindow === 'morning'
                       ? 'bg-sky-600 text-white border-sky-600 shadow-md'
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
@@ -350,7 +349,7 @@ export default function BookingForm({
                 <button
                   type="button"
                   onClick={() => setCheckInTimeWindow('afternoon')}
-                  className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
                     checkInTimeWindow === 'afternoon'
                       ? 'bg-sky-600 text-white border-sky-600 shadow-md'
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
@@ -361,7 +360,7 @@ export default function BookingForm({
                 <button
                   type="button"
                   onClick={() => setCheckInTimeWindow('evening')}
-                  className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
                     checkInTimeWindow === 'evening'
                       ? 'bg-sky-600 text-white border-sky-600 shadow-md'
                       : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
@@ -373,11 +372,13 @@ export default function BookingForm({
             </div>
           </div>
 
+          {/* UTCHECKNING: Datum & Utcheckningstid bredvid varandra även på mobil */}
           <div className="bg-amber-50/60 p-3.5 rounded-2xl border border-amber-100 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block font-bold text-amber-900 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-amber-600" /> {txt.checkOutDate}
+                <label className="block font-bold text-amber-900 mb-1 truncate flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="truncate">{txt.checkOutDate}</span>
                 </label>
                 <input
                   type="date"
@@ -390,8 +391,9 @@ export default function BookingForm({
               </div>
 
               <div>
-                <label className="block font-bold text-amber-900 mb-1 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-600" /> {txt.exactDeparture}
+                <label className="block font-bold text-amber-900 mb-1 truncate flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="truncate">{txt.exactDeparture}</span>
                 </label>
                 <input
                   type="time"
@@ -408,7 +410,7 @@ export default function BookingForm({
                 <button
                   type="button"
                   onClick={() => setCheckOutTimeWindow('morning')}
-                  className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
                     checkOutTimeWindow === 'morning'
                       ? 'bg-amber-600 text-white border-amber-600 shadow-md'
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
@@ -419,7 +421,7 @@ export default function BookingForm({
                 <button
                   type="button"
                   onClick={() => setCheckOutTimeWindow('afternoon')}
-                  className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
                     checkOutTimeWindow === 'afternoon'
                       ? 'bg-amber-600 text-white border-amber-600 shadow-md'
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
@@ -430,7 +432,7 @@ export default function BookingForm({
                 <button
                   type="button"
                   onClick={() => setCheckOutTimeWindow('evening')}
-                  className={`py-2.5 px-2 text-xs font-extrabold rounded-xl border transition text-center ${
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
                     checkOutTimeWindow === 'evening'
                       ? 'bg-amber-600 text-white border-amber-600 shadow-md'
                       : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
@@ -442,10 +444,12 @@ export default function BookingForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {/* GÄSTER & TVÄTT: Bredvid varandra även på mobil */}
+          <div className="grid grid-cols-2 gap-2 pt-1">
             <div>
-              <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Users className="w-3.5 h-3.5 text-slate-500" /> {txt.guestsCount}
+              <label className="block font-bold text-slate-700 mb-1 truncate flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span className="truncate">{txt.guestsCount}</span>
               </label>
               <input
                 type="number"
@@ -458,11 +462,11 @@ export default function BookingForm({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">{txt.laundryLabel}</label>
+              <label className="block font-bold text-slate-700 mb-1 truncate">{txt.laundryLabel}</label>
               <button
                 type="button"
                 onClick={() => setLaundry(!laundry)}
-                className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                className={`w-full py-2.5 px-2 rounded-xl border text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 ${
                   laundry
                     ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
                     : 'bg-slate-100 text-slate-600 border-slate-200'
@@ -487,7 +491,6 @@ export default function BookingForm({
             <p className="text-[10px] text-slate-400 mt-1">{txt.notesHelp}</p>
           </div>
 
-          {/* Val att skicka WhatsApp direkt */}
           <div className="bg-emerald-50/70 border border-emerald-200 p-3 rounded-2xl flex items-center gap-2.5">
             <input
               type="checkbox"
