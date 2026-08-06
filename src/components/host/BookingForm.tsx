@@ -25,7 +25,6 @@ import {
   MapPin,
   Lock,
   PlusCircle,
-  Sparkles,
 } from 'lucide-react';
 
 interface BookingFormProps {
@@ -85,7 +84,6 @@ export default function BookingForm({
   const [guests, setGuests] = useState(2);
   const [laundry, setLaundry] = useState(true);
   const [notes, setNotes] = useState('');
-  const [sendWhatsAppDirectly, setSendWhatsAppDirectly] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -117,7 +115,6 @@ export default function BookingForm({
     setCheckOutTimeWindow('');
     setCheckOutExactTime('');
     setNotes('');
-    setSendWhatsAppDirectly(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -211,11 +208,6 @@ export default function BookingForm({
       });
 
       setCreatedBooking(inserted);
-
-      if (sendWhatsAppDirectly) {
-        const waUrl = getBookingWhatsAppUrl(inserted);
-        window.open(waUrl, '_blank');
-      }
 
       if (onBookingCreated) onBookingCreated();
       if (onSuccess) onSuccess();
@@ -532,19 +524,6 @@ export default function BookingForm({
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:bg-white focus:border-sky-500 transition"
             />
             <p className="text-[10px] text-slate-400 mt-1">{txt.notesHelp}</p>
-          </div>
-
-          <div className="bg-emerald-50/70 border border-emerald-200 p-3 rounded-2xl flex items-center gap-2.5">
-            <input
-              type="checkbox"
-              id="sendWhatsAppDirectly"
-              checked={sendWhatsAppDirectly}
-              onChange={(e) => setSendWhatsAppDirectly(e.target.checked)}
-              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0"
-            />
-            <label htmlFor="sendWhatsAppDirectly" className="text-xs font-bold text-slate-800 cursor-pointer select-none">
-              {txt.sendWhatsAppDirectly}
-            </label>
           </div>
         </div>
 

@@ -61,6 +61,15 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
     ? bookings.filter((b) => b.property_id === selectedProperty.id || b.property_name.toLowerCase() === selectedProperty.name.toLowerCase())
     : bookings;
 
+  // Visa fulladdningsskärm endast vid första inladdningen när inga fastigheter hämtats än
+  if (loading && properties.length === 0) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-xl mx-auto px-2 sm:px-4 space-y-3">
       {/* SPRÅKVÄLJARE */}
@@ -144,12 +153,17 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
         }}
       />
 
-      {/* FLIK-INNEHÅLL */}
+      {/* FLIK-INNEHÅLL - Bevarar tillståndet utan att slänga bort komponenten vid bakgrundsladdningar */}
       {selectedProperty && (
-        loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 text-sky-400 animate-spin" /></div>
-        ) : activeTab === 'create' ? (
-          <BookingForm properties={properties} selectedPropertyId={selectedProperty.id} existingBookings={propertyBookings} onBookingCreated={onRefresh} lang={lang} />
+        activeTab === 'create' ? (
+          <BookingForm
+            key={selectedProperty.id}
+            properties={properties}
+            selectedPropertyId={selectedProperty.id}
+            existingBookings={propertyBookings}
+            onBookingCreated={onRefresh}
+            lang={lang}
+          />
         ) : activeTab === 'list' ? (
           <BookingList bookings={propertyBookings} incidents={incidents} onRefresh={onRefresh} />
         ) : (
