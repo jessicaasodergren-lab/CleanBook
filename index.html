@@ -2,16 +2,59 @@
 <html lang="sv">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CleanBook – Smart Cleaning Management</title>
     <meta name="description" content="CleanBook – Smart Cleaning Management. System för hantering av städuppdrag och bokningar i semesterbostäder." />
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Ikon för iPhone / iPad hemskärm -->
+
+    <!-- Ikoner som standard (Prod) -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <!-- Ikon för vanliga webbläsarflikar -->
     <link rel="icon" type="image/png" sizes="32x32" href="/icon-192.png" />
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- BLIXTSNABBT SKRIPT FÖR MOBILA HEMSKÄRMS-IKONER I DEV -->
+    <script>
+      (function() {
+        var isDev = !window.location.hostname.includes('clean-book-nine.vercel.app');
+        if (isDev) {
+          document.title = '[TEST] CleanBook';
+          var testIcon = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="28" fill="%23f59e0b"/><text x="50" y="62" font-size="34" font-weight="900" font-family="sans-serif" text-anchor="middle" fill="%230f172a">TEST</text></svg>';
+          
+          // Skapa ett dynamiskt manifest för mobilen
+          var testManifest = {
+            name: "[TEST] CleanBook",
+            short_name: "[TEST] CleanBook",
+            start_url: "/",
+            display: "standalone",
+            background_color: "#0f172a",
+            theme_color: "#f59e0b",
+            icons: [
+              {
+                src: testIcon,
+                sizes: "192x192 512x512",
+                type: "image/svg+xml",
+                purpose: "any maskable"
+              }
+            ]
+          };
+
+          var manifestBlob = new Blob([JSON.stringify(testManifest)], { type: 'application/json' });
+          var manifestUrl = URL.createObjectURL(manifestBlob);
+
+          // Uppdatera mobilikonerna omedelbart
+          document.addEventListener('DOMContentLoaded', function() {
+            var appleIcon = document.querySelector("link[rel='apple-touch-icon']");
+            if (appleIcon) appleIcon.href = testIcon;
+
+            var manifestLink = document.querySelector("link[rel='manifest']");
+            if (manifestLink) manifestLink.href = manifestUrl;
+
+            var favIcons = document.querySelectorAll("link[rel*='icon']");
+            favIcons.forEach(function(i) { i.href = testIcon; });
+          });
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

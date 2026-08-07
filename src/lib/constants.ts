@@ -5,7 +5,7 @@ export const APP_CONFIG = {
   tagline: 'Smart Cleaning Management',
   fullTitle: 'CleanBook – Smart Cleaning Management',
   description: 'Hantering av städuppdrag och bokningar i semesterbostäder.',
-  version: 'v0.9.0-beta.1', // <-- Här styr du appens aktuella version
+  version: 'v0.9.0-beta.2', // <-- Här styr du appens aktuella version
   mariaPhoneNumber: '46721886174', // WhatsApp-format (utan + eller mellanslag)
 };
 
