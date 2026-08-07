@@ -5,68 +5,66 @@ export const propertyService = {
   /**
    * Hämtar alla fastigheter som ägs av den inloggade värden och kopplar på värdens namn från profiles
    */
-  // Ersätt getHostProperties i src/services/propertyService.ts
-async getHostProperties(hostId: string): Promise<Property[]> {
-  // 1. Hämta värdens alla fastigheter först
-  const { data: props, error } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('host_id', hostId)
-    .order('created_at', { ascending: false });
+  async getHostProperties(hostId: string): Promise<Property[]> {
+    const { data: props, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('host_id', hostId)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Fel vid hämtning av fastigheter:', error);
-    throw error;
-  }
-
-  if (!props || props.length === 0) return [];
-
-  const propIds = props.map((p) => p.id);
-
-  // 2. Hämta kopplade städerskor i separata anrop för att förhindra krasch om en relation saknas
-  try {
-    const { data: conns } = await supabase
-      .from('property_connections')
-      .select('property_id, cleaner_id')
-      .in('property_id', propIds);
-
-    if (conns && conns.length > 0) {
-      const cleanerIds = Array.from(new Set(conns.map((c) => c.cleaner_id)));
-
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone, email')
-        .in('id', cleanerIds);
-
-      if (profiles) {
-        const profileMap = new Map(profiles.map((p) => [p.id, p]));
-        const propCleanersMap: Record<string, CleanerInfo[]> = {};
-
-        conns.forEach((c) => {
-          const profile = profileMap.get(c.cleaner_id);
-          if (profile) {
-            if (!propCleanersMap[c.property_id]) propCleanersMap[c.property_id] = [];
-            propCleanersMap[c.property_id].push({
-              id: profile.id,
-              full_name: profile.full_name || null,
-              phone: profile.phone || null,
-              email: profile.email,
-            });
-          }
-        });
-
-        return props.map((p) => ({
-          ...p,
-          cleaners: propCleanersMap[p.id] || [],
-        }));
-      }
+    if (error) {
+      console.error('Fel vid hämtning av fastigheter:', error);
+      throw error;
     }
-  } catch (err) {
-    console.warn('Kunde inte läsa in städerskor, visar fastigheter ändå:', err);
-  }
 
-  return props;
-},
+    if (!props || props.length === 0) return [];
+
+    const propIds = props.map((p) => p.id);
+
+    try {
+      const { data: conns } = await supabase
+        .from('property_connections')
+        .select('property_id, cleaner_id')
+        .in('property_id', propIds);
+
+      if (conns && conns.length > 0) {
+        const cleanerIds = Array.from(new Set(conns.map((c) => c.cleaner_id)));
+
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, phone, email')
+          .in('id', cleanerIds);
+
+        if (profiles) {
+          const profileMap = new Map(profiles.map((p) => [p.id, p]));
+          const propCleanersMap: Record<string, any[]> = {};
+
+          conns.forEach((c) => {
+            const profile = profileMap.get(c.cleaner_id);
+            if (profile) {
+              if (!propCleanersMap[c.property_id]) propCleanersMap[c.property_id] = [];
+              propCleanersMap[c.property_id].push({
+                id: profile.id,
+                full_name: profile.full_name || null,
+                phone: profile.phone || null,
+                email: profile.email,
+              });
+            }
+          });
+
+          return props.map((p) => ({
+            ...p,
+            cleaners: propCleanersMap[p.id] || [],
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('Kunde inte läsa in städerskor, visar fastigheter ändå:', err);
+    }
+
+    return props;
+  },
+
   /**
    * Skapar en ny fastighet (utan host_name i databaskolumnen)
    */
@@ -98,7 +96,6 @@ async getHostProperties(hostId: string): Promise<Property[]> {
 
     if (error) throw error;
 
-    // Hämtar namnet på skaparen från profiles
     const { data: profile } = await supabase
       .from('profiles')
       .select('full_name')
@@ -109,6 +106,39 @@ async getHostProperties(hostId: string): Promise<Property[]> {
       ...(data as Property),
       host_name: profile?.full_name || 'Värd',
     };
+  },
+
+  /**
+   * Uppdaterar en befintlig fastighet i Supabase
+   */
+  async updateProperty(
+    propertyId: string,
+    payload: {
+      name: string;
+      address: string;
+      kvm?: string | null;
+      rooms?: string | null;
+      bathrooms?: string | null;
+      property_notes?: string | null;
+    }
+  ): Promise<Property> {
+    const { data, error } = await supabase
+      .from('properties')
+      .update({
+        name: payload.name,
+        address: payload.address,
+        kvm: payload.kvm || null,
+        rooms: payload.rooms || null,
+        bathrooms: payload.bathrooms || null,
+        property_notes: payload.property_notes || null,
+        notes_updated_at: new Date().toISOString(),
+      })
+      .eq('id', propertyId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data as Property;
   },
 
   /**
@@ -123,7 +153,6 @@ async getHostProperties(hostId: string): Promise<Property[]> {
     if (error) throw error;
     if (!data) return [];
 
-    // Samlar alla unika host_ids
     const hostIds = Array.from(
       new Set(data.map((item: any) => item.properties?.host_id).filter(Boolean))
     );
@@ -162,7 +191,6 @@ async getHostProperties(hostId: string): Promise<Property[]> {
   async connectByInviteCode(cleanerId: string, code: string): Promise<void> {
     const formattedCode = code.trim().toUpperCase();
 
-    // Söker enbart mot invite_code
     const { data: prop, error: propErr } = await supabase
       .from('properties')
       .select('id')
@@ -188,7 +216,12 @@ async getHostProperties(hostId: string): Promise<Property[]> {
   /**
    * Uppdaterar städerskans privata anteckningar & uppskattade städtid
    */
-  async updateCleanerConnection(cleanerId: string, propertyId: string, time: string | null, notes: string | null): Promise<void> {
+  async updateCleanerConnection(
+    cleanerId: string,
+    propertyId: string,
+    time: string | null,
+    notes: string | null
+  ): Promise<void> {
     const { error } = await supabase
       .from('property_connections')
       .update({
