@@ -12,12 +12,9 @@ import {
   MapPin,
   Camera,
   User,
-  AlertTriangle,
   Loader2,
   ThumbsUp,
   Check,
-  Clock,
-  CalendarCheck,
 } from 'lucide-react';
 
 interface CleanerCalendarViewProps {
@@ -28,68 +25,37 @@ interface CleanerCalendarViewProps {
   lang?: CleanerLanguage;
 }
 
-const cleanerCalTexts: Record<CleanerLanguage, any> = {
-  es: {
-    title: 'Calendario de Limpiezas',
-    btnToday: 'Hoy',
-    daysOfWeek: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-    months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
-    legendPending: '🟡 Por aceptar',
-    legendAccepted: '🔵 Aceptada',
-    legendFinished: '💚 Completada',
-    modalTitle: 'Detalles de Limpieza',
-    modalStatusLabel: 'Estado de tarea:',
-    modalHostLabel: 'Anfitriona:',
-    modalInstruction: 'Instrucción del anfitrión:',
-    modalWindow: 'Ventana de Limpieza',
-    modalNextArrival: 'Próxima entrada (Límite):',
-    departure: '🚪 Salida',
-    arrival: '🔑 Entrada',
-    noNextArrival: 'Sin próxima entrada',
-    guests: 'huéspedes',
-    laundryYes: '🧺 Lavar lencería',
-    laundryNo: '🚫 Sin colada',
-    btnAccept: 'Aceptar tarea',
-    btnComplete: 'Completado',
-    btnIncident: 'Foto / Daño',
-    turnoverSameDay: '⚡ Cambio hoy',
-    windowLabel: '🧹 Ventana',
-    departureShort: '🚪 Salida',
-    arrivalShort: '🔑 Entrada',
-  },
-  en: {
-    title: 'Cleaning Calendar',
-    btnToday: 'Today',
-    daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-    legendPending: '🟡 Pending',
-    legendAccepted: '🔵 Accepted',
-    legendFinished: '💚 Completed',
-    modalTitle: 'Cleaning Details',
-    modalStatusLabel: 'Task Status:',
-    modalHostLabel: 'Host:',
-    modalInstruction: 'Host Instruction:',
-    modalWindow: 'Cleaning Window',
-    modalNextArrival: 'Next arrival (Deadline):',
-    departure: '🚪 Departure',
-    arrival: '🔑 Arrival',
-    noNextArrival: 'No upcoming arrival',
-    guests: 'guests',
-    laundryYes: '🧺 Wash linen',
-    laundryNo: '🚫 No laundry',
-    btnAccept: 'Accept task',
-    btnComplete: 'Completed',
-    btnIncident: 'Photo / Damage',
-    turnoverSameDay: '⚡ Turnover',
-    windowLabel: '🧹 Window',
-    departureShort: '🚪 Departure',
-    arrivalShort: '🔑 Arrival',
-  },
+const colStartClasses: Record<number, string> = {
+  1: 'col-start-1',
+  2: 'col-start-2',
+  3: 'col-start-3',
+  4: 'col-start-4',
+  5: 'col-start-5',
+  6: 'col-start-6',
+  7: 'col-start-7',
+};
+
+const colSpanClasses: Record<number, string> = {
+  1: 'col-span-1',
+  2: 'col-span-2',
+  3: 'col-span-3',
+  4: 'col-span-4',
+  5: 'col-span-5',
+  6: 'col-span-6',
+  7: 'col-span-7',
+};
+
+const daysOfWeekMap: Record<CleanerLanguage, string[]> = {
+  sv: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'],
+  es: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+  en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  da: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'],
+};
+
+const legendTexts: Record<CleanerLanguage, any> = {
   sv: {
     title: 'Städkalender',
     btnToday: 'Idag',
-    daysOfWeek: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'],
-    months: ['Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni', 'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'],
     legendPending: '🟡 Väntar',
     legendAccepted: '🔵 Accepterad',
     legendFinished: '💚 Slutförd',
@@ -97,10 +63,9 @@ const cleanerCalTexts: Record<CleanerLanguage, any> = {
     modalStatusLabel: 'Uppdragsstatus:',
     modalHostLabel: 'Värd:',
     modalInstruction: 'Värdens instruktion:',
-    modalWindow: 'Städfönster',
     modalNextArrival: 'Nästa incheckning (Deadline):',
-    departure: '🚪 Utcheckning',
-    arrival: '🔑 Incheckning',
+    departure: 'Utcheckning / Städdag',
+    arrival: 'Incheckning',
     noNextArrival: 'Ingen nästa incheckning',
     guests: 'gäster',
     laundryYes: '🧺 Tvätta lakan/handdukar',
@@ -108,14 +73,72 @@ const cleanerCalTexts: Record<CleanerLanguage, any> = {
     btnAccept: 'Acceptera uppdrag',
     btnComplete: 'Slutförd',
     btnIncident: 'Foto / Skada',
-    turnoverSameDay: '⚡ Byte idag',
-    windowLabel: '🧹 Städfönster',
-    departureShort: '🚪 Utcheckning',
-    arrivalShort: '🔑 Incheckning',
+  },
+  es: {
+    title: 'Calendario de Limpiezas',
+    btnToday: 'Hoy',
+    legendPending: '🟡 Por aceptar',
+    legendAccepted: '🔵 Aceptada',
+    legendFinished: '💚 Completada',
+    modalTitle: 'Detalles de Limpieza',
+    modalStatusLabel: 'Estado de tarea:',
+    modalHostLabel: 'Anfitriona:',
+    modalInstruction: 'Instrucción del anfitrión:',
+    modalNextArrival: 'Próxima entrada (Límite):',
+    departure: 'Salida / Limpieza',
+    arrival: 'Entrada',
+    noNextArrival: 'Sin próxima entrada',
+    guests: 'huéspedes',
+    laundryYes: '🧺 Lavar lencería',
+    laundryNo: '🚫 Sin colada',
+    btnAccept: 'Aceptar tarea',
+    btnComplete: 'Completado',
+    btnIncident: 'Foto / Daño',
+  },
+  en: {
+    title: 'Cleaning Calendar',
+    btnToday: 'Today',
+    legendPending: '🟡 Pending',
+    legendAccepted: '🔵 Accepted',
+    legendFinished: '💚 Completed',
+    modalTitle: 'Cleaning Details',
+    modalStatusLabel: 'Task Status:',
+    modalHostLabel: 'Host:',
+    modalInstruction: 'Host Instruction:',
+    modalNextArrival: 'Next arrival (Deadline):',
+    departure: 'Departure / Cleaning',
+    arrival: 'Arrival',
+    noNextArrival: 'No upcoming arrival',
+    guests: 'guests',
+    laundryYes: '🧺 Wash linen',
+    laundryNo: '🚫 No laundry',
+    btnAccept: 'Accept task',
+    btnComplete: 'Completed',
+    btnIncident: 'Photo / Damage',
+  },
+  da: {
+    title: 'Rengøringskalender',
+    btnToday: 'I dag',
+    legendPending: '🟡 Afventer',
+    legendAccepted: '🔵 Accepteret',
+    legendFinished: '💚 Gennemført',
+    modalTitle: 'Detaljer om rengøring',
+    modalStatusLabel: 'Opgavestatus:',
+    modalHostLabel: 'Vært:',
+    modalInstruction: 'Værtens instruktion:',
+    modalNextArrival: 'Næste ankomst (Deadline):',
+    departure: 'Udtjekning / Rengøring',
+    arrival: 'Indtjekning',
+    noNextArrival: 'Ingen næste ankomst',
+    guests: 'gæster',
+    laundryYes: '🧺 Vask linned/håndklæder',
+    laundryNo: '🚫 Ingen vask',
+    btnAccept: 'Accepter opgave',
+    btnComplete: 'Gennemført',
+    btnIncident: 'Foto / Skade',
   },
 };
 
-// Hjälpfunktion för att räkna ut städfönstret för en bokning
 function getBookingWindowInfo(b: Booking, allBookings: Booking[]) {
   const samePropBookings = allBookings.filter(
     (other) =>
@@ -146,10 +169,14 @@ export default function CleanerCalendarView({
   const [openIncidentFor, setOpenIncidentFor] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
 
-  const txt = cleanerCalTexts[lang] || cleanerCalTexts.es;
+  const txt = legendTexts[lang] || legendTexts.es;
+  const daysOfWeek = daysOfWeekMap[lang] || daysOfWeekMap.es;
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  const monthNameRaw = currentDate.toLocaleDateString(lang, { month: 'long' });
+  const monthName = monthNameRaw.charAt(0).toUpperCase() + monthNameRaw.slice(1);
 
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
@@ -163,11 +190,19 @@ export default function CleanerCalendarView({
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const calendarGrid = [];
-  for (let i = 0; i < startDayOfWeek; i++) calendarGrid.push(null);
+  const monthDays: ({ day: number; dateStr: string } | null)[] = [];
+  for (let i = 0; i < startDayOfWeek; i++) monthDays.push(null);
   for (let day = 1; day <= daysInMonth; day++) {
     const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    calendarGrid.push({ day, dateStr: dayStr });
+    monthDays.push({ day, dateStr: dayStr });
+  }
+  while (monthDays.length % 7 !== 0) {
+    monthDays.push(null);
+  }
+
+  const weeks: ({ day: number; dateStr: string } | null)[][] = [];
+  for (let i = 0; i < monthDays.length; i += 7) {
+    weeks.push(monthDays.slice(i, i + 7));
   }
 
   const handleAcceptTask = async (b: Booking) => {
@@ -187,7 +222,8 @@ export default function CleanerCalendarView({
   };
 
   return (
-    <div className="bg-white text-slate-900 rounded-3xl shadow-2xl p-3.5 sm:p-5 border border-slate-200 space-y-3">
+    <div className="bg-white text-slate-900 rounded-3xl shadow-2xl p-3.5 sm:p-5 border border-slate-200 space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100">
@@ -195,7 +231,7 @@ export default function CleanerCalendarView({
           </div>
           <div>
             <h3 className="font-black text-slate-900 text-sm sm:text-base leading-tight">
-              {txt.months[month]} {year}
+              {monthName} {year}
             </h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               {txt.title}
@@ -219,64 +255,68 @@ export default function CleanerCalendarView({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 text-center font-black text-[10px] text-slate-400 uppercase tracking-wider">
-        {txt.daysOfWeek.map((day: string, idx: number) => (
+      {/* Veckodags-rubriker */}
+      <div className="grid grid-cols-7 text-center font-black text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider">
+        {daysOfWeek.map((day: string, idx: number) => (
           <div key={idx}>{day}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-        {calendarGrid.map((item, idx) => {
-          if (!item) return <div key={`empty-${idx}`} className="h-16 sm:h-20 bg-slate-50/40 rounded-2xl" />;
+      {/* Vecko-Grid */}
+      <div className="space-y-2">
+        {weeks.map((week, weekIdx) => {
+          const validWeekDays = week.filter((d) => d !== null) as { day: number; dateStr: string }[];
+          if (validWeekDays.length === 0) return null;
 
-          const isToday = item.dateStr === todayStr;
+          const weekStartStr = validWeekDays[0].dateStr;
+          const weekEndStr = validWeekDays[validWeekDays.length - 1].dateStr;
 
-          // Hitta alla städfönster som berör detta datum i kalendern
-          const dayItems = bookings.reduce<
-            { booking: Booking; type: 'same_day' | 'start' | 'end' | 'between' }[]
-          >((acc, b) => {
-            const { windowStart, windowEnd } = getBookingWindowInfo(b, bookings);
-
-            const isStart = item.dateStr === windowStart;
-            const isEnd = windowEnd ? item.dateStr === windowEnd : false;
-            const isBetween = windowEnd ? item.dateStr > windowStart && item.dateStr < windowEnd : false;
-
-            if (isStart && isEnd) {
-              acc.push({ booking: b, type: 'same_day' });
-            } else if (isStart) {
-              acc.push({ booking: b, type: 'start' });
-            } else if (isEnd) {
-              acc.push({ booking: b, type: 'end' });
-            } else if (isBetween) {
-              acc.push({ booking: b, type: 'between' });
-            }
-
-            return acc;
-          }, []);
+          const weekBookings = bookings.filter((b) => {
+            if (!b.check_in_date || !b.check_out_date) return false;
+            return b.check_in_date <= weekEndStr && b.check_out_date >= weekStartStr;
+          });
 
           return (
-            <div
-              key={item.dateStr}
-              className={`min-h-[64px] sm:min-h-[80px] border rounded-2xl p-1 flex flex-col justify-between transition-all ${
-                isToday
-                  ? 'border-sky-500 bg-sky-50/40 shadow-sm ring-2 ring-sky-500/20'
-                  : 'border-slate-100 bg-slate-50/30 hover:border-slate-200 hover:bg-slate-50/80'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className={`text-[10px] font-black w-4.5 h-4.5 flex items-center justify-center rounded-full ${
-                    isToday ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-700'
-                  }`}
-                >
-                  {item.day}
-                </span>
+            <div key={`week-${weekIdx}`} className="border border-slate-200/80 rounded-2xl bg-slate-50/30 p-1.5 space-y-1.5">
+              {/* Dagshuvuden */}
+              <div className="grid grid-cols-7 gap-1">
+                {week.map((dayObj, dayIdx) => {
+                  if (!dayObj) return <div key={`empty-${dayIdx}`} className="h-6" />;
+                  const isToday = dayObj.dateStr === todayStr;
+
+                  return (
+                    <div key={dayObj.dateStr} className="text-center">
+                      <span
+                        className={`inline-flex items-center justify-center text-[10px] sm:text-[11px] font-black w-5 h-5 sm:w-6 sm:h-6 rounded-full ${
+                          isToday ? 'bg-sky-600 text-white shadow-sm ring-2 ring-sky-500/20' : 'text-slate-700'
+                        }`}
+                      >
+                        {dayObj.day}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="space-y-1 overflow-y-auto max-h-12 pt-0.5">
-                {dayItems.map(({ booking: b, type }) => {
-                  const isFinished = b.status === 'finished';
-                  const isAccepted = b.status === 'accepted';
+              {/* Flerdagarsfält - visar ENDAST adressen */}
+              <div className="grid grid-cols-7 gap-y-1">
+                {weekBookings.map((b) => {
+                  let startColIdx = week.findIndex((d) => d && d.dateStr >= b.check_in_date);
+                  if (startColIdx === -1) startColIdx = week.findIndex((d) => d !== null);
+
+                  let endColIdx = 6;
+                  for (let i = 6; i >= 0; i--) {
+                    if (week[i] && week[i]!.dateStr <= b.check_out_date) {
+                      endColIdx = i;
+                      break;
+                    }
+                  }
+
+                  const colStart = startColIdx + 1;
+                  const colSpan = Math.max(1, endColIdx - startColIdx + 1);
+
+                  const isTrueStart = week[startColIdx]?.dateStr === b.check_in_date;
+                  const isTrueEnd = week[endColIdx]?.dateStr === b.check_out_date;
 
                   const matchedProp = properties.find(
                     (p) =>
@@ -284,27 +324,29 @@ export default function CleanerCalendarView({
                       p.address.toLowerCase() === (b.property_address || '').toLowerCase()
                   );
 
-                  const displayName = matchedProp?.address || b.property_address || b.property_name;
+                  // Endast adressen (eller namn om adress saknas)
+                  const displayAddress = matchedProp?.address || b.property_address || b.property_name;
 
-                  let labelPrefix = txt.windowLabel;
-                  if (type === 'same_day') labelPrefix = txt.turnoverSameDay;
-                  else if (type === 'start') labelPrefix = txt.departureShort;
-                  else if (type === 'end') labelPrefix = txt.arrivalShort;
+                  const isFinished = b.status === 'finished';
+                  const isAccepted = b.status === 'accepted';
 
-                  const pillStyle = isFinished
-                    ? 'bg-emerald-500 text-white'
+                  const pillBg = isFinished
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600'
                     : isAccepted
-                    ? 'bg-sky-500 text-white'
-                    : 'bg-amber-400 text-slate-950 font-black';
+                    ? 'bg-sky-500 text-white hover:bg-sky-600'
+                    : 'bg-amber-400 text-slate-950 font-black hover:bg-amber-500';
+
+                  const roundedLeft = isTrueStart ? 'rounded-l-xl' : 'rounded-l-none';
+                  const roundedRight = isTrueEnd ? 'rounded-r-xl' : 'rounded-r-none';
 
                   return (
                     <button
-                      key={`${b.id}-${type}`}
+                      key={`${b.id}-week-${weekIdx}`}
                       onClick={() => setSelectedBooking(b)}
-                      className={`w-full text-left px-1 py-0.5 rounded-lg text-[8.5px] sm:text-[9px] font-extrabold truncate block transition shadow-sm active:scale-95 ${pillStyle}`}
-                      title={`${labelPrefix}: ${displayName}`}
+                      className={`w-full text-left py-1 px-2 text-[9px] sm:text-[10px] font-extrabold truncate block transition shadow-sm active:scale-98 ${pillBg} ${roundedLeft} ${roundedRight} ${colStartClasses[colStart]} ${colSpanClasses[colSpan]}`}
+                      title={`${displayAddress} (${b.check_in_date} till ${b.check_out_date})`}
                     >
-                      {labelPrefix} {displayName}
+                      {displayAddress}
                     </button>
                   );
                 })}
@@ -314,6 +356,7 @@ export default function CleanerCalendarView({
         })}
       </div>
 
+      {/* Legend */}
       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-2.5 flex items-center justify-around text-[10.5px] font-bold text-slate-600">
         <span className="flex items-center gap-1 text-amber-900 font-black">
           {txt.legendPending}
@@ -326,6 +369,7 @@ export default function CleanerCalendarView({
         </span>
       </div>
 
+      {/* Detaljmodal vid klick */}
       {selectedBooking && (() => {
         const b = selectedBooking;
         const matchedProp = properties.find(
@@ -378,22 +422,27 @@ export default function CleanerCalendarView({
                   )}
                 </div>
 
-                {/* VISNING AV STÄDFÖNSTER / DATUM */}
                 <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-500">{txt.arrival}:</span>
+                    <span className="font-black text-slate-900">
+                      {formatDate(b.check_in_date, lang)} ({b.check_in_time_window})
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
                     <span className="font-bold text-slate-500">{txt.departure}:</span>
                     <span className="font-black text-slate-900">
                       {formatDate(b.check_out_date, lang)} ({b.check_out_time_window})
                     </span>
                   </div>
-                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
-                    <span className="font-bold text-slate-500">{txt.modalNextArrival}</span>
-                    <span className="font-black text-emerald-700">
-                      {nextBooking
-                        ? `${formatDate(nextBooking.check_in_date, lang)} (${nextBooking.check_in_time_window})`
-                        : txt.noNextArrival}
-                    </span>
-                  </div>
+                  {nextBooking && (
+                    <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
+                      <span className="font-bold text-slate-500">{txt.modalNextArrival}</span>
+                      <span className="font-black text-emerald-700">
+                        {formatDate(nextBooking.check_in_date, lang)} ({nextBooking.check_in_time_window})
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {b.notes_es || b.notes ? (

@@ -1,3 +1,4 @@
+// src/components/host/CalendarView.tsx
 import { useState } from 'react';
 import { supabase, type Booking } from '../../lib/supabase';
 import { formatDate, APP_CONFIG } from '../../lib/constants';
@@ -17,13 +18,32 @@ import {
   Bell,
   Trash2,
   Loader2,
-  RefreshCw,
 } from 'lucide-react';
 
 interface CalendarViewProps {
   bookings: Booking[];
   onRefresh?: () => void;
 }
+
+const colStartClasses: Record<number, string> = {
+  1: 'col-start-1',
+  2: 'col-start-2',
+  3: 'col-start-3',
+  4: 'col-start-4',
+  5: 'col-start-5',
+  6: 'col-start-6',
+  7: 'col-start-7',
+};
+
+const colSpanClasses: Record<number, string> = {
+  1: 'col-span-1',
+  2: 'col-span-2',
+  3: 'col-span-3',
+  4: 'col-span-4',
+  5: 'col-span-5',
+  6: 'col-span-6',
+  7: 'col-span-7',
+};
 
 function getValidNote(notesEs: string | null | undefined, notesSv: string | null | undefined): string | null {
   if (notesEs && !notesEs.toUpperCase().includes('QUERY LENGTH LIMIT') && !notesEs.toUpperCase().includes('MYMEMORY')) {
@@ -75,16 +95,14 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
+  const monthNameRaw = currentDate.toLocaleDateString('sv', { month: 'long' });
+  const monthName = monthNameRaw.charAt(0).toUpperCase() + monthNameRaw.slice(1);
+
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
 
   const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
   const daysInMonth = lastDayOfMonth.getDate();
-
-  const monthNamesSv = [
-    'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
-    'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'
-  ];
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -92,11 +110,19 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const calendarGrid = [];
-  for (let i = 0; i < startDayOfWeek; i++) calendarGrid.push(null);
+  const monthDays: ({ day: number; dateStr: string } | null)[] = [];
+  for (let i = 0; i < startDayOfWeek; i++) monthDays.push(null);
   for (let day = 1; day <= daysInMonth; day++) {
     const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    calendarGrid.push({ day, dateStr: dayStr });
+    monthDays.push({ day, dateStr: dayStr });
+  }
+  while (monthDays.length % 7 !== 0) {
+    monthDays.push(null);
+  }
+
+  const weeks: ({ day: number; dateStr: string } | null)[][] = [];
+  for (let i = 0; i < monthDays.length; i += 7) {
+    weeks.push(monthDays.slice(i, i + 7));
   }
 
   const monthStartStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
@@ -127,6 +153,7 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
 
   return (
     <div className="bg-white text-slate-900 rounded-3xl shadow-2xl p-4 sm:p-5 border border-slate-200 space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100">
@@ -134,7 +161,7 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
           </div>
           <div>
             <h3 className="font-black text-slate-900 text-base leading-tight">
-              {monthNamesSv[month]} {year}
+              {monthName} {year}
             </h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Bokningsöversikt
@@ -158,57 +185,67 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
         </div>
       </div>
 
+      {/* Veckodagar */}
       <div className="grid grid-cols-7 text-center font-black text-[11px] text-slate-400 uppercase tracking-wider">
         <div>Mån</div><div>Tis</div><div>Ons</div><div>Tor</div><div>Fre</div><div>Lör</div><div>Sön</div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-        {calendarGrid.map((item, idx) => {
-          if (!item) return <div key={`empty-${idx}`} className="h-20 sm:h-24 bg-slate-50/40 rounded-2xl" />;
+      {/* Vecko-Grid */}
+      <div className="space-y-2">
+        {weeks.map((week, weekIdx) => {
+          const validWeekDays = week.filter((d) => d !== null) as { day: number; dateStr: string }[];
+          if (validWeekDays.length === 0) return null;
 
-          const isToday = item.dateStr === todayStr;
+          const weekStartStr = validWeekDays[0].dateStr;
+          const weekEndStr = validWeekDays[validWeekDays.length - 1].dateStr;
 
-          const dayBookings = bookings.filter((b) => {
-            const start = b.check_in_date;
-            const end = b.check_out_date;
-            if (!start || !end) return false;
-            return item.dateStr >= start && item.dateStr <= end;
+          const weekBookings = bookings.filter((b) => {
+            if (!b.check_in_date || !b.check_out_date) return false;
+            return b.check_in_date <= weekEndStr && b.check_out_date >= weekStartStr;
           });
 
-          const isCheckOutDay = dayBookings.some((b) => b.check_out_date === item.dateStr);
-          const isCheckInDay = dayBookings.some((b) => b.check_in_date === item.dateStr);
-          const isTurnover = isCheckOutDay && isCheckInDay && dayBookings.length > 1;
-
           return (
-            <div
-              key={item.dateStr}
-              className={`min-h-[80px] sm:min-h-[96px] border rounded-2xl p-1 sm:p-1.5 flex flex-col justify-between transition-all ${
-                isToday
-                  ? 'border-sky-500 bg-sky-50/40 shadow-sm ring-2 ring-sky-500/20'
-                  : 'border-slate-100 bg-slate-50/30 hover:border-slate-200 hover:bg-slate-50/80'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className={`text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-full ${
-                    isToday ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-700'
-                  }`}
-                >
-                  {item.day}
-                </span>
+            <div key={`week-${weekIdx}`} className="border border-slate-200/80 rounded-2xl bg-slate-50/30 p-1.5 space-y-1.5">
+              {/* Dagshuvuden */}
+              <div className="grid grid-cols-7 gap-1">
+                {week.map((dayObj, dayIdx) => {
+                  if (!dayObj) return <div key={`empty-${dayIdx}`} className="h-6" />;
+                  const isToday = dayObj.dateStr === todayStr;
 
-                {isTurnover && (
-                  <span
-                    className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-500 text-slate-950 flex items-center gap-0.5 shadow-sm"
-                    title="Byte samma dag!"
-                  >
-                    <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Byte
-                  </span>
-                )}
+                  return (
+                    <div key={dayObj.dateStr} className="text-center">
+                      <span
+                        className={`inline-flex items-center justify-center text-[10px] sm:text-[11px] font-black w-5 h-5 sm:w-6 sm:h-6 rounded-full ${
+                          isToday ? 'bg-sky-600 text-white shadow-sm ring-2 ring-sky-500/20' : 'text-slate-700'
+                        }`}
+                      >
+                        {dayObj.day}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="space-y-1 overflow-y-auto max-h-14 sm:max-h-16 pt-1">
-                {dayBookings.map((b) => {
+              {/* Flerdagarsfält - visar ENDAST bokningstitel */}
+              <div className="grid grid-cols-7 gap-y-1">
+                {weekBookings.map((b) => {
+                  let startColIdx = week.findIndex((d) => d && d.dateStr >= b.check_in_date);
+                  if (startColIdx === -1) startColIdx = week.findIndex((d) => d !== null);
+
+                  let endColIdx = 6;
+                  for (let i = 6; i >= 0; i--) {
+                    if (week[i] && week[i]!.dateStr <= b.check_out_date) {
+                      endColIdx = i;
+                      break;
+                    }
+                  }
+
+                  const colStart = startColIdx + 1;
+                  const colSpan = Math.max(1, endColIdx - startColIdx + 1);
+
+                  const isTrueStart = week[startColIdx]?.dateStr === b.check_in_date;
+                  const isTrueEnd = week[endColIdx]?.dateStr === b.check_out_date;
+
                   const isFinished = b.status === 'finished';
                   const isAccepted = b.status === 'accepted';
                   
@@ -218,11 +255,15 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
                     ? 'bg-sky-500 hover:bg-sky-600 text-white'
                     : 'bg-amber-400 hover:bg-amber-500 text-slate-950 font-black';
 
+                  const roundedLeft = isTrueStart ? 'rounded-l-xl' : 'rounded-l-none';
+                  const roundedRight = isTrueEnd ? 'rounded-r-xl' : 'rounded-r-none';
+
                   return (
                     <button
-                      key={b.id}
+                      key={`${b.id}-week-${weekIdx}`}
                       onClick={() => setSelectedBooking(b)}
-                      className={`w-full text-left px-1.5 py-1 rounded-lg text-[9.5px] font-black truncate block transition shadow-sm active:scale-95 ${pillStyle}`}
+                      className={`w-full text-left py-1 px-2 text-[9px] sm:text-[10px] font-extrabold truncate block transition shadow-sm active:scale-98 ${pillStyle} ${roundedLeft} ${roundedRight} ${colStartClasses[colStart]} ${colSpanClasses[colSpan]}`}
+                      title={`${b.booking_title} (${b.check_in_date} till ${b.check_out_date})`}
                     >
                       {b.booking_title}
                     </button>
@@ -234,9 +275,10 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
         })}
       </div>
 
+      {/* Sammanfattning */}
       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-600 font-bold">
         <span>
-          Totalt i {monthNamesSv[month]}: <strong className="text-slate-900">{monthBookings.length} bokningar</strong>
+          Totalt i {monthName}: <strong className="text-slate-900">{monthBookings.length} bokningar</strong>
         </span>
 
         <div className="flex items-center gap-2 text-[11px] flex-wrap">
@@ -252,6 +294,7 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
         </div>
       </div>
 
+      {/* Detaljmodal */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
           <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
