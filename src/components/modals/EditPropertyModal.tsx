@@ -21,15 +21,15 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Fyller endast i formuläret när modalen öppnas eller fastighets-ID ändras
+  // Omvandlar alltid värden till strängar för att förhindra .trim()-krasch om databasen returnerar nummer
   useEffect(() => {
     if (isOpen && property) {
-      setName(property.name || '');
-      setAddress(property.address || '');
-      setKvm(property.kvm || '');
-      setRooms(property.rooms || '');
-      setBathrooms(property.bathrooms || '');
-      setPropertyNotes(property.property_notes || '');
+      setName(property.name ? String(property.name) : '');
+      setAddress(property.address ? String(property.address) : '');
+      setKvm(property.kvm != null ? String(property.kvm) : '');
+      setRooms(property.rooms != null ? String(property.rooms) : '');
+      setBathrooms(property.bathrooms != null ? String(property.bathrooms) : '');
+      setPropertyNotes(property.property_notes ? String(property.property_notes) : '');
       setErrorMsg(null);
     }
   }, [isOpen, property?.id]);
@@ -38,19 +38,28 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    
+    // Säkra att alla värden är strängar innan trim anropas
+    const trimmedName = String(name || '').trim();
+    const trimmedAddress = String(address || '').trim();
+    const trimmedKvm = String(kvm || '').trim();
+    const trimmedRooms = String(rooms || '').trim();
+    const trimmedBathrooms = String(bathrooms || '').trim();
+    const trimmedNotes = String(propertyNotes || '').trim();
+
+    if (!trimmedName) return;
 
     setErrorMsg(null);
     setSaving(true);
 
     try {
       const updated = await propertyService.updateProperty(property.id, {
-        name: name.trim(),
-        address: address.trim() || name.trim(),
-        kvm: kvm.trim() || null,
-        rooms: rooms.trim() || null,
-        bathrooms: bathrooms.trim() || null,
-        property_notes: propertyNotes.trim() || null,
+        name: trimmedName,
+        address: trimmedAddress || trimmedName,
+        kvm: trimmedKvm || null,
+        rooms: trimmedRooms || null,
+        bathrooms: trimmedBathrooms || null,
+        property_notes: trimmedNotes || null,
       });
 
       onUpdated(updated);
