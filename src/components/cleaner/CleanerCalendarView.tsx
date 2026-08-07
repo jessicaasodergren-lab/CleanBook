@@ -59,14 +59,16 @@ const legendTexts: Record<CleanerLanguage, any> = {
     legendPending: '🟡 Väntar',
     legendAccepted: '🔵 Accepterad',
     legendFinished: '💚 Slutförd',
+    legendOpenDashed: '⏳ Streckad = Ingen nästa gäst',
+    openWindowLabel: '(Gott om tid)',
     modalTitle: 'Städdetaljer',
     modalStatusLabel: 'Uppdragsstatus:',
     modalHostLabel: 'Värd:',
     modalInstruction: 'Värdens instruktion:',
     modalNextArrival: 'Nästa incheckning (Deadline):',
-    departure: 'Utcheckning / Städdag',
+    departure: 'Utcheckning / Städstart',
     arrival: 'Incheckning',
-    noNextArrival: 'Ingen nästa incheckning',
+    noNextArrival: 'Ingen nästa gäst inbokad (Gott om tid)',
     guests: 'gäster',
     laundryYes: '🧺 Tvätta lakan/handdukar',
     laundryNo: '🚫 Ingen tvätt',
@@ -80,14 +82,16 @@ const legendTexts: Record<CleanerLanguage, any> = {
     legendPending: '🟡 Por aceptar',
     legendAccepted: '🔵 Aceptada',
     legendFinished: '💚 Completada',
+    legendOpenDashed: '⏳ Borde punteado = Tiempo extra',
+    openWindowLabel: '(Tiempo extra)',
     modalTitle: 'Detalles de Limpieza',
     modalStatusLabel: 'Estado de tarea:',
     modalHostLabel: 'Anfitriona:',
     modalInstruction: 'Instrucción del anfitrión:',
     modalNextArrival: 'Próxima entrada (Límite):',
-    departure: 'Salida / Limpieza',
+    departure: 'Salida / Inicio de limpieza',
     arrival: 'Entrada',
-    noNextArrival: 'Sin próxima entrada',
+    noNextArrival: 'Sin próxima entrada (Tiempo extra)',
     guests: 'huéspedes',
     laundryYes: '🧺 Lavar lencería',
     laundryNo: '🚫 Sin colada',
@@ -101,14 +105,16 @@ const legendTexts: Record<CleanerLanguage, any> = {
     legendPending: '🟡 Pending',
     legendAccepted: '🔵 Accepted',
     legendFinished: '💚 Completed',
+    legendOpenDashed: '⏳ Dashed = Flexible time',
+    openWindowLabel: '(Flexible time)',
     modalTitle: 'Cleaning Details',
     modalStatusLabel: 'Task Status:',
     modalHostLabel: 'Host:',
     modalInstruction: 'Host Instruction:',
     modalNextArrival: 'Next arrival (Deadline):',
-    departure: 'Departure / Cleaning',
+    departure: 'Departure / Cleaning start',
     arrival: 'Arrival',
-    noNextArrival: 'No upcoming arrival',
+    noNextArrival: 'No upcoming arrival (Flexible time)',
     guests: 'guests',
     laundryYes: '🧺 Wash linen',
     laundryNo: '🚫 No laundry',
@@ -122,14 +128,16 @@ const legendTexts: Record<CleanerLanguage, any> = {
     legendPending: '🟡 Afventer',
     legendAccepted: '🔵 Accepteret',
     legendFinished: '💚 Gennemført',
+    legendOpenDashed: '⏳ Stribet = God tid',
+    openWindowLabel: '(God tid)',
     modalTitle: 'Detaljer om rengøring',
     modalStatusLabel: 'Opgavestatus:',
     modalHostLabel: 'Vært:',
     modalInstruction: 'Værtens instruktion:',
     modalNextArrival: 'Næste ankomst (Deadline):',
-    departure: 'Udtjekning / Rengøring',
+    departure: 'Udtjekning / Rengøringsstart',
     arrival: 'Indtjekning',
-    noNextArrival: 'Ingen næste ankomst',
+    noNextArrival: 'Ingen næste ankomst (God tid)',
     guests: 'gæster',
     laundryYes: '🧺 Vask linned/håndklæder',
     laundryNo: '🚫 Ingen vask',
@@ -139,6 +147,7 @@ const legendTexts: Record<CleanerLanguage, any> = {
   },
 };
 
+// Beräknar städfönstret (Från utcheckning till nästa incheckning)
 function getBookingWindowInfo(b: Booking, allBookings: Booking[]) {
   const samePropBookings = allBookings.filter(
     (other) =>
@@ -152,9 +161,9 @@ function getBookingWindowInfo(b: Booking, allBookings: Booking[]) {
     .sort((a, b) => a.check_in_date.localeCompare(b.check_in_date))[0];
 
   const windowStart = b.check_out_date;
-  const windowEnd = nextBooking ? nextBooking.check_in_date : null;
+  const windowEnd = nextBooking ? nextBooking.check_in_date : b.check_out_date;
 
-  return { nextBooking, windowStart, windowEnd };
+  return { nextBooking, windowStart, windowEnd, hasNextGuest: !!nextBooking };
 }
 
 export default function CleanerCalendarView({
@@ -271,9 +280,11 @@ export default function CleanerCalendarView({
           const weekStartStr = validWeekDays[0].dateStr;
           const weekEndStr = validWeekDays[validWeekDays.length - 1].dateStr;
 
+          // Hämta alla bokningar vars STÄDFÖNSTERT överlappar denna vecka
           const weekBookings = bookings.filter((b) => {
-            if (!b.check_in_date || !b.check_out_date) return false;
-            return b.check_in_date <= weekEndStr && b.check_out_date >= weekStartStr;
+            if (!b.check_out_date) return false;
+            const { windowStart, windowEnd } = getBookingWindowInfo(b, bookings);
+            return windowStart <= weekEndStr && windowEnd >= weekStartStr;
           });
 
           return (
@@ -298,25 +309,29 @@ export default function CleanerCalendarView({
                 })}
               </div>
 
-              {/* Flerdagarsfält - visar ENDAST adressen */}
+              {/* Flerdagarsfält för STÄDFÖNSTRET */}
               <div className="grid grid-cols-7 gap-y-1">
                 {weekBookings.map((b) => {
-                  let startColIdx = week.findIndex((d) => d && d.dateStr >= b.check_in_date);
+                  const { windowStart, windowEnd, hasNextGuest } = getBookingWindowInfo(b, bookings);
+
+                  // Hitta start- och slutkolumn i aktuell vecka
+                  let startColIdx = week.findIndex((d) => d && d.dateStr >= windowStart);
                   if (startColIdx === -1) startColIdx = week.findIndex((d) => d !== null);
 
-                  let endColIdx = 6;
+                  let endColIdx = -1;
                   for (let i = 6; i >= 0; i--) {
-                    if (week[i] && week[i]!.dateStr <= b.check_out_date) {
+                    if (week[i] && week[i]!.dateStr <= windowEnd) {
                       endColIdx = i;
                       break;
                     }
                   }
+                  if (endColIdx === -1) endColIdx = 6;
 
                   const colStart = startColIdx + 1;
                   const colSpan = Math.max(1, endColIdx - startColIdx + 1);
 
-                  const isTrueStart = week[startColIdx]?.dateStr === b.check_in_date;
-                  const isTrueEnd = week[endColIdx]?.dateStr === b.check_out_date;
+                  const isTrueStart = week[startColIdx]?.dateStr === windowStart;
+                  const isTrueEnd = week[endColIdx]?.dateStr === windowEnd;
 
                   const matchedProp = properties.find(
                     (p) =>
@@ -324,17 +339,26 @@ export default function CleanerCalendarView({
                       p.address.toLowerCase() === (b.property_address || '').toLowerCase()
                   );
 
-                  // Endast adressen (eller namn om adress saknas)
                   const displayAddress = matchedProp?.address || b.property_address || b.property_name;
 
                   const isFinished = b.status === 'finished';
                   const isAccepted = b.status === 'accepted';
 
-                  const pillBg = isFinished
-                    ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                    : isAccepted
-                    ? 'bg-sky-500 text-white hover:bg-sky-600'
-                    : 'bg-amber-400 text-slate-950 font-black hover:bg-amber-500';
+                  // Styling: Om nästa gäst finns -> Solid färg. Om INGEN nästa gäst -> Streckad ram (Dashed) & ljus stil
+                  let pillBg = '';
+                  if (hasNextGuest) {
+                    pillBg = isFinished
+                      ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                      : isAccepted
+                      ? 'bg-sky-500 text-white hover:bg-sky-600'
+                      : 'bg-amber-400 text-slate-950 font-black hover:bg-amber-500';
+                  } else {
+                    pillBg = isFinished
+                      ? 'bg-emerald-50 text-emerald-950 border-2 border-dashed border-emerald-500 hover:bg-emerald-100 font-black'
+                      : isAccepted
+                      ? 'bg-sky-50 text-sky-950 border-2 border-dashed border-sky-500 hover:bg-sky-100 font-black'
+                      : 'bg-amber-50 text-amber-950 border-2 border-dashed border-amber-500 hover:bg-amber-100 font-black';
+                  }
 
                   const roundedLeft = isTrueStart ? 'rounded-l-xl' : 'rounded-l-none';
                   const roundedRight = isTrueEnd ? 'rounded-r-xl' : 'rounded-r-none';
@@ -343,10 +367,21 @@ export default function CleanerCalendarView({
                     <button
                       key={`${b.id}-week-${weekIdx}`}
                       onClick={() => setSelectedBooking(b)}
-                      className={`w-full text-left py-1 px-2 text-[9px] sm:text-[10px] font-extrabold truncate block transition shadow-sm active:scale-98 ${pillBg} ${roundedLeft} ${roundedRight} ${colStartClasses[colStart]} ${colSpanClasses[colSpan]}`}
-                      title={`${displayAddress} (${b.check_in_date} till ${b.check_out_date})`}
+                      className={`w-full text-left py-1 px-1.5 text-[9px] sm:text-[10px] font-extrabold truncate block transition shadow-sm active:scale-98 ${pillBg} ${roundedLeft} ${roundedRight} ${colStartClasses[colStart]} ${colSpanClasses[colSpan]}`}
+                      title={
+                        hasNextGuest
+                          ? `Städfönster: ${displayAddress} (${formatDate(windowStart, lang)} till ${formatDate(windowEnd, lang)})`
+                          : `Städfönster: ${displayAddress} (${formatDate(windowStart, lang)} - Ingen nästa gäst)`
+                      }
                     >
-                      {displayAddress}
+                      <span className="flex items-center justify-between gap-1 truncate">
+                        <span className="truncate">{displayAddress}</span>
+                        {!hasNextGuest && (
+                          <span className="text-[8px] opacity-80 shrink-0 font-extrabold">
+                            ⏳ {txt.openWindowLabel}
+                          </span>
+                        )}
+                      </span>
                     </button>
                   );
                 })}
@@ -356,8 +391,8 @@ export default function CleanerCalendarView({
         })}
       </div>
 
-      {/* Legend */}
-      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-2.5 flex items-center justify-around text-[10.5px] font-bold text-slate-600">
+      {/* Legend / Teckenförklaring */}
+      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-2.5 flex items-center justify-around text-[10px] sm:text-[10.5px] font-bold text-slate-600 flex-wrap gap-2">
         <span className="flex items-center gap-1 text-amber-900 font-black">
           {txt.legendPending}
         </span>
@@ -366,6 +401,9 @@ export default function CleanerCalendarView({
         </span>
         <span className="flex items-center gap-1 text-emerald-900 font-black">
           {txt.legendFinished}
+        </span>
+        <span className="flex items-center gap-1 text-slate-500 font-bold border-l border-slate-200 pl-2">
+          {txt.legendOpenDashed}
         </span>
       </div>
 
@@ -435,14 +473,18 @@ export default function CleanerCalendarView({
                       {formatDate(b.check_out_date, lang)} ({b.check_out_time_window})
                     </span>
                   </div>
-                  {nextBooking && (
-                    <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
-                      <span className="font-bold text-slate-500">{txt.modalNextArrival}</span>
+                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
+                    <span className="font-bold text-slate-500">{txt.modalNextArrival}</span>
+                    {nextBooking ? (
                       <span className="font-black text-emerald-700">
                         {formatDate(nextBooking.check_in_date, lang)} ({nextBooking.check_in_time_window})
                       </span>
-                    </div>
-                  )}
+                    ) : (
+                      <span className="font-black text-amber-700 italic">
+                        {txt.noNextArrival}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {b.notes_es || b.notes ? (
