@@ -4,10 +4,10 @@ export type Language = 'sv' | 'en' | 'da' | 'es';
 
 export const translations = {
   common: {
-    sv: { loading: 'Laddar...', error: 'Ett fel uppstod', save: 'Spara', cancel: 'Avbryt', delete: 'Ta bort' },
-    en: { loading: 'Loading...', error: 'An error occurred', save: 'Save', cancel: 'Cancel', delete: 'Delete' },
-    da: { loading: 'Indlæser...', error: 'Der opstod en fejl', save: 'Gem', cancel: 'Annuller', delete: 'Slet' },
-    es: { loading: 'Cargando...', error: 'Ocurrió un error', save: 'Guardar', cancel: 'Cancelar', delete: 'Eliminar' },
+    sv: { loading: 'Laddar...', error: 'Ett fel uppstod', save: 'Spara', cancel: 'Avbryt', delete: 'Ta bort', version: 'Version' },
+    en: { loading: 'Loading...', error: 'An error occurred', save: 'Save', cancel: 'Cancel', delete: 'Delete', version: 'Version' },
+    da: { loading: 'Indlæser...', error: 'Der opstod en fejl', save: 'Gem', cancel: 'Annuller', delete: 'Slet', version: 'Version' },
+    es: { loading: 'Cargando...', error: 'Ocurrió un error', save: 'Guardar', cancel: 'Cancelar', delete: 'Eliminar', version: 'Versión' },
   },
 
   auth: {
@@ -440,7 +440,7 @@ export const translations = {
       evening: 'Kväll',
       checkOutDate: 'Utcheckning *',
       exactDeparture: 'Ungefärlig utcheckning',
-      departureWindow: 'Utcheckningsfönster (Städstart) *',
+      departureWindow: 'Utcheckningsvindue (Städstart) *',
       guestsCount: 'Antal gäster',
       laundryLabel: 'Sängkläder & Tvätt?',
       laundryYes: '🧺 Tvätta lakan/handdukar',

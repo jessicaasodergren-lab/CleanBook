@@ -1,6 +1,7 @@
 // src/components/AuthView.tsx
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { APP_CONFIG } from '../lib/constants';
 import { translations, type Language } from '../i18n/translations';
 import { Home, Sparkles, Lock, Mail, User, Globe } from 'lucide-react';
 
@@ -236,6 +237,11 @@ export const AuthView: React.FC = () => {
             </button>
           </form>
 
+        </div>
+
+        {/* APP-VERSION LÄNGST NER PÅ INLOGGNINGSSIDAN */}
+        <div className="mt-6 text-center text-xs font-bold text-slate-500">
+          {APP_CONFIG.name} {APP_CONFIG.version}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 // src/components/modals/ProfileModal.tsx
 import { useState, useEffect } from 'react';
 import { supabase, type Profile } from '../../lib/supabase';
+import { APP_CONFIG } from '../../lib/constants';
 import { User, Phone, Globe, X, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -159,6 +160,11 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Spara profilen
           </button>
+
+          {/* APP-VERSION */}
+          <div className="pt-2 text-center text-[10px] font-bold text-slate-400 border-t border-slate-100 mt-3">
+            {APP_CONFIG.name} {APP_CONFIG.version}
+          </div>
         </form>
       </div>
     </div>
