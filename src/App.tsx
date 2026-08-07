@@ -22,6 +22,39 @@ export default function App() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
+  // Identifiera om appen körs i TEST / DEV-miljö
+  const isDevEnv =
+    import.meta.env.DEV ||
+    window.location.hostname.includes('dev') ||
+    window.location.hostname.includes('preview') ||
+    window.location.hostname.includes('webcontainer') ||
+    (import.meta.env.VITE_SUPABASE_URL && !import.meta.env.VITE_SUPABASE_URL.includes('zfjphhvpkeriuypishhy'));
+
+  // Ändra ikon och titel i webbläsaren / mobilen om det är TEST-miljön
+  useEffect(() => {
+    if (isDevEnv) {
+      document.title = '[TEST] CleanBook – Smart Cleaning Management';
+
+      // Skapa en dynamisk orange TEST-ikon för hemskärm och flikar
+      const testIconSvg = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="28" fill="%23f59e0b"/><text x="50" y="62" font-size="34" font-weight="900" font-family="sans-serif" text-anchor="middle" fill="%230f172a">TEST</text></svg>`;
+
+      const linkIcons = document.querySelectorAll("link[rel*='icon']");
+      linkIcons.forEach((link) => {
+        (link as HTMLLinkElement).href = testIconSvg;
+      });
+
+      const appleTouchIcon = document.querySelector("link[rel='apple-touch-icon']");
+      if (appleTouchIcon) {
+        (appleTouchIcon as HTMLLinkElement).href = testIconSvg;
+      } else {
+        const newAppleIcon = document.createElement('link');
+        newAppleIcon.rel = 'apple-touch-icon';
+        newAppleIcon.href = testIconSvg;
+        document.head.appendChild(newAppleIcon);
+      }
+    }
+  }, [isDevEnv]);
+
   const fetchUserProfile = async (sessionUser: any) => {
     try {
       const userId = sessionUser.id;
@@ -188,9 +221,16 @@ export default function App() {
               )}
             </div>
             <div>
-              <span className="font-black text-white text-lg tracking-wider block leading-none">
-                {APP_CONFIG.name}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-white text-lg tracking-wider block leading-none">
+                  {APP_CONFIG.name}
+                </span>
+                {isDevEnv && (
+                  <span className="bg-amber-500/20 text-amber-400 border border-amber-500/40 font-black text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                    🧪 TEST
+                  </span>
+                )}
+              </div>
               <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block pt-0.5">
                 {APP_CONFIG.tagline}
               </span>
