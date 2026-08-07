@@ -23,11 +23,10 @@ export default function App() {
   const [loadingData, setLoadingData] = useState(false);
 
   // Identifiera om appen körs i TEST / DEV-miljö
+  // Allt som INTE är den skarpa domänen (clean-book-nine.vercel.app) räknas som TEST!
   const isDevEnv =
     import.meta.env.DEV ||
-    window.location.hostname.includes('dev') ||
-    window.location.hostname.includes('preview') ||
-    window.location.hostname.includes('webcontainer') ||
+    !window.location.hostname.includes('clean-book-nine.vercel.app') ||
     (import.meta.env.VITE_SUPABASE_URL && !import.meta.env.VITE_SUPABASE_URL.includes('zfjphhvpkeriuypishhy'));
 
   // Ändra ikon och titel i webbläsaren / mobilen om det är TEST-miljön
