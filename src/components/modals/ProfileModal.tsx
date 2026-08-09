@@ -19,15 +19,16 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Laddar endast formulärdata när modalen öppnas
   useEffect(() => {
-    if (profile && isOpen) {
+    if (isOpen && profile) {
       setFullName(profile.full_name || '');
       setPhone(profile.phone || '');
       setLanguage((profile.language as any) || (profile.role === 'host' ? 'sv' : 'es'));
       setSuccess(false);
       setErrorMsg(null);
     }
-  }, [profile, isOpen]);
+  }, [isOpen]);
 
   if (!isOpen || !profile) return null;
 
@@ -57,9 +58,11 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
       }
 
       setSuccess(true);
-      onProfileUpdated();
+
+      // Visa bekräftelsen direkt i knappen i 1 sekund innan modalen stängs
       setTimeout(() => {
         setSuccess(false);
+        onProfileUpdated();
         onClose();
       }, 1000);
     } catch (err: any) {
@@ -145,20 +148,31 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
             </div>
           )}
 
-          {success && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Profilen har sparats!</span>
-            </div>
-          )}
-
           <button
             type="submit"
-            disabled={saving}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2 active:scale-98 mt-2"
+            disabled={saving || success}
+            className={`w-full font-black py-3.5 rounded-xl text-xs transition-all duration-200 shadow-lg flex items-center justify-center gap-2 active:scale-98 mt-2 ${
+              success
+                ? 'bg-emerald-600 text-white'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            }`}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Spara profilen
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Sparar...</span>
+              </>
+            ) : success ? (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-white animate-in zoom-in duration-150" />
+                <span>Profilen har sparats!</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Spara profilen</span>
+              </>
+            )}
           </button>
 
           {/* APP-VERSION */}
