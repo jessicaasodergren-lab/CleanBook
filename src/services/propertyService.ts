@@ -3,12 +3,22 @@ import { supabase, type Property } from '../lib/supabase';
 
 export const propertyService = {
   /**
-   * Hämtar alla fastigheter som ägs av den inloggade värden och kopplar på värdens namn från profiles
+   * Hämtar alla fastigheter som ägs av den inloggade värden och inkluderar kopplade städerskor i 1 anrop
    */
   async getHostProperties(hostId: string): Promise<Property[]> {
-    const { data: props, error } = await supabase
+    const { data, error } = await supabase
       .from('properties')
-      .select('*')
+      .select(`
+        *,
+        property_connections (
+          cleaner:profiles!property_connections_cleaner_id_fkey (
+            id,
+            full_name,
+            phone,
+            email
+          )
+        )
+      `)
       .eq('host_id', hostId)
       .order('created_at', { ascending: false });
 
@@ -17,56 +27,18 @@ export const propertyService = {
       throw error;
     }
 
-    if (!props || props.length === 0) return [];
+    if (!data) return [];
 
-    const propIds = props.map((p) => p.id);
-
-    try {
-      const { data: conns } = await supabase
-        .from('property_connections')
-        .select('property_id, cleaner_id')
-        .in('property_id', propIds);
-
-      if (conns && conns.length > 0) {
-        const cleanerIds = Array.from(new Set(conns.map((c) => c.cleaner_id)));
-
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, phone, email')
-          .in('id', cleanerIds);
-
-        if (profiles) {
-          const profileMap = new Map(profiles.map((p) => [p.id, p]));
-          const propCleanersMap: Record<string, any[]> = {};
-
-          conns.forEach((c) => {
-            const profile = profileMap.get(c.cleaner_id);
-            if (profile) {
-              if (!propCleanersMap[c.property_id]) propCleanersMap[c.property_id] = [];
-              propCleanersMap[c.property_id].push({
-                id: profile.id,
-                full_name: profile.full_name || null,
-                phone: profile.phone || null,
-                email: profile.email,
-              });
-            }
-          });
-
-          return props.map((p) => ({
-            ...p,
-            cleaners: propCleanersMap[p.id] || [],
-          }));
-        }
-      }
-    } catch (err) {
-      console.warn('Kunde inte läsa in städerskor, visar fastigheter ändå:', err);
-    }
-
-    return props;
+    return data.map((prop: any) => ({
+      ...prop,
+      cleaners: (prop.property_connections || [])
+        .map((conn: any) => conn.cleaner)
+        .filter(Boolean),
+    }));
   },
 
   /**
-   * Skapar en ny fastighet (utan host_name i databaskolumnen)
+   * Skapar en ny fastighet
    */
   async createProperty(payload: {
     hostId: string;
@@ -142,42 +114,32 @@ export const propertyService = {
   },
 
   /**
-   * Hämtar städerskans kopplade fastigheter och slår ihop värdarnas namn säkert
+   * Hämtar städerskans kopplade fastigheter och värdens namn i 1 anrop
    */
   async getCleanerProperties(cleanerId: string): Promise<Property[]> {
     const { data, error } = await supabase
       .from('property_connections')
-      .select('cleaning_time, internal_notes, properties(*)')
+      .select(`
+        cleaning_time,
+        internal_notes,
+        properties:property_id (
+          *,
+          host:profiles!properties_host_id_fkey (
+            full_name
+          )
+        )
+      `)
       .eq('cleaner_id', cleanerId);
 
     if (error) throw error;
     if (!data) return [];
 
-    const hostIds = Array.from(
-      new Set(data.map((item: any) => item.properties?.host_id).filter(Boolean))
-    );
-
-    let profileMap: Record<string, string> = {};
-    if (hostIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', hostIds);
-
-      if (profiles) {
-        profiles.forEach((pr) => {
-          if (pr.full_name) profileMap[pr.id] = pr.full_name;
-        });
-      }
-    }
-
     return data
       .map((item: any) => {
         if (!item.properties) return null;
-        const hId = item.properties.host_id;
         return {
           ...item.properties,
-          host_name: profileMap[hId] || 'Värd',
+          host_name: item.properties.host?.full_name || 'Värd',
           cleaning_time: item.cleaning_time,
           internal_notes: item.internal_notes,
         };

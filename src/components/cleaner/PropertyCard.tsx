@@ -1,5 +1,5 @@
 // src/components/cleaner/PropertyCard.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Property } from '../../lib/supabase';
 import { propertyService } from '../../services/propertyService';
 import { formatDate } from '../../lib/constants';
@@ -113,11 +113,17 @@ export default function PropertyCard({
 }: PropertyCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [timeVal, setTimeVal] = useState(connectionData?.cleaning_time || p.cleaning_time || '');
-  const [notesVal, setNotesVal] = useState(connectionData?.internal_notes || '');
+  const [notesVal, setNotesVal] = useState(connectionData?.internal_notes || p.internal_notes || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  // Håll state synkat när data laddas om från databasen
+  useEffect(() => {
+    setTimeVal(connectionData?.cleaning_time || p.cleaning_time || '');
+    setNotesVal(connectionData?.internal_notes || p.internal_notes || '');
+  }, [connectionData, p.cleaning_time, p.internal_notes]);
 
   const fallback = defaultCardTexts[lang] || defaultCardTexts.es;
   const txt = {

@@ -58,10 +58,10 @@ export interface PropertyConnection {
 
 export interface Booking {
   id: string;
-  property_id?: string | null;
+  property_id: string;
   property_name: string;
   property_address: string | null;
-  booking_title?: string;
+  booking_title?: string | null;
   check_in_date: string;
   check_in_time_window: ArrivalTimeWindow | null;
   check_in_exact_time?: string | null;
@@ -76,7 +76,7 @@ export interface Booking {
   notes_es?: string | null;
   status: BookingStatus;
   created_at?: string;
-  host_name?: string | null;
+  cleaner_id?: string | null;
 }
 
 export interface Incident {
