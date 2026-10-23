@@ -115,36 +115,41 @@ export const propertyService = {
    * Hämtar städerskans kopplade fastigheter och värdens namn i 1 anrop
    */
   async getCleanerProperties(cleanerId: string): Promise<Property[]> {
-    const { data, error } = await supabase
+    console.log("Hämtar för cleanerId:", cleanerId);
+
+    // 1. Hämta kopplingar
+    const { data: connections, error: connError } = await supabase
       .from('property_connections')
-      .select(`
-        cleaning_time,
-        internal_notes,
-        properties:property_id (
-          *,
-          host:profiles!properties_host_id_fkey (
-            full_name
-          )
-        )
-      `)
+      .select('property_id, cleaning_time, internal_notes')
       .eq('cleaner_id', cleanerId);
 
-    if (error) throw error;
-    if (!data) return [];
+    console.log("Kopplingar hittade:", connections);
 
-    return data
-      .map((item: any) => {
-        if (!item.properties) return null;
-        return {
-          ...item.properties,
-          host_name: item.properties.host?.full_name || 'Värd',
-          cleaning_time: item.cleaning_time,
-          internal_notes: item.internal_notes,
-        };
-      })
-      .filter(Boolean) as Property[];
+    if (connError) { console.error("Kopplingsfel:", connError); throw connError; }
+    if (!connections || connections.length === 0) return [];
+
+    const propertyIds = connections.map(c => c.property_id);
+
+    // 2. Hämta fastigheter (vi tar bort joinen för att utesluta fel i relationsnamnet)
+    const { data: properties, error: propError } = await supabase
+      .from('properties')
+      .select('*')
+      .in('id', propertyIds);
+
+    console.log("Fastigheter hittade:", properties);
+
+    if (propError) { console.error("Fastighetsfel:", propError); throw propError; }
+
+    return (properties || []).map(p => {
+      const conn = connections.find(c => c.property_id === p.id);
+      return {
+        ...p,
+        host_name: 'Värd', // Förenklat för test
+        cleaning_time: conn?.cleaning_time,
+        internal_notes: conn?.internal_notes,
+      } as Property;
+    });
   },
-
   /**
    * Kopplar en städerska till en fastighet via invite_code
    */
