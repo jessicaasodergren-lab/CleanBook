@@ -29,6 +29,7 @@ import {
   X,
   Clock,
   Phone,
+  MessageSquare 
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -165,6 +166,11 @@ export default function TaskCard({
             <h3 className="font-black text-slate-900 text-base sm:text-lg leading-tight flex items-center gap-1.5 truncate">
               <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="truncate">{displayAddress}</span>
+              {displayNote && (
+    <button onClick={() => setIsExpanded(!isExpanded)} className="ml-1 text-amber-500 hover:text-amber-600 transition">
+      <MessageSquare className="w-4 h-4" />
+    </button>
+  )}
             </h3>
 
             {estCleaningTime && (
@@ -210,28 +216,7 @@ export default function TaskCard({
         </button>
       </div>
 
-      {/* VÄRDENS EXTRA BOKNINGSINSTRUKTIONER (SVE -> ES) */}
-      {displayNote && (
-        <div
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="bg-amber-100/90 border-l-4 border-amber-500 p-3 rounded-r-xl text-xs font-bold text-amber-950 cursor-pointer hover:bg-amber-200/80 transition shadow-sm space-y-1"
-        >
-          <div className="flex items-center gap-1 font-black text-amber-900 text-[10px] uppercase tracking-wider">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-            <span>{txt.instructionHost}</span>
-          </div>
-
-          <p className="font-medium text-amber-950 leading-relaxed">
-            {isExpanded ? (
-              <span className="whitespace-pre-line">{displayNote}</span>
-            ) : (
-              <span>
-                {displayNote.length > 75 ? `${displayNote.slice(0, 75)}...` : displayNote}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
+     
 
       {/* STÄDFÖNSTER & TIDER */}
       <div className="bg-white/90 rounded-2xl p-3 border border-slate-200/80 space-y-2.5 text-xs shadow-sm">
@@ -266,6 +251,11 @@ export default function TaskCard({
             <span className="font-black text-slate-900 block text-xs">
               {formatDate(b.check_out_date, lang)}
             </span>
+            {b.check_out_time_window && (
+              <span className="text-[10px] font-bold text-slate-500 block italic">
+                {b.check_out_time_window}
+              </span>
+            )}
           </div>
 
           <div className="bg-sky-50/80 p-2 rounded-xl border border-sky-200 space-y-0.5">
@@ -273,9 +263,14 @@ export default function TaskCard({
               {txt.arrivalLabel}
             </span>
             {nextBooking ? (
-              <span className="font-black text-slate-900 block text-xs">
-                {formatDate(nextBooking.check_in_date, lang)}
-              </span>
+              <>
+                <span className="font-black text-slate-900 block text-xs">
+                  {formatDate(nextBooking.check_in_date, lang)}
+                </span>
+                <span className="text-[10px] font-bold text-sky-800 block italic">
+                  {nextBooking.check_in_time_window}
+                </span>
+              </>
             ) : (
               <span className="text-[10.5px] font-extrabold text-slate-400 block pt-0.5 italic">
                 {txt.noNextGuest}
@@ -294,6 +289,18 @@ export default function TaskCard({
       {isExpanded && (
         <div className="pt-2 border-t border-slate-200/80 space-y-3 text-xs animate-in fade-in duration-200">
           
+          {/* VÄRDENS INSTRUKTIONER (NU I UTFÄLLT LÄGE) */}
+          {displayNote && (
+            <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-xl space-y-1">
+              <span className="font-black text-amber-900 uppercase text-[10px] tracking-wider block flex items-center gap-1">
+                <StickyNote className="w-3.5 h-3.5 text-amber-700" /> {txt.instructionHost}
+              </span>
+              <p className="font-bold text-amber-950 leading-relaxed whitespace-pre-line">
+                {displayNote}
+              </p>
+            </div>
+          )}
+
           {/* FASTIGHETSFAKTA (KVM, RUM, BADRUM) */}
           {matchedProp && (matchedProp.kvm || matchedProp.rooms || matchedProp.bathrooms) && (
             <div className="space-y-1">
