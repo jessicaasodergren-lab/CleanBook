@@ -6,33 +6,36 @@ export const propertyService = {
    * Hämtar alla fastigheter som ägs av den inloggade värden och inkluderar kopplade städerskor i 1 anrop
    */
   async getHostProperties(hostId: string): Promise<Property[]> {
-    // 1. Hämta fastigheterna (detta funkar nu!)
     const { data: properties, error: propError } = await supabase
       .from('properties')
       .select('*')
-      .eq('host_id', hostId)
-      .order('created_at', { ascending: false });
+      .eq('host_id', hostId);
 
-    if (propError) throw propError;
-    if (!properties) return [];
+    if (propError || !properties) return [];
 
-    // 2. Hämta alla kopplingar för dessa fastigheter i ett svep
     const propertyIds = properties.map(p => p.id);
-    const { data: connections } = await supabase
-      .from('property_connections')
-      .select(`
-        property_id,
-        cleaner:profiles (id, full_name, phone, email)
-      `)
-      .in('property_id', propertyIds);
 
-    // 3. Pussla ihop dem i webbläsaren istället för i databasen
-    return properties.map(p => ({
-      ...p,
-      cleaners: connections
-        ?.filter(c => c.property_id === p.id)
-        .map(c => c.cleaner) || []
-    }));
+    // Hämta kopplingar separat
+    const { data: connections, error: connError } = await supabase
+      .from('property_connections')
+      .select('property_id, cleaner_id');
+
+    if (connError) return properties;
+
+    // Hämta profilerna för de städare vi hittade i kopplingarna
+    const cleanerIds = connections.map(c => c.cleaner_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, phone, email')
+      .in('id', cleanerIds);
+
+    return properties.map(p => {
+      const conn = connections.filter(c => c.property_id === p.id);
+      return {
+        ...p,
+        cleaners: conn.map(c => profiles?.find(prof => prof.id === c.cleaner_id)).filter(Boolean)
+      };
+    });
   },
 
   /**
