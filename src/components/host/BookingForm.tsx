@@ -91,10 +91,12 @@ export default function BookingForm({
 
   const handleArrivalExactTimeChange = (timeValue: string) => {
     setCheckInExactTime(timeValue);
-    const autoWindow = getTimeWindowFromExactTime(timeValue);
-    if (autoWindow) {
-      setCheckInTimeWindow(autoWindow as ArrivalTimeWindow);
-    }
+    if (!timeValue) return; // Om användaren väljer "Välj tid..."
+    
+    const hours = parseInt(timeValue.split(':')[0], 10);
+    if (hours < 12) setCheckInTimeWindow('morning');
+    else if (hours < 18) setCheckInTimeWindow('afternoon');
+    else setCheckInTimeWindow('evening');
   };
 
   const handleDepartureExactTimeChange = (timeValue: string) => {
@@ -358,53 +360,47 @@ export default function BookingForm({
               <div>
                 <label className="block font-bold text-sky-900 mb-1 truncate flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                  <span className="truncate">{txt.exactArrival}</span>
+                  <span className="truncate">{txt.approxTime}</span>
                 </label>
-                <input
-                  type="time"
-                  value={checkInExactTime}
-                  onChange={(e) => handleArrivalExactTimeChange(e.target.value)}
-                  className="w-full bg-white border border-sky-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-sky-500"
-                />
+                <select
+  value={checkInExactTime} // eller checkOutExactTime
+  onChange={(e) => handleArrivalExactTimeChange(e.target.value)} // eller handleDepartureExactTimeChange
+  className="w-full bg-white border border-sky-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-sky-500"
+>
+  <option value="">Välj tid...</option>
+  {Array.from({ length: 24 }).map((_, i) => (
+    <option key={i} value={`${String(i).padStart(2, '0')}:00`}>
+      {String(i).padStart(2, '0')}:00
+    </option>
+  ))}
+</select>
               </div>
             </div>
 
+            {/* HÄR ÄR DEN NYA SEPARATORN */}
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-sky-200"></div>
+              <span className="flex-shrink mx-2 text-[10px] font-black text-sky-400 uppercase tracking-widest">{txt.orWindow}</span>
+              <div className="flex-grow border-t border-sky-200"></div>
+            </div>
+
             <div>
-              <label className="block font-bold text-sky-950 mb-1.5 text-[11px]">{txt.arrivalWindow}</label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={() => setCheckInTimeWindow('morning')}
-                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
-                    checkInTimeWindow === 'morning'
-                      ? 'bg-sky-600 text-white border-sky-600 shadow-md'
-                      : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
-                  }`}
-                >
-                  🌅 {txt.morning}
-                </button>
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] font-extrabold rounded-xl border transition ${checkInTimeWindow === 'morning' ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-700 border-sky-200'}`}
+                >🌅 {txt.morning}</button>
                 <button
                   type="button"
                   onClick={() => setCheckInTimeWindow('afternoon')}
-                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
-                    checkInTimeWindow === 'afternoon'
-                      ? 'bg-sky-600 text-white border-sky-600 shadow-md'
-                      : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
-                  }`}
-                >
-                  ☀️ {txt.afternoon}
-                </button>
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] font-extrabold rounded-xl border transition ${checkInTimeWindow === 'afternoon' ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-700 border-sky-200'}`}
+                >☀️ {txt.afternoon}</button>
                 <button
                   type="button"
                   onClick={() => setCheckInTimeWindow('evening')}
-                  className={`py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl border transition text-center ${
-                    checkInTimeWindow === 'evening'
-                      ? 'bg-sky-600 text-white border-sky-600 shadow-md'
-                      : 'bg-white text-slate-700 border-sky-200 hover:bg-sky-50'
-                  }`}
-                >
-                  🌙 {txt.evening}
-                </button>
+                  className={`py-2.5 px-1 sm:px-2 text-[11px] font-extrabold rounded-xl border transition ${checkInTimeWindow === 'evening' ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-700 border-sky-200'}`}
+                >🌙 {txt.evening}</button>
               </div>
             </div>
           </div>
@@ -429,19 +425,30 @@ export default function BookingForm({
               <div>
                 <label className="block font-bold text-amber-900 mb-1 truncate flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="truncate">{txt.exactDeparture}</span>
+                  <span className="truncate">{txt.approxTime}</span>
                 </label>
-                <input
-                  type="time"
-                  value={checkOutExactTime}
-                  onChange={(e) => handleDepartureExactTimeChange(e.target.value)}
-                  className="w-full bg-white border border-amber-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-amber-500"
-                />
+                <select
+  value={checkOutExactTime} // eller checkOutExactTime
+  onChange={(e) => handleDepartureExactTimeChange(e.target.value)} // eller handleDepartureExactTimeChange
+  className="w-full bg-white border border-sky-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-sky-500"
+>
+  <option value="">Välj tid...</option>
+  {Array.from({ length: 24 }).map((_, i) => (
+    <option key={i} value={`${String(i).padStart(2, '0')}:00`}>
+      {String(i).padStart(2, '0')}:00
+    </option>
+  ))}
+</select>
               </div>
             </div>
 
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-amber-200"></div>
+              <span className="flex-shrink mx-2 text-[10px] font-black text-amber-400 uppercase tracking-widest">{txt.orWindow}</span>
+              <div className="flex-grow border-t border-amber-200"></div>
+            </div>
+
             <div>
-              <label className="block font-bold text-amber-950 mb-1.5 text-[11px]">{txt.departureWindow}</label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
