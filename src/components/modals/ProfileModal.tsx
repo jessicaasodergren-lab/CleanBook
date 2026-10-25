@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, type Profile } from '../../lib/supabase';
 import { APP_CONFIG } from '../../lib/constants';
+import { translations } from '../../i18n/translations';
 import { User, Phone, Globe, X, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -18,6 +19,7 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const t = (translations as any).profileModal?.[language] || (translations as any).profileModal?.sv;
 
   // Laddar endast formulärdata när modalen öppnas
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
       <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white">
           <h3 className="font-black text-sm text-slate-900 flex items-center gap-1.5">
-            <User className="w-4 h-4 text-emerald-600" /> Profilinställningar
+            <User className="w-4 h-4 text-emerald-600" /> {t.profileSettings}
           </h3>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
             <X className="w-5 h-5" />
@@ -88,13 +90,13 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
         <form onSubmit={handleSave} className="p-5 space-y-4 text-xs">
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-slate-500" /> Namn / Företagsnamn
+              <User className="w-3.5 h-3.5 text-slate-500" /> {t.nameCompany}
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="T.ex. Maria Svensson eller Limpiezas Costa"
+              placeholder={t.egName}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold outline-none focus:bg-white focus:border-emerald-500"
               required
             />
@@ -102,23 +104,21 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
 
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-              <Phone className="w-3.5 h-3.5 text-emerald-600" /> Telefonnummer (för WhatsApp)
+              <Phone className="w-3.5 h-3.5 text-emerald-600" /> {t.PhoneWhatsApp}
             </label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="T.ex. +34 612 345 678 eller +46 70 123 45 67"
+              placeholder={t.egPhone}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold outline-none focus:bg-white focus:border-emerald-500"
             />
-            <p className="text-[10px] text-slate-500 mt-1">
-              Används för att skicka direktmeddelanden och aviseringar via WhatsApp.
-            </p>
+            <p className="text-[10px] text-slate-500 mt-1">{t.usedToWhatsApp}</p>
           </div>
 
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-              <Globe className="w-3.5 h-3.5 text-sky-600" /> Språk i appen
+              <Globe className="w-3.5 h-3.5 text-sky-600" /> {t.appLanguage}
             </label>
             <select
               value={language}
@@ -152,30 +152,27 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
             type="submit"
             disabled={saving || success}
             className={`w-full font-black py-3.5 rounded-xl text-xs transition-all duration-200 shadow-lg flex items-center justify-center gap-2 active:scale-98 mt-2 ${
-              success
-                ? 'bg-emerald-600 text-white'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              success ? 'bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
             }`}
           >
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Sparar...</span>
+                <span>{t.saveProfile}...</span>
               </>
             ) : success ? (
               <>
                 <CheckCircle2 className="w-4 h-4 text-white animate-in zoom-in duration-150" />
-                <span>Profilen har sparats!</span>
+                <span>{t.saveProfile}!</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>Spara profilen</span>
+                <span>{t.saveProfile}</span>
               </>
             )}
           </button>
 
-          {/* APP-VERSION */}
           <div className="pt-2 text-center text-[10px] font-bold text-slate-400 border-t border-slate-100 mt-3">
             {APP_CONFIG.name} {APP_CONFIG.version}
           </div>
