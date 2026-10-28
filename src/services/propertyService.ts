@@ -156,28 +156,13 @@ export const propertyService = {
   /**
    * Kopplar en städerska till en fastighet via invite_code
    */
-  async connectByInviteCode(cleanerId: string, code: string): Promise<void> {
-    const formattedCode = code.trim().toUpperCase();
+  async connectByInviteCode(code: string): Promise<void> {
+    const { error } = await supabase.rpc('connect_cleaner_by_invite', { p_code: code });
 
-    const { data: prop, error: propErr } = await supabase
-      .from('properties')
-      .select('id')
-      .eq('invite_code', formattedCode)
-      .maybeSingle();
-
-    if (propErr) throw propErr;
-    if (!prop) throw new Error('INVALID_CODE');
-
-    const { error: connectErr } = await supabase
-      .from('property_connections')
-      .insert({
-        property_id: prop.id,
-        cleaner_id: cleanerId,
-      });
-
-    if (connectErr) {
-      if (connectErr.code === '23505') throw new Error('ALREADY_CONNECTED');
-      throw connectErr;
+    if (error) {
+      if (error.message.includes('INVALID_CODE')) throw new Error('INVALID_CODE');
+      if (error.message.includes('ALREADY_CONNECTED')) throw new Error('ALREADY_CONNECTED');
+      throw error;
     }
   },
 

@@ -32,17 +32,7 @@ export default function ConnectPropertyModal({ isOpen, onClose, onConnected, lan
     setConnecting(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No session');
-
-      await supabase.from('profiles').upsert({
-        id: session.user.id,
-        email: session.user.email,
-        role: session.user.user_metadata?.role || 'agency_admin',
-        full_name: session.user.user_metadata?.full_name || '',
-      });
-
-      await propertyService.connectByInviteCode(session.user.id, inviteCode);
+      await propertyService.connectByInviteCode(inviteCode);
 
       setSuccessMsg(txt.successConnected || '¡Propiedad conectada con éxito!');
       setInviteCode('');
