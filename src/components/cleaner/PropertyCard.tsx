@@ -42,7 +42,6 @@ interface PropertyCardProps {
 const defaultCardTexts: Record<CleanerLanguage, any> = {
   es: {
     noTimeSet: 'Sin tiempo fijado',
-    anfitriona: 'Anfitriona:',
     noPhoneSet: 'Sin teléfono registrado',
     saveError: 'Error al guardar los datos',
     confirmDisconnect: '¿Estás segura de que deseas desconectar la propiedad',
@@ -63,7 +62,6 @@ const defaultCardTexts: Record<CleanerLanguage, any> = {
   },
   en: {
     noTimeSet: 'No time set',
-    anfitriona: 'Host:',
     noPhoneSet: 'No phone registered',
     saveError: 'Error saving data',
     confirmDisconnect: 'Are you sure you want to disconnect property',
@@ -84,7 +82,6 @@ const defaultCardTexts: Record<CleanerLanguage, any> = {
   },
   sv: {
     noTimeSet: 'Ej angiven tid',
-    anfitriona: 'Värd:',
     noPhoneSet: 'Inget tel.nr registrerat',
     saveError: 'Kunde inte spara uppgifter',
     confirmDisconnect: 'Är du säker på att du vill koppla från fastigheten',
@@ -213,7 +210,7 @@ export default function PropertyCard({
         <div className="flex items-center gap-1.5 min-w-0">
           <User className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span className="font-bold text-slate-800 truncate">
-            {txt.anfitriona} {p.host_name || 'Värd'}
+            {p.host_name || 'Värd'}
           </span>
         </div>
 
