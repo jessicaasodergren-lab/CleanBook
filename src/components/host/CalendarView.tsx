@@ -76,7 +76,7 @@ function getWhatsAppUrl(b: Booking): string {
 `¡Hola Maria! 🧹
 Reserva en CleanBook:
 
-📍 *Propiedad:* ${b.property_name} (${b.property_address || b.property_name})
+📍 *Propiedad:* ${b.properties?.name} (${b.properties?.address || b.properties?.name})
 📅 *Salida (Limpieza):* ${depDate} ${depTime}
 📅 *Entrada del huésped:* ${arrDate} ${arrTime}
 👥 *Huéspedes:* ${b.guests}
@@ -335,12 +335,12 @@ export default function CalendarView({ bookings, onRefresh }: CalendarViewProps)
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Fastighet</span>
                 <p className="font-black text-slate-900 text-sm flex items-center gap-1.5">
                   <Building className="w-4 h-4 text-sky-600 shrink-0" />
-                  {selectedBooking.property_name}
+                  {selectedBooking.properties?.name}
                 </p>
-                {selectedBooking.property_address && (
+                {selectedBooking.properties?.address && (
                   <p className="text-xs font-bold text-slate-500 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    {selectedBooking.property_address}
+                    {selectedBooking.properties?.address}
                   </p>
                 )}
               </div>

@@ -56,11 +56,15 @@ export interface PropertyConnection {
   properties?: Property;
 }
 
+export interface BookingProperty {
+  name: string;
+  address: string;
+}
+
 export interface Booking {
   id: string;
   property_id: string;
-  property_name: string;
-  property_address: string | null;
+  properties?: BookingProperty | null;
   booking_title?: string | null;
   check_in_date: string;
   check_in_time_window: ArrivalTimeWindow | null;

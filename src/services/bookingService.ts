@@ -3,69 +3,9 @@ import { supabase, type Booking, type BookingStatus, translateToSpanish } from '
 
 export const bookingService = {
   /**
-   * Hämtar alla bokningar för fastigheter som ägs av den inloggade värden
-   */
-  async getHostBookings(hostId: string): Promise<Booking[]> {
-    const { data: props, error: propErr } = await supabase
-      .from('properties')
-      .select('id')
-      .eq('host_id', hostId);
-
-    if (propErr) throw propErr;
-    if (!props || props.length === 0) return [];
-
-    const propIds = props.map((p) => p.id);
-
-    const { data: bookings, error: bookErr } = await supabase
-      .from('bookings')
-      .select('*')
-      .in('property_id', propIds)
-      .order('check_in_date', { ascending: true });
-
-    if (bookErr) throw bookErr;
-    return (bookings as Booking[]) || [];
-  },
-
-  /**
-   * Hämtar alla bokningar för fastigheter som städerskan är kopplad till
-   * Inkluderar värdnamn via join
-   */
-  async getCleanerBookings(cleanerId: string): Promise<Booking[]> {
-    const { data: conns } = await supabase
-      .from('property_connections')
-      .select('property_id')
-      .eq('cleaner_id', cleanerId);
-
-    if (!conns || conns.length === 0) return [];
-
-    const propIds = conns.map((c) => c.property_id);
-
-    const { data, error } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        properties (
-          name,
-          address,
-          profiles (full_name, phone)
-        )
-      `)
-      .in('property_id', propIds)
-      .order('check_in_date', { ascending: true });
-
-    if (error) throw error;
-
-    return (data || []).map((b: any) => ({
-      ...b,
-      host_name: b.properties?.profiles?.full_name || 'Okänd Värd',
-      host_phone: b.properties?.profiles?.phone || ''
-    }));
-  },
-
-  /**
    * Skapar en ny gästbokning
    */
-  async createBooking(payload: Omit<Booking, 'id' | 'created_at' | 'status'>): Promise<Booking> {
+  async createBooking(payload: Omit<Booking, 'id' | 'created_at' | 'status' | 'properties'>): Promise<Booking> {
     let notesEs: string | null = null;
     const cleanNotes = payload.notes?.trim();
 
@@ -87,7 +27,7 @@ export const bookingService = {
         notes_es: notesEs,
         status: 'pending',
       })
-      .select()
+      .select('*, properties(name, address)')
       .single();
 
     if (error) throw error;
@@ -125,7 +65,7 @@ export const bookingService = {
         ...(payload.notes !== undefined ? { notes_es: notesEs } : {}),
       })
       .eq('id', bookingId)
-      .select()
+      .select('*, properties(name, address)')
       .single();
 
     if (error) throw error;

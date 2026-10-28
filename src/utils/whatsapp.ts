@@ -15,7 +15,7 @@ export function getBookingWhatsAppUrl(booking: Booking, phone: string = APP_CONF
 `¡Hola! 🧹
 Nueva reserva para gestionar en CleanBook:
 
-📍 *Propiedad:* ${booking.property_name} (${booking.property_address || booking.property_name})
+📍 *Propiedad:* ${booking.properties?.name} (${booking.properties?.address || booking.properties?.name})
 📅 *Salida (Limpieza):* ${depDate} ${depTime}
 📅 *Entrada del huésped:* ${arrDate} ${arrTime}
 👥 *Huéspedes:* ${booking.guests}

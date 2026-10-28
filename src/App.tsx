@@ -159,7 +159,7 @@ export default function App() {
       const [bRes, iRes] = await Promise.all([
         supabase
           .from('bookings')
-          .select('*')
+          .select('*, properties(name, address)')
           .in('property_id', targetPropertyIds)
           .order('check_out_date', { ascending: true }),
         supabase

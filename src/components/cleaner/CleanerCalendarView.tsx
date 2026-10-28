@@ -152,8 +152,7 @@ function getBookingWindowInfo(b: Booking, allBookings: Booking[]) {
   const samePropBookings = allBookings.filter(
     (other) =>
       other.id !== b.id &&
-      (other.property_id === b.property_id ||
-        other.property_name.toLowerCase() === b.property_name.toLowerCase())
+      other.property_id === b.property_id
   );
 
   const nextBooking = samePropBookings
@@ -333,13 +332,8 @@ export default function CleanerCalendarView({
                   const isTrueStart = week[startColIdx]?.dateStr === windowStart;
                   const isTrueEnd = week[endColIdx]?.dateStr === windowEnd;
 
-                  const matchedProp = properties.find(
-                    (p) =>
-                      p.name.toLowerCase() === b.property_name.toLowerCase() ||
-                      p.address.toLowerCase() === (b.property_address || '').toLowerCase()
-                  );
-
-                  const displayAddress = matchedProp?.address || b.property_address || b.property_name;
+                  const matchedProp = properties.find((p) => p.id === b.property_id);
+                  const displayAddress = matchedProp?.address || b.properties?.address || b.properties?.name || '';
 
                   const isFinished = b.status === 'finished';
                   const isAccepted = b.status === 'accepted';
@@ -410,14 +404,9 @@ export default function CleanerCalendarView({
       {/* Detaljmodal vid klick */}
       {selectedBooking && (() => {
         const b = selectedBooking;
-        const matchedProp = properties.find(
-          (p) =>
-            p.name.toLowerCase() === b.property_name.toLowerCase() ||
-            p.address.toLowerCase() === (b.property_address || '').toLowerCase()
-        );
-
-        const displayAddress = matchedProp?.address || b.property_address || b.property_name;
-        const displayHost = matchedProp?.host_name || b.host_name;
+        const matchedProp = properties.find((p) => p.id === b.property_id);
+        const displayAddress = matchedProp?.address || b.properties?.address || b.properties?.name || '';
+        const displayHost = matchedProp?.host_name || 'Värd';
 
         const { nextBooking } = getBookingWindowInfo(b, bookings);
 
@@ -501,7 +490,7 @@ export default function CleanerCalendarView({
 
                 {displayHost && displayHost !== 'Värd' && (
                   <p className="text-xs font-bold text-slate-600 flex items-center gap-1 border-t border-slate-100 pt-2">
-                    <User className="w-3.5 h-3.5 text-slate-400" /> {txt.modalHostLabel} {displayHost} ({b.property_name})
+                    <User className="w-3.5 h-3.5 text-slate-400" /> {txt.modalHostLabel} {displayHost} ({b.properties?.name})
                   </p>
                 )}
 

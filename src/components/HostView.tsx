@@ -64,7 +64,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
   };
 
   const propertyBookings = selectedProperty
-    ? bookings.filter((b) => b.property_id === selectedProperty.id || b.property_name.toLowerCase() === selectedProperty.name.toLowerCase())
+    ? bookings.filter((b) => b.property_id === selectedProperty.id)
     : bookings;
 
   if (loading && properties.length === 0) {

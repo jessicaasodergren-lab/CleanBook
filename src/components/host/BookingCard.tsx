@@ -111,7 +111,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
           </h3>
           <p className="text-xs font-bold text-slate-500 flex items-center gap-1 truncate">
             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="truncate">{b.property_address || b.property_name}</span>
+            <span className="truncate">{b.properties?.address || b.properties?.name}</span>
           </p>
         </div>
 

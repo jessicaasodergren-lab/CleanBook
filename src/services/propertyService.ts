@@ -143,11 +143,21 @@ export const propertyService = {
 
     if (propError) { console.error("Fastighetsfel:", propError); throw propError; }
 
+    const hostIds = [...new Set((properties || []).map(p => p.host_id).filter(Boolean))];
+    const { data: hosts, error: hostError } = await supabase
+      .from('profiles')
+      .select('id, full_name, phone')
+      .in('id', hostIds);
+
+    if (hostError) throw hostError;
+
     return (properties || []).map(p => {
       const conn = connections.find(c => c.property_id === p.id);
+      const host = hosts?.find(h => h.id === p.host_id);
       return {
         ...p,
-        host_name: 'Värd', // Förenklat för test
+        host_name: host?.full_name || 'Värd',
+        host_phone: host?.phone || null,
         cleaning_time: conn?.cleaning_time,
         internal_notes: conn?.internal_notes,
       } as Property;

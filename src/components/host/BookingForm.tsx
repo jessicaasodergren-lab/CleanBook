@@ -151,8 +151,8 @@ export default function BookingForm({
 
       const { data: dbBookings, error: fetchErr } = await supabase
         .from('bookings')
-        .select('id, booking_title, check_out_date, check_in_date, property_id, property_name')
-        .or(`property_id.eq.${prop.id},property_name.eq.${prop.name}`);
+        .select('id, booking_title, check_out_date, check_in_date, property_id')
+        .eq('property_id', prop.id);
 
       if (fetchErr) {
         console.error('Fel vid hämtning av existerande bokningar för överlappskontroll:', fetchErr);
@@ -193,9 +193,6 @@ export default function BookingForm({
 
       const inserted = await bookingService.createBooking({
         property_id: prop.id,
-        property_name: prop.name,
-        property_address: prop.address || prop.name,
-        host_name: prop.host_name || 'Värd',
         booking_title: bookingTitle.trim(),
         check_in_date: checkInDate,
         check_in_time_window: checkInTimeWindow as ArrivalTimeWindow,
@@ -241,7 +238,7 @@ export default function BookingForm({
         <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 text-left space-y-2 text-xs">
           <div className="flex items-center justify-between border-b border-slate-700/60 pb-2">
             <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">Fastighet</span>
-            <span className="font-black text-white text-xs">{createdBooking.property_name}</span>
+            <span className="font-black text-white text-xs">{createdBooking.properties?.name}</span>
           </div>
 
           {createdBooking.booking_title && (

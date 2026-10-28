@@ -78,15 +78,10 @@ export default function TaskCard({
 
   const displayNote = getValidNote(b.notes_es, b.notes);
 
-  const matchedProp = properties.find(
-    (p) =>
-      (b.property_id && p.id === b.property_id) ||
-      p.name.toLowerCase() === b.property_name.toLowerCase() ||
-      p.address.toLowerCase() === (b.property_address || '').toLowerCase()
-  );
+  const matchedProp = properties.find((p) => p.id === b.property_id);
 
-  const displayAddress = matchedProp?.address || b.property_address || b.property_name;
-  const displayHost = matchedProp?.host_name || b.host_name;
+  const displayAddress = matchedProp?.address || b.properties?.address || b.properties?.name || '';
+  const displayHost = matchedProp?.host_name || 'Värd';
   const estCleaningTime = matchedProp?.cleaning_time;
   const cleanerInternalNotes = (matchedProp as any)?.internal_notes;
 
@@ -94,7 +89,7 @@ export default function TaskCard({
 
   const nextBooking = allBookings.find((other) => {
     if (other.id === b.id) return false;
-    if (other.property_name.toLowerCase() !== b.property_name.toLowerCase()) return false;
+    if (other.property_id !== b.property_id) return false;
     if (!other.check_in_date || !b.check_out_date) return false;
     return other.check_in_date >= b.check_out_date;
   });
@@ -188,8 +183,8 @@ export default function TaskCard({
                 <span className="truncate">
                 {displayHost} 
         
-        {b.property_name && displayAddress.toLowerCase() !== b.property_name.toLowerCase() && (
-          <span className="text-slate-400 font-medium"> ({b.property_name})</span>
+        {b.properties?.name && displayAddress.toLowerCase() !== b.properties.name.toLowerCase() && (
+          <span className="text-slate-400 font-medium"> ({b.properties.name})</span>
         )}
       </span>
     </div>
