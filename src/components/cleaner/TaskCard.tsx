@@ -186,12 +186,13 @@ export default function TaskCard({
               <div className="flex items-center gap-1 truncate">
                 <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="truncate">
-                  {txt.hostLabel || 'Anfitriona:'} {displayHost}
-                  {b.property_name && displayAddress.toLowerCase() !== b.property_name.toLowerCase() && (
-                    <span className="text-slate-400 font-medium"> ({b.property_name})</span>
-                  )}
-                </span>
-              </div>
+                {displayHost} 
+        
+        {b.property_name && displayAddress.toLowerCase() !== b.property_name.toLowerCase() && (
+          <span className="text-slate-400 font-medium"> ({b.property_name})</span>
+        )}
+      </span>
+    </div>
 
               {matchedProp?.host_phone && (
                 <a

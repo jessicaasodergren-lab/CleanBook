@@ -6,7 +6,6 @@ export const bookingService = {
    * Hämtar alla bokningar för fastigheter som ägs av den inloggade värden
    */
   async getHostBookings(hostId: string): Promise<Booking[]> {
-    // 1. Hämta värdens fastighets-ID:n
     const { data: props, error: propErr } = await supabase
       .from('properties')
       .select('id')
@@ -17,7 +16,6 @@ export const bookingService = {
 
     const propIds = props.map((p) => p.id);
 
-    // 2. Hämta alla bokningar kopplade till dessa fastigheter
     const { data: bookings, error: bookErr } = await supabase
       .from('bookings')
       .select('*')
@@ -30,32 +28,42 @@ export const bookingService = {
 
   /**
    * Hämtar alla bokningar för fastigheter som städerskan är kopplad till
+   * Inkluderar värdnamn via join
    */
   async getCleanerBookings(cleanerId: string): Promise<Booking[]> {
-    // 1. Hämta alla fastigheter städerskan är ansluten till
-    const { data: conns, error: connErr } = await supabase
+    const { data: conns } = await supabase
       .from('property_connections')
       .select('property_id')
       .eq('cleaner_id', cleanerId);
 
-    if (connErr) throw connErr;
     if (!conns || conns.length === 0) return [];
 
     const propIds = conns.map((c) => c.property_id);
 
-    // 2. Hämta bokningar för dessa fastigheter
-    const { data: bookings, error: bookErr } = await supabase
+    const { data, error } = await supabase
       .from('bookings')
-      .select('*')
+      .select(`
+        *,
+        properties (
+          name,
+          address,
+          profiles (full_name, phone)
+        )
+      `)
       .in('property_id', propIds)
       .order('check_in_date', { ascending: true });
 
-    if (bookErr) throw bookErr;
-    return (bookings as Booking[]) || [];
+    if (error) throw error;
+
+    return (data || []).map((b: any) => ({
+      ...b,
+      host_name: b.properties?.profiles?.full_name || 'Okänd Värd',
+      host_phone: b.properties?.profiles?.phone || ''
+    }));
   },
 
   /**
-   * Skapar en ny gästbokning med automatisk översättning av instruktioner till spanska
+   * Skapar en ny gästbokning
    */
   async createBooking(payload: Omit<Booking, 'id' | 'created_at' | 'status'>): Promise<Booking> {
     let notesEs: string | null = null;
@@ -65,16 +73,7 @@ export const bookingService = {
       try {
         const safeText = cleanNotes.length > 450 ? cleanNotes.slice(0, 450) : cleanNotes;
         const translated = await translateToSpanish(safeText);
-
-        if (
-          translated &&
-          !translated.toUpperCase().includes('QUERY LENGTH LIMIT') &&
-          !translated.toUpperCase().includes('MYMEMORY')
-        ) {
-          notesEs = translated;
-        } else {
-          notesEs = cleanNotes;
-        }
+        notesEs = (translated && !translated.toUpperCase().includes('QUERY LENGTH LIMIT')) ? translated : cleanNotes;
       } catch {
         notesEs = cleanNotes;
       }
@@ -96,7 +95,7 @@ export const bookingService = {
   },
 
   /**
-   * Uppdaterar en hel bokning samt översätter instruktioner på nytt om de ändrats
+   * Uppdaterar en hel bokning
    */
   async updateBooking(
     bookingId: string,
@@ -106,21 +105,11 @@ export const bookingService = {
 
     if (payload.notes !== undefined) {
       const cleanNotes = payload.notes?.trim();
-
       if (cleanNotes) {
         try {
           const safeText = cleanNotes.length > 450 ? cleanNotes.slice(0, 450) : cleanNotes;
           const translated = await translateToSpanish(safeText);
-
-          if (
-            translated &&
-            !translated.toUpperCase().includes('QUERY LENGTH LIMIT') &&
-            !translated.toUpperCase().includes('MYMEMORY')
-          ) {
-            notesEs = translated;
-          } else {
-            notesEs = cleanNotes;
-          }
+          notesEs = (translated && !translated.toUpperCase().includes('QUERY LENGTH LIMIT')) ? translated : cleanNotes;
         } catch {
           notesEs = cleanNotes;
         }
@@ -143,9 +132,6 @@ export const bookingService = {
     return data as Booking;
   },
 
-  /**
-   * Uppdaterar bokningsstatus ('pending' | 'accepted' | 'finished')
-   */
   async updateStatus(bookingId: string, status: BookingStatus): Promise<void> {
     const { error } = await supabase
       .from('bookings')
@@ -155,9 +141,6 @@ export const bookingService = {
     if (error) throw error;
   },
 
-  /**
-   * Tar bort en bokning
-   */
   async deleteBooking(bookingId: string): Promise<void> {
     const { error } = await supabase
       .from('bookings')
