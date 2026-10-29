@@ -1,4 +1,5 @@
 import type { Booking } from './supabase';
+import type { Language } from '../i18n/translations';
 
 export const APP_CONFIG = {
   name: 'CleanBook',
@@ -28,29 +29,36 @@ export const TIME_LABELS = {
   },
 };
 
-export function formatDate(dateStr?: string | null, lang: 'sv' | 'es' = 'sv'): string {
+export const DATE_LOCALES: Record<Language, string> = {
+  sv: 'sv-SE',
+  en: 'en-GB',
+  da: 'da-DK',
+  es: 'es-ES',
+};
+
+export function formatDate(dateStr?: string | null, lang: Language = 'sv'): string {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return date.toLocaleDateString(lang === 'sv' ? 'sv-SE' : 'es-ES', {
+  return date.toLocaleDateString(DATE_LOCALES[lang], {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
   });
 }
 
-export function formatDateShort(dateStr?: string | null, lang: 'sv' | 'es' = 'sv'): string {
+export function formatDateShort(dateStr?: string | null, lang: Language = 'sv'): string {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return date.toLocaleDateString(lang === 'sv' ? 'sv-SE' : 'es-ES', {
+  return date.toLocaleDateString(DATE_LOCALES[lang], {
     day: 'numeric',
     month: 'short',
   });
 }
 
-export function formatDateTime(dateStr?: string | null, lang: 'sv' | 'es' = 'es'): string {
+export function formatDateTime(dateStr?: string | null, lang: Language = 'es'): string {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return date.toLocaleString(lang === 'sv' ? 'sv-SE' : 'es-ES', {
+  return date.toLocaleString(DATE_LOCALES[lang], {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

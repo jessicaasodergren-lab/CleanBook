@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import type { Property } from '../../lib/supabase';
 import { propertyService } from '../../services/propertyService';
+import { translations, type Language } from '../../i18n/translations';
 import { Home, X, Loader2, Ruler, Bed, Bath, StickyNote, AlertCircle, Save } from 'lucide-react';
 
 interface EditPropertyModalProps {
@@ -9,9 +10,11 @@ interface EditPropertyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdated: (updatedProp: Property) => void;
+  lang: Language;
 }
 
-export default function EditPropertyModal({ property, isOpen, onClose, onUpdated }: EditPropertyModalProps) {
+export default function EditPropertyModal({ property, isOpen, onClose, onUpdated, lang }: EditPropertyModalProps) {
+  const txt = translations.propertyModal[lang];
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [kvm, setKvm] = useState('');
@@ -65,7 +68,7 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
       onUpdated(updated);
       onClose();
     } catch (err: any) {
-      setErrorMsg(`Kunde inte uppdatera fastigheten: ${err.message || 'Ett fel uppstod.'}`);
+      setErrorMsg(`${txt.errUpdate} ${err.message || txt.errGeneric}`);
     } finally {
       setSaving(false);
     }
@@ -76,7 +79,7 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
       <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white">
           <h3 className="font-black text-sm text-slate-900 flex items-center gap-1.5">
-            <Home className="w-4 h-4 text-sky-600" /> Redigera fastighet
+            <Home className="w-4 h-4 text-sky-600" /> {txt.editTitle}
           </h3>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
             <X className="w-5 h-5" />
@@ -85,7 +88,7 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
 
         <form onSubmit={handleUpdate} className="p-5 space-y-3 text-xs">
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Fastighetens namn *</label>
+            <label className="block font-bold text-slate-700 mb-1">{txt.nameLabel}</label>
             <input
               type="text"
               value={name}
@@ -96,7 +99,7 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Fullständig adress</label>
+            <label className="block font-bold text-slate-700 mb-1">{txt.addressLabel}</label>
             <input
               type="text"
               value={address}
@@ -108,7 +111,7 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
           <div className="grid grid-cols-3 gap-2 pt-1">
             <div>
               <label className="block text-[10px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Ruler className="w-3 h-3 text-slate-500" /> Kvm
+                <Ruler className="w-3 h-3 text-slate-500" /> {txt.kvm}
               </label>
               <input
                 type="text"
@@ -121,7 +124,7 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
 
             <div>
               <label className="block text-[10px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Bed className="w-3 h-3 text-slate-500" /> Rum
+                <Bed className="w-3 h-3 text-slate-500" /> {txt.rooms}
               </label>
               <input
                 type="text"
@@ -134,7 +137,7 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
 
             <div>
               <label className="block text-[10px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Bath className="w-3 h-3 text-slate-500" /> Badrum
+                <Bath className="w-3 h-3 text-slate-500" /> {txt.bathrooms}
               </label>
               <input
                 type="text"
@@ -148,11 +151,11 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
 
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-              <StickyNote className="w-3.5 h-3.5 text-amber-600" /> Fasta instruktioner till städfirman
+              <StickyNote className="w-3.5 h-3.5 text-amber-600" /> {txt.notesLabel}
             </label>
             <textarea
               rows={3}
-              placeholder="T.ex. Nyckel under krukan, lås två varv..."
+              placeholder={txt.notesPlaceholderEdit}
               value={propertyNotes}
               onChange={(e) => setPropertyNotes(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-sky-500 font-medium"
@@ -172,7 +175,7 @@ export default function EditPropertyModal({ property, isOpen, onClose, onUpdated
             className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2 active:scale-98 mt-2"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Spara ändringar
+            {txt.saveBtn}
           </button>
         </form>
       </div>

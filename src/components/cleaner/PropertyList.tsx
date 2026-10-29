@@ -13,44 +13,11 @@ interface PropertyListProps {
   lang?: CleanerLanguage;
 }
 
-// Inbyggda reservöversättningar för att förhindra krasch vid saknade i18n-nycklar
-const defaultPropListTexts: Record<CleanerLanguage, any> = {
-  es: {
-    title: 'Propiedades conectadas',
-    subtitleSingle: 'propiedad vinculada a tu cuenta',
-    subtitlePlural: 'propiedades vinculadas a tu cuenta',
-    btnConnectCode: 'Conectar código',
-    noPropsTitle: 'Sin propiedades conectadas',
-    noPropsDesc: 'Usa el botón superior para vincular tu primera propiedad.',
-  },
-  en: {
-    title: 'Connected Properties',
-    subtitleSingle: 'property linked to your account',
-    subtitlePlural: 'properties linked to your account',
-    btnConnectCode: 'Connect code',
-    noPropsTitle: 'No connected properties',
-    noPropsDesc: 'Use the button above to link your first property.',
-  },
-  sv: {
-    title: 'Kopplade fastigheter',
-    subtitleSingle: 'fastighet kopplad till ditt konto',
-    subtitlePlural: 'fastigheter kopplade till ditt konto',
-    btnConnectCode: 'Koppla med kod',
-    noPropsTitle: 'Inga kopplade fastigheter',
-    noPropsDesc: 'Använd knappen ovan för att koppla din första fastighet.',
-  },
-};
-
 export default function PropertyList({ properties = [], onRefresh, lang = 'es' }: PropertyListProps) {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [connectionsMap, setConnectionsMap] = useState<Record<string, any>>({});
 
-  // Kraschsäker hämtning med inbyggd reservöversättning
-  const txt =
-    (translations as any)?.propertyList?.[lang] ||
-    (translations as any)?.propertyList?.es ||
-    defaultPropListTexts[lang] ||
-    defaultPropListTexts.es;
+  const txt = translations.propertyList[lang];
 
   const fetchConnections = async () => {
     try {

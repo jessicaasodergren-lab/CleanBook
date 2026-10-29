@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { Booking, Incident, Property } from '../../lib/supabase';
 import { formatDate } from '../../lib/constants';
+import { translations } from '../../i18n/translations';
 import { getValidNote } from '../../utils/notes';
 import type { CleanerLanguage } from '../CleanerView';
 import {
@@ -81,7 +82,7 @@ export default function TaskCard({
   const matchedProp = properties.find((p) => p.id === b.property_id);
 
   const displayAddress = matchedProp?.address || b.properties?.address || b.properties?.name || '';
-  const displayHost = matchedProp?.host_name || 'Värd';
+  const displayHost = matchedProp?.host_name;
   const estCleaningTime = matchedProp?.cleaning_time;
   const cleanerInternalNotes = (matchedProp as any)?.internal_notes;
 
@@ -152,7 +153,7 @@ export default function TaskCard({
             {bookingIncidents.length > 0 && (
               <span className="bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
                 <Camera className="w-3 h-3 text-rose-600" />
-                {bookingIncidents.length} {txt.photosLabel || 'fotos'}
+                {bookingIncidents.length} {txt.photosLabel}
               </span>
             )}
           </div>
@@ -301,7 +302,7 @@ export default function TaskCard({
           {matchedProp && (matchedProp.kvm || matchedProp.rooms || matchedProp.bathrooms) && (
             <div className="space-y-1">
               <span className="font-black text-[10px] uppercase text-slate-500 tracking-wider block">
-                {txt.houseInfo || 'Información de la casa:'}
+                {txt.houseInfo}
               </span>
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 space-y-0.5">
@@ -357,7 +358,7 @@ export default function TaskCard({
                 {matchedProp.notes_updated_at && (
                   <span className="text-[9.5px] font-bold text-slate-400 flex items-center gap-1">
                     <Clock className="w-3 h-3 text-slate-400" />
-                    Actualizado: {formatDate(matchedProp.notes_updated_at, lang)}
+                    {translations.propertyList[lang].notesUpdatedAt}: {formatDate(matchedProp.notes_updated_at, lang)}
                   </span>
                 )}
               </div>

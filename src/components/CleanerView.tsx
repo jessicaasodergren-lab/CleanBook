@@ -2,13 +2,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
 import { propertyService } from '../services/propertyService';
-import { translations } from '../i18n/translations';
+import { translations, type Language } from '../i18n/translations';
 import TaskList from './cleaner/TaskList';
 import CleanerCalendarView from './cleaner/CleanerCalendarView';
 import PropertyList from './cleaner/PropertyList';
 import { Clock, Building, Calendar as CalendarIcon, Sparkles, Key, Check, AlertCircle, Loader2, KeyRound, X } from 'lucide-react';
 
-export type CleanerLanguage = 'es' | 'en' | 'sv';
+export type CleanerLanguage = Language;
 
 interface CleanerViewProps {
   bookings: Booking[];
@@ -35,27 +35,7 @@ export default function CleanerView({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const txt = translations?.cleaner?.[lang] || translations?.cleaner?.es || {
-    tabJobs: 'Tareas',
-    tabCalendar: 'Calendario',
-    tabProps: 'Propiedades',
-    welcomeTitle: '¡Bienvenida a CleanBook! 👋',
-    welcomeDesc: 'Para empezar a ver tus tareas de limpieza y el calendario, conecta tu primera propiedad en 3 sencillos pasos:',
-    step1: 'Pide el código:',
-    step1Desc: 'Solicita el código de invitación a la anfitriona (ej. CLEAN-88A2).',
-    step2: 'Pulsa en Conectar:',
-    step2Desc: 'Pulsa el botón inferior para introducir el código.',
-    step3: '¡Listo!',
-    step3Desc: 'Tus limpiezas y el calendario se actualizarán automáticamente.',
-    btnConnectNow: 'Conectar mi primera propiedad ahora',
-    modalTitle: 'Conectar nueva propiedad',
-    modalDesc: 'Introduce el código de invitación o clave secreta proporcionada por la anfitriona:',
-    placeholderCode: 'Ej. CLEAN-88A2 o GV45',
-    btnSubmitConnect: 'Conectar',
-    errInvalidCode: 'Código no válido. Verifica el código e inténtalo de nuevo.',
-    errAlreadyConnected: 'Esta propiedad ya está conectada a tu cuenta.',
-    successConnected: '¡Propiedad conectada con éxito!',
-  };
+  const txt = translations.cleaner[lang];
 
   const fetchProperties = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -100,7 +80,7 @@ export default function CleanerView({
     } catch (err: any) {
       if (err.message === 'INVALID_CODE') setErrorMsg(txt.errInvalidCode);
       else if (err.message === 'ALREADY_CONNECTED') setErrorMsg(txt.errAlreadyConnected);
-      else setErrorMsg('Error occurred');
+      else setErrorMsg(translations.common[lang].error);
     } finally {
       setConnecting(false);
     }

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, type Profile } from '../../lib/supabase';
 import { APP_CONFIG } from '../../lib/constants';
-import { translations } from '../../i18n/translations';
+import { translations, type Language } from '../../i18n/translations';
 import { User, Phone, Globe, X, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -15,11 +15,12 @@ interface ProfileModalProps {
 export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdated }: ProfileModalProps) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [language, setLanguage] = useState<'sv' | 'en' | 'da' | 'es'>('sv');
+  const [language, setLanguage] = useState<Language>('sv');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const t = (translations as any).profileModal?.[language] || (translations as any).profileModal?.sv;
+  const saveTxt = translations.profileSave[language];
 
   // Laddar endast formulärdata när modalen öppnas
   useEffect(() => {
@@ -33,8 +34,6 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
   }, [isOpen]);
 
   if (!isOpen || !profile) return null;
-
-  const isHost = profile.role === 'host';
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +53,7 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
 
       if (error) {
         console.error('Supabase update error:', error);
-        setErrorMsg(`Kunde inte spara: ${error.message}`);
+        setErrorMsg(`${saveTxt.saveFailed} ${error.message}`);
         setSaving(false);
         return;
       }
@@ -69,7 +68,7 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
       }, 1000);
     } catch (err: any) {
       console.error('Kunde inte uppdatera profil:', err);
-      setErrorMsg('Ett oväntat fel uppstod vid sparande.');
+      setErrorMsg(saveTxt.unexpected);
     } finally {
       setSaving(false);
     }
@@ -125,19 +124,10 @@ export default function ProfileModal({ isOpen, onClose, profile, onProfileUpdate
               onChange={(e) => setLanguage(e.target.value as any)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold outline-none focus:bg-white focus:border-emerald-500"
             >
-              {isHost ? (
-                <>
-                  <option value="sv">🇸🇪 Svenska</option>
-                  <option value="en">🇬🇧 English</option>
-                  <option value="da">🇩🇰 Dansk</option>
-                </>
-              ) : (
-                <>
-                  <option value="es">🇪🇸 Español</option>
-                  <option value="en">🇬🇧 English</option>
-                  <option value="sv">🇸🇪 Svenska</option>
-                </>
-              )}
+              <option value="sv">🇸🇪 Svenska</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="da">🇩🇰 Dansk</option>
+              <option value="es">🇪🇸 Español</option>
             </select>
           </div>
 

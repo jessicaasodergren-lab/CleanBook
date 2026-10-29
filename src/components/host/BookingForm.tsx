@@ -61,7 +61,7 @@ export default function BookingForm({
   onSuccess,
   lang = 'sv',
 }: BookingFormProps) {
-  const txt = translations.bookingForm[lang] || translations.bookingForm.sv;
+  const txt = translations.bookingForm[lang];
 
   const effectiveProperties: Property[] = properties.length > 0
     ? properties
@@ -185,7 +185,11 @@ export default function BookingForm({
             ? ` ("${overlappingBooking.booking_title}")`
             : '';
           setErrorMsg(
-            `Det finns redan en krockande bokning${titleStr} för ${prop.name} mellan datumen ${formatDate(overlappingBooking.check_in_date, lang)} och ${formatDate(overlappingBooking.check_out_date, lang)}.`
+            txt.overlapError
+              .replace('{title}', titleStr)
+              .replace('{property}', prop.name)
+              .replace('{start}', formatDate(overlappingBooking.check_in_date, lang))
+              .replace('{end}', formatDate(overlappingBooking.check_out_date, lang))
           );
           return;
         }
@@ -211,7 +215,7 @@ export default function BookingForm({
       if (onBookingCreated) onBookingCreated();
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setErrorMsg(`Error: ${err.message}`);
+      setErrorMsg(`${txt.errorPrefix} ${err.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -237,19 +241,19 @@ export default function BookingForm({
         {/* SAMMANFATTNINGSKORT */}
         <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 text-left space-y-2 text-xs">
           <div className="flex items-center justify-between border-b border-slate-700/60 pb-2">
-            <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">Fastighet</span>
+            <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">{txt.summaryProperty}</span>
             <span className="font-black text-white text-xs">{createdBooking.properties?.name}</span>
           </div>
 
           {createdBooking.booking_title && (
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-2">
-              <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">Gäst / Titel</span>
+              <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">{txt.summaryGuest}</span>
               <span className="font-black text-sky-400 text-xs">{createdBooking.booking_title}</span>
             </div>
           )}
 
           <div className="flex items-center justify-between pt-0.5">
-            <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">Datum</span>
+            <span className="font-extrabold text-slate-400 uppercase text-[10px] tracking-wider">{txt.summaryDate}</span>
             <span className="font-bold text-emerald-400 text-xs">
               {formatDate(createdBooking.check_in_date, lang)} ➔ {formatDate(createdBooking.check_out_date, lang)}
             </span>
@@ -364,7 +368,7 @@ export default function BookingForm({
   onChange={(e) => handleArrivalExactTimeChange(e.target.value)} // eller handleDepartureExactTimeChange
   className="w-full bg-white border border-sky-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-sky-500"
 >
-  <option value="">Välj tid...</option>
+  <option value="">{txt.chooseTime}</option>
   {Array.from({ length: 24 }).map((_, i) => (
     <option key={i} value={`${String(i).padStart(2, '0')}:00`}>
       {String(i).padStart(2, '0')}:00
@@ -429,7 +433,7 @@ export default function BookingForm({
   onChange={(e) => handleDepartureExactTimeChange(e.target.value)} // eller handleDepartureExactTimeChange
   className="w-full bg-white border border-sky-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 outline-none focus:border-sky-500"
 >
-  <option value="">Välj tid...</option>
+  <option value="">{txt.chooseTime}</option>
   {Array.from({ length: 24 }).map((_, i) => (
     <option key={i} value={`${String(i).padStart(2, '0')}:00`}>
       {String(i).padStart(2, '0')}:00

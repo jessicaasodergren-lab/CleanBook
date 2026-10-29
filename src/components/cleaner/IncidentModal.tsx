@@ -26,7 +26,7 @@ export default function IncidentModal({
   const [submitting, setSubmitting] = useState(false);
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
 
-  const txt = translations?.incidentModal?.[lang] || translations?.incidentModal?.es;
+  const txt = translations.incidentModal[lang];
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

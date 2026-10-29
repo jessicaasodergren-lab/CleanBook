@@ -25,7 +25,7 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
   const [actionError, setActionError] = useState<{ id: string; msg: string } | null>(null);
 
   // Hämtar från det centrala språk-registret!
-  const txt = translations.taskList[lang] || translations.taskList.es;
+  const txt = translations.taskList[lang];
   const todayYMD = new Date().toISOString().split('T')[0];
 
   const sortedByDeparture = [...bookings].sort((a, b) =>

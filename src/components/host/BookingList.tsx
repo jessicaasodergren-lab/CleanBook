@@ -1,15 +1,18 @@
 // src/components/host/BookingList.tsx
 import { useState } from 'react';
 import type { Booking, Incident } from '../../lib/supabase';
+import { translations, type Language } from '../../i18n/translations';
 import BookingCard from './BookingCard';
 
 interface BookingListProps {
   bookings: Booking[];
   incidents: Incident[];
   onRefresh: () => void;
+  lang: Language;
 }
 
-export default function BookingList({ bookings, incidents, onRefresh }: BookingListProps) {
+export default function BookingList({ bookings, incidents, onRefresh, lang }: BookingListProps) {
+  const txt = translations.bookingList[lang];
   const [jobFilter, setJobFilter] = useState<'active' | 'pending_only' | 'finished'>('active');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -34,8 +37,8 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
   if (sortedBookings.length === 0) {
     return (
       <div className="text-center py-10 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 space-y-2">
-        <p className="text-white font-black text-base">Inga bokningar ännu</p>
-        <p className="text-slate-400 text-xs">Använd formuläret för att lägga till din första gästvistelse.</p>
+        <p className="text-white font-black text-base">{txt.emptyTitle}</p>
+        <p className="text-slate-400 text-xs">{txt.emptyDesc}</p>
       </div>
     );
   }
@@ -51,7 +54,7 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
             jobFilter === 'active' ? 'bg-sky-500 text-slate-950 shadow' : 'text-slate-400'
           }`}
         >
-          🧹 Aktiva ({activeJobs.length})
+          {txt.filterActive} ({activeJobs.length})
         </button>
 
         <button
@@ -61,7 +64,7 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
             jobFilter === 'pending_only' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-400'
           }`}
         >
-          <span>🟡 Väntar</span>
+          <span>🟡 {txt.filterPending}</span>
           {pendingJobs.length > 0 && (
             <span className="bg-amber-500 text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-black">
               {pendingJobs.length}
@@ -76,7 +79,7 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
             jobFilter === 'finished' ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400'
           }`}
         >
-          💚 Slutförda ({finishedJobs.length})
+          💚 {txt.filterFinished} ({finishedJobs.length})
         </button>
       </div>
 
@@ -84,8 +87,8 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
       <div className="space-y-3">
         {displayedJobs.length === 0 ? (
           <div className="text-center py-10 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 space-y-2">
-            <p className="text-white font-black text-base">Inga bokningar här</p>
-            <p className="text-slate-400 text-xs">Det finns inga gästvistelser i denna vy.</p>
+            <p className="text-white font-black text-base">{txt.emptyFilteredTitle}</p>
+            <p className="text-slate-400 text-xs">{txt.emptyFilteredDesc}</p>
           </div>
         ) : (
           displayedJobs.map((b) => (
@@ -95,6 +98,7 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
               incidents={incidents}
               onRefresh={onRefresh}
               onSelectImage={(url) => setSelectedImage(url)}
+              lang={lang}
             />
           ))
         )}
@@ -107,13 +111,13 @@ export default function BookingList({ bookings, incidents, onRefresh }: BookingL
           onClick={() => setSelectedImage(null)}
         >
           <div className="relative max-w-2xl max-h-[90vh] overflow-hidden rounded-3xl">
-            <img src={selectedImage} alt="Förstorad bild" className="w-full h-full object-contain" />
+            <img src={selectedImage} alt={txt.imageAlt} className="w-full h-full object-contain" />
             <button
               type="button"
               onClick={() => setSelectedImage(null)}
               className="absolute top-3 right-3 bg-slate-900/80 text-white font-black p-2 rounded-full text-xs"
             >
-              ✕ Stäng
+              ✕ {txt.closeImage}
             </button>
           </div>
         </div>

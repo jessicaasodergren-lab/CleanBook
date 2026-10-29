@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../lib/supabase';
 import { propertyService } from '../services/propertyService';
-import { translations } from '../i18n/translations';
+import { translations, type Language } from '../i18n/translations';
 import { getPropertyInviteWhatsAppUrl } from '../utils/whatsapp';
 import CreatePropertyModal from './modals/CreatePropertyModal';
 import EditPropertyModal from './modals/EditPropertyModal';
@@ -11,7 +11,7 @@ import BookingList from './host/BookingList';
 import CalendarView from './host/CalendarView';
 import { PlusCircle, List, Calendar as CalendarIcon, Loader2, Home, Share2, Copy, Check, Plus, Pencil, UserCheck, Phone } from 'lucide-react';
 
-export type HostLanguage = 'sv' | 'en' | 'da';
+export type HostLanguage = Language;
 
 interface HostViewProps {
   bookings: Booking[];
@@ -29,13 +29,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
   const [showAddPropModal, setShowAddPropModal] = useState(false);
   const [showEditPropModal, setShowEditPropModal] = useState(false);
 
-  const txt = translations?.host?.[lang] || translations?.host?.sv || {
-    tabNew: 'Ny bokning',
-    tabList: 'Mina bokningar',
-    tabCal: 'Kalender',
-    inviteCodeLabel: 'Inbjudningskod till städerska:',
-    addPropBtn: 'Ny fastighet',
-  };
+  const txt = translations.host[lang];
 
   const fetchProperties = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -81,12 +75,12 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
       {properties.length === 0 && !loading && (
         <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 text-center space-y-3 shadow-xl">
           <Home className="w-10 h-10 text-emerald-400 mx-auto" />
-          <h3 className="font-black text-white text-base">Välkommen! Lägg till din första fastighet</h3>
+          <h3 className="font-black text-white text-base">{txt.welcomeTitle}</h3>
           <p className="text-xs text-slate-400">
-            För att kunna skapa bokningar och bjuda in din städerska behöver du först registrera en fastighet.
+            {txt.welcomeDesc}
           </p>
           <button onClick={() => setShowAddPropModal(true)} className="bg-emerald-500 text-slate-950 font-black px-4 py-3 rounded-2xl text-xs flex items-center gap-1.5 mx-auto active:scale-95 transition">
-            <Plus className="w-4 h-4" /> Skapa fastighet nu
+            <Plus className="w-4 h-4" /> {txt.createPropNow}
           </button>
         </div>
       )}
@@ -103,7 +97,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
                   <button
                     onClick={() => setShowEditPropModal(true)}
                     className="p-1 bg-slate-800 hover:bg-slate-700 text-sky-400 rounded-lg transition border border-slate-700/80 shrink-0"
-                    title="Redigera fastighet"
+                    title={txt.editPropTitle}
                   >
                     <Pencil className="w-3 h-3" />
                   </button>
@@ -118,7 +112,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
                   {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               )}
-              <button onClick={() => setShowAddPropModal(true)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl transition border border-slate-700" title="Ny fastighet"><Plus className="w-3.5 h-3.5" /></button>
+              <button onClick={() => setShowAddPropModal(true)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl transition border border-slate-700" title={txt.addPropBtn}><Plus className="w-3.5 h-3.5" /></button>
             </div>
           </div>
 
@@ -147,7 +141,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-slate-400 font-semibold">{txt.inviteCodeLabel}</span>
                 <span className="font-mono font-black text-emerald-400">{selectedProperty.invite_code || ''}</span>
-                <button onClick={() => copyInviteCode(selectedProperty.invite_code || '')} className="text-slate-400 hover:text-white p-1" title="Kopiera kod">
+                <button onClick={() => copyInviteCode(selectedProperty.invite_code || '')} className="text-slate-400 hover:text-white p-1" title={txt.copyCodeTitle}>
                   {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
@@ -171,6 +165,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
       {/* MODAL FÖR SKAPA FASTIGHET */}
       <CreatePropertyModal
         isOpen={showAddPropModal}
+        lang={lang}
         onClose={() => setShowAddPropModal(false)}
         onCreated={(createdProp) => {
           setSelectedProperty(createdProp);
@@ -183,6 +178,7 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
       <EditPropertyModal
         property={selectedProperty}
         isOpen={showEditPropModal}
+        lang={lang}
         onClose={() => setShowEditPropModal(false)}
         onUpdated={(updatedProp) => {
           setSelectedProperty(updatedProp);
@@ -203,9 +199,9 @@ export default function HostView({ bookings, incidents, loading, onRefresh, lang
             lang={lang}
           />
         ) : activeTab === 'list' ? (
-          <BookingList bookings={propertyBookings} incidents={incidents} onRefresh={onRefresh} />
+          <BookingList bookings={propertyBookings} incidents={incidents} onRefresh={onRefresh} lang={lang} />
         ) : (
-          <CalendarView bookings={propertyBookings} />
+          <CalendarView bookings={propertyBookings} lang={lang} />
         )
       )}
     </div>

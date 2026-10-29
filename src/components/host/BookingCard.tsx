@@ -1,6 +1,8 @@
 // src/components/host/BookingCard.tsx
 import { useState } from 'react';
 import type { Booking, Incident } from '../../lib/supabase';
+import type { Language } from '../../i18n/translations';
+import { translations } from '../../i18n/translations';
 import { bookingService } from '../../services/bookingService';
 import { getBookingWhatsAppUrl } from '../../utils/whatsapp';
 import { getValidNote } from '../../utils/notes';
@@ -17,7 +19,6 @@ import {
   Bell,
   AlertTriangle,
   Check,
-  UserCheck,
 } from 'lucide-react';
 
 interface BookingCardProps {
@@ -25,6 +26,7 @@ interface BookingCardProps {
   incidents: Incident[];
   onRefresh: () => void;
   onSelectImage: (url: string) => void;
+  lang: Language;
 }
 
 function parsePhotos(photoUrl: string | null): string[] {
@@ -35,15 +37,22 @@ function parsePhotos(photoUrl: string | null): string[] {
   return [photoUrl];
 }
 
-function formatTimeOrWindow(exactTime: string | null | undefined, timeWindow: string | null | undefined): string | null {
-  if (exactTime) return `kl ${exactTime}`;
-  if (timeWindow === 'morning') return '🌅 Förmiddag';
-  if (timeWindow === 'afternoon') return '☀️ Eftermiddag';
-  if (timeWindow === 'evening') return '🌙 Kväll';
+type BookingCardTexts = (typeof translations.bookingCard)[Language];
+
+export function formatTimeOrWindow(
+  exactTime: string | null | undefined,
+  timeWindow: string | null | undefined,
+  txt: BookingCardTexts,
+): string | null {
+  if (exactTime) return `${txt.exactTime} ${exactTime}`;
+  if (timeWindow === 'morning') return txt.timeMorning;
+  if (timeWindow === 'afternoon') return txt.timeAfternoon;
+  if (timeWindow === 'evening') return txt.timeEvening;
   return null;
 }
 
-export default function BookingCard({ booking: b, incidents, onRefresh, onSelectImage }: BookingCardProps) {
+export default function BookingCard({ booking: b, incidents, onRefresh, onSelectImage, lang }: BookingCardProps) {
+  const txt = translations.bookingCard[lang];
   const [isExpanded, setIsExpanded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -53,15 +62,15 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
   const bookingIncidents = incidents.filter((i) => i.booking_id === b.id);
   const validNoteEs = getValidNote(b.notes_es, b.notes);
 
-  const arrivalTimeFormatted = formatTimeOrWindow(b.check_in_exact_time, b.check_in_time_window);
-  const departureTimeFormatted = formatTimeOrWindow(b.check_out_exact_time, b.check_out_time_window);
+  const arrivalTimeFormatted = formatTimeOrWindow(b.check_in_exact_time, b.check_in_time_window, txt);
+  const departureTimeFormatted = formatTimeOrWindow(b.check_out_exact_time, b.check_out_time_window, txt);
 
   const handleDelete = async () => {
     if (b.status !== 'pending') {
-      alert('Kan inte radera: Bokningen är redan accepterad av städfirmana eller utförd.');
+      alert(txt.alertCannotDelete);
       return;
     }
-    if (!window.confirm(`Är du säker på att du vill ta bort bokningen "${b.booking_title}"?`)) return;
+    if (!window.confirm(txt.confirmDelete.replace('{title}', b.booking_title))) return;
 
     setDeletingId(b.id);
     await bookingService.deleteBooking(b.id);
@@ -84,17 +93,17 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
           <div className="flex items-center gap-2 flex-wrap">
             {isPending && (
               <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                <Bell className="w-3 h-3 text-slate-950" /> Väntar på städfirmans svar
+                <Bell className="w-3 h-3 text-slate-950" /> {txt.pendingBadge}
               </span>
             )}
             {isAccepted && (
               <span className="bg-sky-100 text-sky-900 border border-sky-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                <Check className="w-3 h-3 text-sky-600" /> Accepterad av städfirma
+                <Check className="w-3 h-3 text-sky-600" /> {txt.acceptedBadge}
               </span>
             )}
             {isFinished && (
               <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                Slutförd städning
+                {txt.finishedBadge}
               </span>
             )}
 
@@ -131,7 +140,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
         >
           <div className="flex items-center gap-1 font-black text-amber-900 text-[10px] uppercase tracking-wider">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-            <span>Dina extra instruktioner:</span>
+            <span>{txt.instructions}</span>
           </div>
 
           <p className="font-bold text-amber-950 leading-relaxed">
@@ -145,7 +154,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
           {isExpanded && validNoteEs && validNoteEs !== b.notes && (
             <div className="pt-1.5 border-t border-amber-200/60 mt-1.5">
               <span className="text-[9.5px] font-extrabold text-amber-800 block uppercase">
-                Spansk översättning:
+                {txt.translatedNotes}
               </span>
               <p className="font-medium text-amber-900 italic leading-relaxed">{validNoteEs}</p>
             </div>
@@ -156,16 +165,16 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
       <div className="bg-white/90 rounded-2xl p-3 border border-slate-200/80 space-y-2 text-xs shadow-sm">
         <div className="grid grid-cols-2 gap-2 pb-1.5 border-b border-slate-200/60">
           <div className="bg-sky-50/80 p-2 rounded-xl border border-sky-100">
-            <span className="text-[10px] font-black text-sky-900 uppercase block">Incheckning</span>
-            <span className="font-black text-sky-950 block text-xs">{formatDate(b.check_in_date, 'sv')}</span>
+            <span className="text-[10px] font-black text-sky-900 uppercase block">{txt.checkIn}</span>
+            <span className="font-black text-sky-950 block text-xs">{formatDate(b.check_in_date, lang)}</span>
             {arrivalTimeFormatted && (
               <span className="text-[10.5px] font-bold text-sky-700 block mt-0.5">{arrivalTimeFormatted}</span>
             )}
           </div>
 
           <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
-            <span className="text-[10px] font-bold text-slate-400 uppercase block">Utcheckning</span>
-            <span className="font-black text-slate-900 block text-xs">{formatDate(b.check_out_date, 'sv')}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">{txt.checkOut}</span>
+            <span className="font-black text-slate-900 block text-xs">{formatDate(b.check_out_date, lang)}</span>
             {departureTimeFormatted && (
               <span className="text-[10.5px] font-bold text-slate-500 block mt-0.5">{departureTimeFormatted}</span>
             )}
@@ -173,8 +182,8 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
         </div>
 
         <div className="flex items-center justify-between text-slate-600 font-bold pt-0.5">
-          <span>{b.guests} gäster</span>
-          <span>{b.laundry ? '🧺 Tvätta lakan/handdukar' : '🚫 Ingen tvätt'}</span>
+          <span>{b.guests} {txt.guests}</span>
+          <span>{b.laundry ? txt.laundryYes : txt.laundryNo}</span>
         </div>
       </div>
 
@@ -185,7 +194,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
           {bookingIncidents.length > 0 && (
             <div className="bg-slate-100/70 border border-slate-200 p-3 rounded-xl space-y-1.5">
               <span className="font-black text-slate-900 uppercase text-[10px] block flex items-center gap-1">
-                <Camera className="w-3.5 h-3.5 text-slate-600" /> Fotorapport ({bookingIncidents.length}):
+                <Camera className="w-3.5 h-3.5 text-slate-600" /> {txt.photoReport} ({bookingIncidents.length}):
               </span>
               <div className="space-y-1.5">
                 {bookingIncidents.map((inc) => {
@@ -198,7 +207,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
                             <img
                               key={idx}
                               src={url}
-                              alt={`Foto ${idx + 1}`}
+                              alt={`${txt.photoAlt} ${idx + 1}`}
                               onClick={() => onSelectImage(url)}
                               className="w-full h-20 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition"
                             />
@@ -223,7 +232,7 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
                   className="py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 flex-1"
                 >
                   <MessageSquare className="w-4 h-4 fill-white" />
-                  Avisera städfirma på WhatsApp
+                  {txt.notifyCleaner}
                 </a>
 
                 <button
@@ -233,12 +242,12 @@ export default function BookingCard({ booking: b, incidents, onRefresh, onSelect
                   className="py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 border border-rose-200 active:scale-95"
                 >
                   {deletingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-600" />}
-                  Ta bort
+                  {txt.deleteBtn}
                 </button>
               </>
             ) : (
               <div className="w-full py-2 px-3 bg-slate-100 text-slate-500 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 border border-slate-200">
-                <Lock className="w-3.5 h-3.5 text-slate-400" /> Låst (accepterad/utförd av städfirma)
+                <Lock className="w-3.5 h-3.5 text-slate-400" /> {txt.locked}
               </div>
             )}
           </div>

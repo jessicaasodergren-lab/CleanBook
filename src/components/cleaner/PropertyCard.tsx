@@ -39,69 +39,6 @@ interface PropertyCardProps {
   onRefresh: () => void;
 }
 
-const defaultCardTexts: Record<CleanerLanguage, any> = {
-  es: {
-    noTimeSet: 'Sin tiempo fijado',
-    noPhoneSet: 'Sin teléfono registrado',
-    saveError: 'Error al guardar los datos',
-    confirmDisconnect: '¿Estás segura de que deseas desconectar la propiedad',
-    specSurface: 'Superficie',
-    specRooms: 'Habitaciones',
-    specBathrooms: 'Baños',
-    hostNotes: 'Instrucciones fijas del anfitrión',
-    notesUpdatedAt: 'Actualizado',
-    myInternalSection: 'Mis notas privadas y tiempo (privado)',
-    savedNotice: '¡Guardado!',
-    editModalTimeLabel: 'Mi tiempo de limpieza estimado:',
-    editModalTimePlaceholder: 'Ej. 3h 30min',
-    editModalNotesLabel: 'Mis notas privadas:',
-    editModalNotesPlaceholder: 'Ej. Dar dos vueltas a la llave, fregona extra...',
-    editModalNotesHelp: 'Estas notas solo son visibles para ti, no para la anfitriona.',
-    btnSaveNotes: 'Guardar notas y tiempo',
-    btnDisconnect: 'Desconectar propiedad',
-  },
-  en: {
-    noTimeSet: 'No time set',
-    noPhoneSet: 'No phone registered',
-    saveError: 'Error saving data',
-    confirmDisconnect: 'Are you sure you want to disconnect property',
-    specSurface: 'Surface',
-    specRooms: 'Rooms',
-    specBathrooms: 'Bathrooms',
-    hostNotes: 'Fixed host instructions',
-    notesUpdatedAt: 'Updated',
-    myInternalSection: 'My private notes & time (private)',
-    savedNotice: 'Saved!',
-    editModalTimeLabel: 'My estimated cleaning time:',
-    editModalTimePlaceholder: 'E.g. 3h 30min',
-    editModalNotesLabel: 'My private notes:',
-    editModalNotesPlaceholder: 'E.g. Turn key twice, extra mop needed...',
-    editModalNotesHelp: 'These notes are only visible to you, not the host.',
-    btnSaveNotes: 'Save notes & time',
-    btnDisconnect: 'Disconnect property',
-  },
-  sv: {
-    noTimeSet: 'Ej angiven tid',
-    noPhoneSet: 'Inget tel.nr registrerat',
-    saveError: 'Kunde inte spara uppgifter',
-    confirmDisconnect: 'Är du säker på att du vill koppla från fastigheten',
-    specSurface: 'Yta',
-    specRooms: 'Rum',
-    specBathrooms: 'Badrum',
-    hostNotes: 'Värdens fasta instruktioner',
-    notesUpdatedAt: 'Uppdaterades',
-    myInternalSection: 'Mina privata anteckningar & tid (privat)',
-    savedNotice: 'Sparat!',
-    editModalTimeLabel: 'Min beräknade städtid:',
-    editModalTimePlaceholder: 'T.ex. 3t 30min',
-    editModalNotesLabel: 'Mina privata anteckningar:',
-    editModalNotesPlaceholder: 'T.ex. Lås två varv, extra mopp behövs...',
-    editModalNotesHelp: 'Dessa anteckningar syns bara för dig, inte för värden.',
-    btnSaveNotes: 'Spara anteckningar och tid',
-    btnDisconnect: 'Koppla från fastighet',
-  },
-};
-
 export default function PropertyCard({
   property: p,
   connectionData,
@@ -122,11 +59,7 @@ export default function PropertyCard({
     setNotesVal(connectionData?.internal_notes || p.internal_notes || '');
   }, [connectionData, p.cleaning_time, p.internal_notes]);
 
-  const fallback = defaultCardTexts[lang] || defaultCardTexts.es;
-  const txt = {
-    ...fallback,
-    ...((translations as any)?.propertyList?.[lang] || (translations as any)?.propertyList?.es || {}),
-  };
+  const txt = translations.propertyList[lang];
 
   const displayTime = connectionData?.cleaning_time || p.cleaning_time || txt.noTimeSet;
 
@@ -210,7 +143,7 @@ export default function PropertyCard({
         <div className="flex items-center gap-1.5 min-w-0">
           <User className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span className="font-bold text-slate-800 truncate">
-            {p.host_name || 'Värd'}
+            {p.host_name || txt.hostFallback}
           </span>
         </div>
 
@@ -276,7 +209,7 @@ export default function PropertyCard({
                 {p.notes_updated_at && (
                   <span className="text-[9.5px] font-bold text-slate-400 flex items-center gap-1">
                     <Clock className="w-3 h-3 text-slate-400" />
-                    {txt.notesUpdatedAt || 'Uppdaterades'}: {formatDate(p.notes_updated_at, lang)}
+                    {txt.notesUpdatedAt}: {formatDate(p.notes_updated_at, lang)}
                   </span>
                 )}
               </div>

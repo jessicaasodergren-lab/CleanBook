@@ -84,6 +84,11 @@ export const translations = {
       tabCal: 'Kalender',
       inviteCodeLabel: 'Inbjudningskod till städerska:',
       addPropBtn: 'Ny fastighet',
+      welcomeTitle: 'Välkommen! Lägg till din första fastighet',
+      welcomeDesc: 'För att kunna skapa bokningar och bjuda in din städerska behöver du först registrera en fastighet.',
+      createPropNow: 'Skapa fastighet nu',
+      editPropTitle: 'Redigera fastighet',
+      copyCodeTitle: 'Kopiera kod',
     },
     en: {
       tabNew: 'New booking',
@@ -91,6 +96,11 @@ export const translations = {
       tabCal: 'Calendar',
       inviteCodeLabel: 'Invitation code for cleaner:',
       addPropBtn: 'New property',
+      welcomeTitle: 'Welcome! Add your first property',
+      welcomeDesc: 'To create bookings and invite your cleaner, you first need to register a property.',
+      createPropNow: 'Create property now',
+      editPropTitle: 'Edit property',
+      copyCodeTitle: 'Copy code',
     },
     da: {
       tabNew: 'Ny booking',
@@ -98,6 +108,11 @@ export const translations = {
       tabCal: 'Kalender',
       inviteCodeLabel: 'Invitationskode til rengøring:',
       addPropBtn: 'Ny ejendom',
+      welcomeTitle: 'Velkommen! Tilføj din første ejendom',
+      welcomeDesc: 'For at kunne oprette bookinger og invitere din rengøringsperson skal du først registrere en ejendom.',
+      createPropNow: 'Opret ejendom nu',
+      editPropTitle: 'Rediger ejendom',
+      copyCodeTitle: 'Kopiér kode',
     },
     es: {
       tabNew: 'Nueva reserva',
@@ -105,7 +120,33 @@ export const translations = {
       tabCal: 'Calendario',
       inviteCodeLabel: 'Código de invitación para limpiadora:',
       addPropBtn: 'Nueva propiedad',
+      welcomeTitle: '¡Bienvenida! Añade tu primera propiedad',
+      welcomeDesc: 'Para poder crear reservas e invitar a tu limpiadora, primero necesitas registrar una propiedad.',
+      createPropNow: 'Crear propiedad ahora',
+      editPropTitle: 'Editar propiedad',
+      copyCodeTitle: 'Copiar código',
     },
+  },
+
+  bookingCard: {
+    sv: { timeMorning: '🌅 Förmiddag', timeAfternoon: '☀️ Eftermiddag', timeEvening: '🌙 Kväll', exactTime: 'kl', alertCannotDelete: 'Kan inte radera: Bokningen är redan accepterad av städfirman eller utförd.', confirmDelete: 'Är du säker på att du vill ta bort bokningen "{title}"?', pendingBadge: 'Väntar på städfirmans svar', acceptedBadge: 'Accepterad av städfirma', finishedBadge: 'Slutförd städning', instructions: 'Dina extra instruktioner:', translatedNotes: 'Spansk översättning:', guests: 'gäster', laundryYes: '🧺 Tvätta lakan/handdukar', laundryNo: '🚫 Ingen tvätt', checkIn: 'Incheckning', checkOut: 'Utcheckning', photoReport: 'Fotorapport', photoAlt: 'Foto', notifyCleaner: 'Avisera städfirma på WhatsApp', deleteBtn: 'Ta bort', locked: 'Låst (accepterad/utförd av städfirma)' },
+    en: { timeMorning: '🌅 Morning', timeAfternoon: '☀️ Afternoon', timeEvening: '🌙 Evening', exactTime: 'at', alertCannotDelete: 'Cannot delete: the booking has already been accepted by the cleaning company or completed.', confirmDelete: 'Are you sure you want to delete the booking "{title}"?', pendingBadge: 'Waiting for the cleaning company', acceptedBadge: 'Accepted by cleaning company', finishedBadge: 'Cleaning completed', instructions: 'Your extra instructions:', translatedNotes: 'Spanish translation:', guests: 'guests', laundryYes: '🧺 Wash sheets/towels', laundryNo: '🚫 No laundry', checkIn: 'Check-in', checkOut: 'Check-out', photoReport: 'Photo report', photoAlt: 'Photo', notifyCleaner: 'Notify cleaning company on WhatsApp', deleteBtn: 'Delete', locked: 'Locked (accepted/completed by cleaning company)' },
+    da: { timeMorning: '🌅 Formiddag', timeAfternoon: '☀️ Eftermiddag', timeEvening: '🌙 Aften', exactTime: 'kl.', alertCannotDelete: 'Kan ikke slette: Bookingen er allerede accepteret af rengøringsfirmaet eller udført.', confirmDelete: 'Er du sikker på, at du vil slette bookingen "{title}"?', pendingBadge: 'Venter på rengøringsfirmaets svar', acceptedBadge: 'Accepteret af rengøringsfirma', finishedBadge: 'Rengøring udført', instructions: 'Dine ekstra instruktioner:', translatedNotes: 'Spansk oversættelse:', guests: 'gæster', laundryYes: '🧺 Vask lagner/håndklæder', laundryNo: '🚫 Ingen vask', checkIn: 'Indtjekning', checkOut: 'Udtjekning', photoReport: 'Fotorapport', photoAlt: 'Foto', notifyCleaner: 'Underret rengøringsfirma på WhatsApp', deleteBtn: 'Slet', locked: 'Låst (accepteret/udført af rengøringsfirma)' },
+    es: { timeMorning: '🌅 Mañana', timeAfternoon: '☀️ Tarde', timeEvening: '🌙 Noche', exactTime: 'a las', alertCannotDelete: 'No se puede eliminar: la reserva ya ha sido aceptada por la empresa de limpieza o completada.', confirmDelete: '¿Seguro que quieres eliminar la reserva "{title}"?', pendingBadge: 'Esperando respuesta de la empresa de limpieza', acceptedBadge: 'Aceptada por la empresa de limpieza', finishedBadge: 'Limpieza completada', instructions: 'Tus instrucciones extra:', translatedNotes: 'Traducción al español:', guests: 'huéspedes', laundryYes: '🧺 Lavar sábanas/toallas', laundryNo: '🚫 Sin lavandería', checkIn: 'Entrada', checkOut: 'Salida', photoReport: 'Informe fotográfico', photoAlt: 'Foto', notifyCleaner: 'Avisar a la empresa de limpieza por WhatsApp', deleteBtn: 'Eliminar', locked: 'Bloqueada (aceptada/completada por la empresa de limpieza)' },
+  },
+
+  bookingList: {
+    sv: { filterActive: 'Aktiva', filterPending: 'Väntar', filterFinished: 'Slutförda', emptyTitle: 'Inga bokningar ännu', emptyDesc: 'Använd formuläret för att lägga till din första gästvistelse.', emptyFilteredTitle: 'Inga bokningar här', emptyFilteredDesc: 'Det finns inga gästvistelser i denna vy.', imageAlt: 'Förstorad bild', closeImage: 'Stäng' },
+    en: { filterActive: 'Active', filterPending: 'Pending', filterFinished: 'Finished', emptyTitle: 'No bookings yet', emptyDesc: 'Use the form to add your first guest stay.', emptyFilteredTitle: 'No bookings here', emptyFilteredDesc: 'There are no guest stays in this view.', imageAlt: 'Enlarged image', closeImage: 'Close' },
+    da: { filterActive: 'Aktive', filterPending: 'Venter', filterFinished: 'Afsluttede', emptyTitle: 'Ingen bookinger endnu', emptyDesc: 'Brug formularen til at tilføje dit første gæsteophold.', emptyFilteredTitle: 'Ingen bookinger her', emptyFilteredDesc: 'Der er ingen gæsteophold i denne visning.', imageAlt: 'Forstørret billede', closeImage: 'Luk' },
+    es: { filterActive: 'Activas', filterPending: 'Pendientes', filterFinished: 'Finalizadas', emptyTitle: 'Aún no hay reservas', emptyDesc: 'Usa el formulario para añadir tu primera estancia.', emptyFilteredTitle: 'No hay reservas aquí', emptyFilteredDesc: 'No hay estancias en esta vista.', imageAlt: 'Imagen ampliada', closeImage: 'Cerrar' },
+  },
+
+  calendarView: {
+    sv: { weekdays: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'], today: 'Idag', overview: 'Bokningsöversikt', totalIn: 'Totalt i', bookingsWord: 'bokningar', pendingWord: 'väntar på svar', acceptedWord: 'accepterade', finishedWord: 'slutförda', details: 'Bokningsdetaljer', cleaningStatus: 'Status för städning:', finishedStatus: 'Utförd städning', acceptedStatus: 'Accepterad av städfirma', pendingStatus: 'Väntar på städfirmans svar', property: 'Fastighet', checkIn: 'Incheckning', checkOutClean: 'Utcheckning / Städstart', guests: 'gäster', laundryYes: '🧺 Tvätt: Ja', laundryNo: '🚫 Ingen tvätt', yourInstructions: 'Dina instruktioner:', translatedNotes: 'Spansk översättning (till städfirma):', notifyCleaner: 'Avisera städfirma på WhatsApp', deleteBooking: 'Ta bort denna bokning', locked: 'Låst (accepterad/utförd av städfirma)' },
+    en: { weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], today: 'Today', overview: 'Booking overview', totalIn: 'Total in', bookingsWord: 'bookings', pendingWord: 'waiting for reply', acceptedWord: 'accepted', finishedWord: 'completed', details: 'Booking details', cleaningStatus: 'Cleaning status:', finishedStatus: 'Cleaning completed', acceptedStatus: 'Accepted by cleaning company', pendingStatus: 'Waiting for the cleaning company', property: 'Property', checkIn: 'Check-in', checkOutClean: 'Check-out / Cleaning start', guests: 'guests', laundryYes: '🧺 Laundry: Yes', laundryNo: '🚫 No laundry', yourInstructions: 'Your instructions:', translatedNotes: 'Spanish translation (for cleaning company):', notifyCleaner: 'Notify cleaning company on WhatsApp', deleteBooking: 'Delete this booking', locked: 'Locked (accepted/completed by cleaning company)' },
+    da: { weekdays: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'], today: 'I dag', overview: 'Bookingoversigt', totalIn: 'I alt i', bookingsWord: 'bookinger', pendingWord: 'venter på svar', acceptedWord: 'accepterede', finishedWord: 'afsluttede', details: 'Bookingdetaljer', cleaningStatus: 'Rengøringsstatus:', finishedStatus: 'Rengøring udført', acceptedStatus: 'Accepteret af rengøringsfirma', pendingStatus: 'Venter på rengøringsfirmaets svar', property: 'Ejendom', checkIn: 'Indtjekning', checkOutClean: 'Udtjekning / Rengøringsstart', guests: 'gæster', laundryYes: '🧺 Vask: Ja', laundryNo: '🚫 Ingen vask', yourInstructions: 'Dine instruktioner:', translatedNotes: 'Spansk oversættelse (til rengøringsfirma):', notifyCleaner: 'Underret rengøringsfirma på WhatsApp', deleteBooking: 'Slet denne booking', locked: 'Låst (accepteret/udført af rengøringsfirma)' },
+    es: { weekdays: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'], today: 'Hoy', overview: 'Resumen de reservas', totalIn: 'Total en', bookingsWord: 'reservas', pendingWord: 'esperando respuesta', acceptedWord: 'aceptadas', finishedWord: 'completadas', details: 'Detalles de la reserva', cleaningStatus: 'Estado de la limpieza:', finishedStatus: 'Limpieza completada', acceptedStatus: 'Aceptada por la empresa de limpieza', pendingStatus: 'Esperando respuesta de la empresa de limpieza', property: 'Propiedad', checkIn: 'Entrada', checkOutClean: 'Salida / Inicio de limpieza', guests: 'huéspedes', laundryYes: '🧺 Lavandería: Sí', laundryNo: '🚫 Sin lavandería', yourInstructions: 'Tus instrucciones:', translatedNotes: 'Traducción al español (para la empresa de limpieza):', notifyCleaner: 'Avisar a la empresa de limpieza por WhatsApp', deleteBooking: 'Eliminar esta reserva', locked: 'Bloqueada (aceptada/completada por la empresa de limpieza)' },
   },
 
   cleaner: {
@@ -219,6 +260,9 @@ export const translations = {
       editModalNotesHelp: 'Estas notas solo son visibles para ti, no para la anfitriona.',
       btnSaveNotes: 'Guardar notas y tiempo',
       btnDisconnect: 'Desconectar propiedad',
+      noPhoneSet: 'Sin teléfono registrado',
+      notesUpdatedAt: 'Actualizado',
+      hostFallback: 'Anfitriona',
     },
     en: {
       title: 'Connected Properties',
@@ -243,6 +287,9 @@ export const translations = {
       editModalNotesHelp: 'These notes are only visible to you, not the host.',
       btnSaveNotes: 'Save notes & time',
       btnDisconnect: 'Disconnect property',
+      noPhoneSet: 'No phone registered',
+      notesUpdatedAt: 'Updated',
+      hostFallback: 'Host',
     },
     sv: {
       title: 'Kopplade fastigheter',
@@ -267,6 +314,9 @@ export const translations = {
       editModalNotesHelp: 'Dessa anteckningar syns bara för dig, inte för värden.',
       btnSaveNotes: 'Spara anteckningar och tid',
       btnDisconnect: 'Koppla från fastighet',
+      noPhoneSet: 'Inget tel.nr registrerat',
+      notesUpdatedAt: 'Uppdaterades',
+      hostFallback: 'Värd',
     },
     da: {
       title: 'Tilknyttede ejendomme',
@@ -291,6 +341,9 @@ export const translations = {
       editModalNotesHelp: 'Disse notater er kun synlige for dig, ikke for værten.',
       btnSaveNotes: 'Gem notater og tid',
       btnDisconnect: 'Fjern ejendom',
+      noPhoneSet: 'Ingen telefon registreret',
+      notesUpdatedAt: 'Opdateret',
+      hostFallback: 'Vært',
     },
   },
 
@@ -421,9 +474,29 @@ export const translations = {
     },
   },
 
+  cleanerCalendar: {
+    sv: { weekdays: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'], title: 'Städkalender', btnToday: 'Idag', legendPending: '🟡 Väntar', legendAccepted: '🔵 Accepterad', legendFinished: '💚 Slutförd', legendOpenDashed: '⏳ Streckad = Ingen nästa gäst', openWindowLabel: '(Gott om tid)', modalTitle: 'Städdetaljer', modalStatusLabel: 'Uppdragsstatus:', modalHostLabel: 'Värd:', modalInstruction: 'Värdens instruktion:', modalNextArrival: 'Nästa incheckning (Deadline):', departure: 'Utcheckning / Städstart', arrival: 'Incheckning', noNextArrival: 'Ingen nästa gäst inbokad (Gott om tid)', guests: 'gäster', laundryYes: '🧺 Tvätta lakan/handdukar', laundryNo: '🚫 Ingen tvätt', btnAccept: 'Acceptera uppdrag', btnComplete: 'Slutförd', btnIncident: 'Foto / Skada', windowWithNext: 'Städfönster: {address} ({start} till {end})', windowNoNext: 'Städfönster: {address} ({start} - ingen nästa gäst)' },
+    en: { weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], title: 'Cleaning Calendar', btnToday: 'Today', legendPending: '🟡 Pending', legendAccepted: '🔵 Accepted', legendFinished: '💚 Completed', legendOpenDashed: '⏳ Dashed = Flexible time', openWindowLabel: '(Flexible time)', modalTitle: 'Cleaning Details', modalStatusLabel: 'Task Status:', modalHostLabel: 'Host:', modalInstruction: 'Host Instruction:', modalNextArrival: 'Next arrival (Deadline):', departure: 'Departure / Cleaning start', arrival: 'Arrival', noNextArrival: 'No upcoming arrival (Flexible time)', guests: 'guests', laundryYes: '🧺 Wash linen', laundryNo: '🚫 No laundry', btnAccept: 'Accept task', btnComplete: 'Completed', btnIncident: 'Photo / Damage', windowWithNext: 'Cleaning window: {address} ({start} to {end})', windowNoNext: 'Cleaning window: {address} ({start} - no next guest)' },
+    da: { weekdays: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'], title: 'Rengøringskalender', btnToday: 'I dag', legendPending: '🟡 Afventer', legendAccepted: '🔵 Accepteret', legendFinished: '💚 Gennemført', legendOpenDashed: '⏳ Stribet = God tid', openWindowLabel: '(God tid)', modalTitle: 'Detaljer om rengøring', modalStatusLabel: 'Opgavestatus:', modalHostLabel: 'Vært:', modalInstruction: 'Værtens instruktion:', modalNextArrival: 'Næste ankomst (Deadline):', departure: 'Udtjekning / Rengøringsstart', arrival: 'Indtjekning', noNextArrival: 'Ingen næste ankomst (God tid)', guests: 'gæster', laundryYes: '🧺 Vask linned/håndklæder', laundryNo: '🚫 Ingen vask', btnAccept: 'Accepter opgave', btnComplete: 'Gennemført', btnIncident: 'Foto / Skade', windowWithNext: 'Rengøringsvindue: {address} ({start} til {end})', windowNoNext: 'Rengøringsvindue: {address} ({start} - ingen næste gæst)' },
+    es: { weekdays: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'], title: 'Calendario de Limpiezas', btnToday: 'Hoy', legendPending: '🟡 Por aceptar', legendAccepted: '🔵 Aceptada', legendFinished: '💚 Completada', legendOpenDashed: '⏳ Borde punteado = Tiempo extra', openWindowLabel: '(Tiempo extra)', modalTitle: 'Detalles de Limpieza', modalStatusLabel: 'Estado de tarea:', modalHostLabel: 'Anfitriona:', modalInstruction: 'Instrucción del anfitrión:', modalNextArrival: 'Próxima entrada (Límite):', departure: 'Salida / Inicio de limpieza', arrival: 'Entrada', noNextArrival: 'Sin próxima entrada (Tiempo extra)', guests: 'huéspedes', laundryYes: '🧺 Lavar lencería', laundryNo: '🚫 Sin colada', btnAccept: 'Aceptar tarea', btnComplete: 'Completado', btnIncident: 'Foto / Daño', windowWithNext: 'Ventana de limpieza: {address} ({start} a {end})', windowNoNext: 'Ventana de limpieza: {address} ({start} - sin próxima entrada)' },
+  },
+
+  propertyModal: {
+    sv: { createTitle: 'Registrera ny fastighet', editTitle: 'Redigera fastighet', nameLabel: 'Fastighetens namn *', namePlaceholder: 'T.ex. Gran Vista 45', addressLabel: 'Fullständig adress', addressPlaceholder: 'T.ex. Calle Bach 71, Gran Alacant', kvm: 'Kvm', rooms: 'Rum', bathrooms: 'Badrum', notesLabel: 'Fasta instruktioner till städfirman', notesPlaceholder: 'T.ex. Nyckel under krukan...', notesPlaceholderEdit: 'T.ex. Nyckel under krukan, lås två varv...', createBtn: 'Spara & Generera inbjudningskod', saveBtn: 'Spara ändringar', errNotLoggedIn: 'Du måste vara inloggad för att skapa en fastighet.', errCreate: 'Kunde inte spara fastigheten:', errUpdate: 'Kunde inte uppdatera fastigheten:', errGeneric: 'Ett fel uppstod.' },
+    en: { createTitle: 'Register new property', editTitle: 'Edit property', nameLabel: 'Property name *', namePlaceholder: 'E.g. Gran Vista 45', addressLabel: 'Full address', addressPlaceholder: 'E.g. Calle Bach 71, Gran Alacant', kvm: 'Sq m', rooms: 'Rooms', bathrooms: 'Bathrooms', notesLabel: 'Fixed instructions for the cleaning company', notesPlaceholder: 'E.g. Key under the flowerpot...', notesPlaceholderEdit: 'E.g. Key under the flowerpot, lock twice...', createBtn: 'Save & generate invite code', saveBtn: 'Save changes', errNotLoggedIn: 'You must be logged in to create a property.', errCreate: 'Could not save the property:', errUpdate: 'Could not update the property:', errGeneric: 'An error occurred.' },
+    da: { createTitle: 'Registrer ny ejendom', editTitle: 'Rediger ejendom', nameLabel: 'Ejendommens navn *', namePlaceholder: 'F.eks. Gran Vista 45', addressLabel: 'Fuld adresse', addressPlaceholder: 'F.eks. Calle Bach 71, Gran Alacant', kvm: 'Kvm', rooms: 'Værelser', bathrooms: 'Badeværelser', notesLabel: 'Faste instruktioner til rengøringsfirma', notesPlaceholder: 'F.eks. Nøgle under blomsterkrukken...', notesPlaceholderEdit: 'F.eks. Nøgle under blomsterkrukken, lås to gange...', createBtn: 'Gem & generer invitationskode', saveBtn: 'Gem ændringer', errNotLoggedIn: 'Du skal være logget ind for at oprette en ejendom.', errCreate: 'Kunne ikke gemme ejendommen:', errUpdate: 'Kunne ikke opdatere ejendommen:', errGeneric: 'Der opstod en fejl.' },
+    es: { createTitle: 'Registrar nueva propiedad', editTitle: 'Editar propiedad', nameLabel: 'Nombre de la propiedad *', namePlaceholder: 'Ej. Gran Vista 45', addressLabel: 'Dirección completa', addressPlaceholder: 'Ej. Calle Bach 71, Gran Alacant', kvm: 'M²', rooms: 'Habitaciones', bathrooms: 'Baños', notesLabel: 'Instrucciones fijas para la empresa de limpieza', notesPlaceholder: 'Ej. Llave bajo la maceta...', notesPlaceholderEdit: 'Ej. Llave bajo la maceta, cerrar dos vueltas...', createBtn: 'Guardar y generar código de invitación', saveBtn: 'Guardar cambios', errNotLoggedIn: 'Debes iniciar sesión para crear una propiedad.', errCreate: 'No se pudo guardar la propiedad:', errUpdate: 'No se pudo actualizar la propiedad:', errGeneric: 'Ha ocurrido un error.' },
+  },
+
   bookingForm: {
     sv: {
       title: 'Skapa Ny Gästbokning',
+      chooseTime: 'Välj tid...',
+      overlapError: 'Det finns redan en krockande bokning{title} för {property} mellan datumen {start} och {end}.',
+      summaryProperty: 'Fastighet',
+      summaryGuest: 'Gäst / Titel',
+      summaryDate: 'Datum',
+      errorPrefix: 'Fel:',
       property: 'Fastighet',
       locked: 'Låst',
       guestTitle: 'Gästens namn / Titel',
@@ -455,6 +528,12 @@ export const translations = {
     },
     en: {
       title: 'Create New Guest Booking',
+      chooseTime: 'Choose time...',
+      overlapError: 'There is already an overlapping booking{title} for {property} between {start} and {end}.',
+      summaryProperty: 'Property',
+      summaryGuest: 'Guest / Title',
+      summaryDate: 'Date',
+      errorPrefix: 'Error:',
       property: 'Property',
       locked: 'Locked',
       guestTitle: 'Guest Name / Title',
@@ -487,6 +566,12 @@ export const translations = {
     },
     da: {
       title: 'Opret ny gæstebooking',
+      chooseTime: 'Vælg tid...',
+      overlapError: 'Der findes allerede en overlappende booking{title} for {property} mellem datoerne {start} og {end}.',
+      summaryProperty: 'Ejendom',
+      summaryGuest: 'Gæst / Titel',
+      summaryDate: 'Dato',
+      errorPrefix: 'Fejl:',
       property: 'Ejendom',
       locked: 'Låst',
       guestTitle: 'Gæstens navn / Titel',
@@ -519,6 +604,12 @@ export const translations = {
     },
     es: {
       title: 'Crear nueva reserva de huésped',
+      chooseTime: 'Elegir hora...',
+      overlapError: 'Ya existe una reserva que se solapa{title} para {property} entre las fechas {start} y {end}.',
+      summaryProperty: 'Propiedad',
+      summaryGuest: 'Huésped / Título',
+      summaryDate: 'Fecha',
+      errorPrefix: 'Error:',
       property: 'Propiedad',
       locked: 'Bloqueado',
       guestTitle: 'Nombre del huésped / Título',
@@ -609,6 +700,13 @@ export const translations = {
       btnDone: 'Færdig',
     },
   },
+  profileSave: {
+    sv: { saveFailed: 'Kunde inte spara:', unexpected: 'Ett oväntat fel uppstod vid sparande.' },
+    en: { saveFailed: 'Could not save:', unexpected: 'An unexpected error occurred while saving.' },
+    da: { saveFailed: 'Kunne ikke gemme:', unexpected: 'Der opstod en uventet fejl under lagring.' },
+    es: { saveFailed: 'No se pudo guardar:', unexpected: 'Ocurrió un error inesperado al guardar.' },
+  },
+
   profileModal: {
     es: {
       profileSettings: 'Ajustes de perfil',

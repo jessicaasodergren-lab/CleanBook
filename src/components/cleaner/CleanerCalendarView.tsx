@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase, type Booking, type Incident, type Property } from '../../lib/supabase';
 import { formatDate } from '../../lib/constants';
+import { translations } from '../../i18n/translations';
 import IncidentModal from './IncidentModal';
 import type { CleanerLanguage } from '../CleanerView';
 import {
@@ -45,108 +46,6 @@ const colSpanClasses: Record<number, string> = {
   7: 'col-span-7',
 };
 
-const daysOfWeekMap: Record<CleanerLanguage, string[]> = {
-  sv: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'],
-  es: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-  en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  da: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'],
-};
-
-const legendTexts: Record<CleanerLanguage, any> = {
-  sv: {
-    title: 'Städkalender',
-    btnToday: 'Idag',
-    legendPending: '🟡 Väntar',
-    legendAccepted: '🔵 Accepterad',
-    legendFinished: '💚 Slutförd',
-    legendOpenDashed: '⏳ Streckad = Ingen nästa gäst',
-    openWindowLabel: '(Gott om tid)',
-    modalTitle: 'Städdetaljer',
-    modalStatusLabel: 'Uppdragsstatus:',
-    modalHostLabel: 'Värd:',
-    modalInstruction: 'Värdens instruktion:',
-    modalNextArrival: 'Nästa incheckning (Deadline):',
-    departure: 'Utcheckning / Städstart',
-    arrival: 'Incheckning',
-    noNextArrival: 'Ingen nästa gäst inbokad (Gott om tid)',
-    guests: 'gäster',
-    laundryYes: '🧺 Tvätta lakan/handdukar',
-    laundryNo: '🚫 Ingen tvätt',
-    btnAccept: 'Acceptera uppdrag',
-    btnComplete: 'Slutförd',
-    btnIncident: 'Foto / Skada',
-  },
-  es: {
-    title: 'Calendario de Limpiezas',
-    btnToday: 'Hoy',
-    legendPending: '🟡 Por aceptar',
-    legendAccepted: '🔵 Aceptada',
-    legendFinished: '💚 Completada',
-    legendOpenDashed: '⏳ Borde punteado = Tiempo extra',
-    openWindowLabel: '(Tiempo extra)',
-    modalTitle: 'Detalles de Limpieza',
-    modalStatusLabel: 'Estado de tarea:',
-    modalHostLabel: 'Anfitriona:',
-    modalInstruction: 'Instrucción del anfitrión:',
-    modalNextArrival: 'Próxima entrada (Límite):',
-    departure: 'Salida / Inicio de limpieza',
-    arrival: 'Entrada',
-    noNextArrival: 'Sin próxima entrada (Tiempo extra)',
-    guests: 'huéspedes',
-    laundryYes: '🧺 Lavar lencería',
-    laundryNo: '🚫 Sin colada',
-    btnAccept: 'Aceptar tarea',
-    btnComplete: 'Completado',
-    btnIncident: 'Foto / Daño',
-  },
-  en: {
-    title: 'Cleaning Calendar',
-    btnToday: 'Today',
-    legendPending: '🟡 Pending',
-    legendAccepted: '🔵 Accepted',
-    legendFinished: '💚 Completed',
-    legendOpenDashed: '⏳ Dashed = Flexible time',
-    openWindowLabel: '(Flexible time)',
-    modalTitle: 'Cleaning Details',
-    modalStatusLabel: 'Task Status:',
-    modalHostLabel: 'Host:',
-    modalInstruction: 'Host Instruction:',
-    modalNextArrival: 'Next arrival (Deadline):',
-    departure: 'Departure / Cleaning start',
-    arrival: 'Arrival',
-    noNextArrival: 'No upcoming arrival (Flexible time)',
-    guests: 'guests',
-    laundryYes: '🧺 Wash linen',
-    laundryNo: '🚫 No laundry',
-    btnAccept: 'Accept task',
-    btnComplete: 'Completed',
-    btnIncident: 'Photo / Damage',
-  },
-  da: {
-    title: 'Rengøringskalender',
-    btnToday: 'I dag',
-    legendPending: '🟡 Afventer',
-    legendAccepted: '🔵 Accepteret',
-    legendFinished: '💚 Gennemført',
-    legendOpenDashed: '⏳ Stribet = God tid',
-    openWindowLabel: '(God tid)',
-    modalTitle: 'Detaljer om rengøring',
-    modalStatusLabel: 'Opgavestatus:',
-    modalHostLabel: 'Vært:',
-    modalInstruction: 'Værtens instruktion:',
-    modalNextArrival: 'Næste ankomst (Deadline):',
-    departure: 'Udtjekning / Rengøringsstart',
-    arrival: 'Indtjekning',
-    noNextArrival: 'Ingen næste ankomst (God tid)',
-    guests: 'gæster',
-    laundryYes: '🧺 Vask linned/håndklæder',
-    laundryNo: '🚫 Ingen vask',
-    btnAccept: 'Accepter opgave',
-    btnComplete: 'Gennemført',
-    btnIncident: 'Foto / Skade',
-  },
-};
-
 // Beräknar städfönstret (Från utcheckning till nästa incheckning)
 function getBookingWindowInfo(b: Booking, allBookings: Booking[]) {
   const samePropBookings = allBookings.filter(
@@ -177,8 +76,8 @@ export default function CleanerCalendarView({
   const [openIncidentFor, setOpenIncidentFor] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
 
-  const txt = legendTexts[lang] || legendTexts.es;
-  const daysOfWeek = daysOfWeekMap[lang] || daysOfWeekMap.es;
+  const txt = translations.cleanerCalendar[lang];
+  const daysOfWeek = txt.weekdays;
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -364,8 +263,8 @@ export default function CleanerCalendarView({
                       className={`w-full text-left py-1 px-1.5 text-[9px] sm:text-[10px] font-extrabold truncate block transition shadow-sm active:scale-98 ${pillBg} ${roundedLeft} ${roundedRight} ${colStartClasses[colStart]} ${colSpanClasses[colSpan]}`}
                       title={
                         hasNextGuest
-                          ? `Städfönster: ${displayAddress} (${formatDate(windowStart, lang)} till ${formatDate(windowEnd, lang)})`
-                          : `Städfönster: ${displayAddress} (${formatDate(windowStart, lang)} - Ingen nästa gäst)`
+                          ? txt.windowWithNext.replace('{address}', displayAddress).replace('{start}', formatDate(windowStart, lang)).replace('{end}', formatDate(windowEnd, lang))
+                          : txt.windowNoNext.replace('{address}', displayAddress).replace('{start}', formatDate(windowStart, lang))
                       }
                     >
                       <span className="flex items-center justify-between gap-1 truncate">
@@ -406,7 +305,7 @@ export default function CleanerCalendarView({
         const b = selectedBooking;
         const matchedProp = properties.find((p) => p.id === b.property_id);
         const displayAddress = matchedProp?.address || b.properties?.address || b.properties?.name || '';
-        const displayHost = matchedProp?.host_name || 'Värd';
+        const displayHost = matchedProp?.host_name;
 
         const { nextBooking } = getBookingWindowInfo(b, bookings);
 
@@ -488,7 +387,7 @@ export default function CleanerCalendarView({
                   <span>{b.guests} {txt.guests}</span>
                 </div>
 
-                {displayHost && displayHost !== 'Värd' && (
+                {displayHost && (
                   <p className="text-xs font-bold text-slate-600 flex items-center gap-1 border-t border-slate-100 pt-2">
                     <User className="w-3.5 h-3.5 text-slate-400" /> {txt.modalHostLabel} {displayHost} ({b.properties?.name})
                   </p>
