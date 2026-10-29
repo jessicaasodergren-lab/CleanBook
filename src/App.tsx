@@ -6,6 +6,7 @@ import HostView, { type HostLanguage } from './components/HostView';
 import CleanerView, { type CleanerLanguage } from './components/CleanerView';
 import { AuthView } from './components/AuthView';
 import ProfileModal from './components/modals/ProfileModal';
+import { translations, type Language } from './i18n/translations';
 import { Sparkles, LogOut, User } from 'lucide-react';
 
 export default function App() {
@@ -191,7 +192,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3">
         <Sparkles className="w-8 h-8 text-emerald-400 animate-pulse" />
-        <p className="text-sm font-medium">Startar CleanBook...</p>
+        <p className="text-sm font-medium">{translations.common.en.starting}</p>
       </div>
     );
   }
@@ -201,6 +202,8 @@ export default function App() {
   }
 
   const userRole = userProfile?.role || 'host';
+  const activeLang: Language = userRole === 'host' ? hostLang : cleanerLang;
+  const txt = translations.common[activeLang];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
@@ -239,7 +242,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowProfileModal(true)}
-              title="Min Profil & Inställningar"
+              title={translations.profileModal[activeLang].profileSettings}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700/80 shadow-md active:scale-95"
             >
               <User className="w-3.5 h-3.5 text-emerald-400" />
@@ -248,11 +251,11 @@ export default function App() {
 
             <button
               onClick={handleSignOut}
-              title="Logga ut"
+              title={txt.logout}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700/80 shadow-md active:scale-95"
             >
               <LogOut className="w-3.5 h-3.5 text-rose-400" />
-              <span className="hidden sm:inline">Logga ut</span>
+              <span className="hidden sm:inline">{txt.logout}</span>
             </button>
           </div>
         </div>

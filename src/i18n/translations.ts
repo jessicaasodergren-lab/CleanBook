@@ -4,10 +4,10 @@ export type Language = 'sv' | 'en' | 'da' | 'es';
 
 export const translations = {
   common: {
-    sv: { loading: 'Laddar...', error: 'Ett fel uppstod', save: 'Spara', cancel: 'Avbryt', delete: 'Ta bort', version: 'Version' },
-    en: { loading: 'Loading...', error: 'An error occurred', save: 'Save', cancel: 'Cancel', delete: 'Delete', version: 'Version' },
-    da: { loading: 'Indlæser...', error: 'Der opstod en fejl', save: 'Gem', cancel: 'Annuller', delete: 'Slet', version: 'Version' },
-    es: { loading: 'Cargando...', error: 'Ocurrió un error', save: 'Guardar', cancel: 'Cancelar', delete: 'Eliminar', version: 'Versión' },
+    sv: { loading: 'Laddar...', error: 'Ett fel uppstod', save: 'Spara', cancel: 'Avbryt', delete: 'Ta bort', version: 'Version', logout: 'Logga ut', starting: 'Startar CleanBook...' },
+    en: { loading: 'Loading...', error: 'An error occurred', save: 'Save', cancel: 'Cancel', delete: 'Delete', version: 'Version', logout: 'Log out', starting: 'Starting CleanBook...' },
+    da: { loading: 'Indlæser...', error: 'Der opstod en fejl', save: 'Gem', cancel: 'Annuller', delete: 'Slet', version: 'Version', logout: 'Log ud', starting: 'Starter CleanBook...' },
+    es: { loading: 'Cargando...', error: 'Ocurrió un error', save: 'Guardar', cancel: 'Cancelar', delete: 'Eliminar', version: 'Versión', logout: 'Cerrar sesión', starting: 'Iniciando CleanBook...' },
   },
 
   auth: {
