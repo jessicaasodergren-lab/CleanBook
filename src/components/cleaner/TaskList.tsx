@@ -152,6 +152,7 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
           bookingId={openIncidentFor}
           propertyName={activeIncidentBooking?.properties?.name}
           hostPhone={activeMatchedProp?.host_phone}
+          hostLanguage={activeMatchedProp?.host_language}
           lang={lang}
           onClose={() => setOpenIncidentFor(null)}
           onSaved={() => {

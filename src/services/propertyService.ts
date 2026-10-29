@@ -146,7 +146,7 @@ export const propertyService = {
     const hostIds = [...new Set((properties || []).map(p => p.host_id).filter(Boolean))];
     const { data: hosts, error: hostError } = await supabase
       .from('profiles')
-      .select('id, full_name, phone')
+      .select('id, full_name, phone, language')
       .in('id', hostIds);
 
     if (hostError) throw hostError;
@@ -158,6 +158,7 @@ export const propertyService = {
         ...p,
         host_name: host?.full_name || 'Värd',
         host_phone: host?.phone || null,
+        host_language: host?.language || null,
         cleaning_time: conn?.cleaning_time,
         internal_notes: conn?.internal_notes,
       } as Property;

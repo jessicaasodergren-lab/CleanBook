@@ -655,6 +655,7 @@ export const translations = {
       savedTitle: '¡Reporte guardado con éxito!',
       savedSub: 'Puedes notificar inmediatamente a la anfitriona por WhatsApp:',
       btnNotifyWhatsApp: 'Avisar a la anfitriona por WhatsApp',
+      waMessage: '🚨 *CleanBook - Incidencia / Daño*\n\n🏡 *Propiedad:* {property}\n📝 *Nota:* {note}',
       btnDone: 'Cerrar',
     },
     en: {
@@ -669,6 +670,7 @@ export const translations = {
       savedTitle: 'Report saved successfully!',
       savedSub: 'You can notify the host immediately on WhatsApp:',
       btnNotifyWhatsApp: 'Notify host via WhatsApp',
+      waMessage: '🚨 *CleanBook - Incident / Damage*\n\n🏡 *Property:* {property}\n📝 *Note:* {note}',
       btnDone: 'Done',
     },
     sv: {
@@ -683,6 +685,7 @@ export const translations = {
       savedTitle: 'Rapporten har sparats!',
       savedSub: 'Du kan avisera värden direkt på WhatsApp nu:',
       btnNotifyWhatsApp: 'Avisera värden på WhatsApp',
+      waMessage: '🚨 *CleanBook - Incident / Skada*\n\n🏡 *Fastighet:* {property}\n📝 *Notering:* {note}',
       btnDone: 'Klart',
     },
     da: {
@@ -697,6 +700,7 @@ export const translations = {
       savedTitle: 'Rapporten er gemt!',
       savedSub: 'Du kan underrette værten direkte på WhatsApp nu:',
       btnNotifyWhatsApp: 'Underret vært på WhatsApp',
+      waMessage: '🚨 *CleanBook - Hændelse / Skade*\n\n🏡 *Ejendom:* {property}\n📝 *Note:* {note}',
       btnDone: 'Færdig',
     },
   },

@@ -128,6 +128,7 @@ export default function CleanerCalendarView({
     onRefresh();
   };
 
+  const incidentProp = properties.find((p) => p.id === selectedBooking?.property_id);
   return (
     <div className="bg-white text-slate-900 rounded-3xl shadow-2xl p-3.5 sm:p-5 border border-slate-200 space-y-4">
       {/* Header */}
@@ -436,6 +437,10 @@ export default function CleanerCalendarView({
       {openIncidentFor && (
         <IncidentModal
           bookingId={openIncidentFor}
+          lang={lang}
+          propertyName={selectedBooking?.properties?.name}
+          hostPhone={incidentProp?.host_phone}
+          hostLanguage={incidentProp?.host_language}
           onClose={() => setOpenIncidentFor(null)}
           onSaved={() => {
             setOpenIncidentFor(null);

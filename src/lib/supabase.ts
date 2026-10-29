@@ -1,5 +1,6 @@
 // src/lib/supabase.ts
 import { createClient } from '@supabase/supabase-js';
+import type { Language } from '../i18n/translations';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -41,6 +42,7 @@ export interface Property {
   // Virtuella fält som slås ihop i minnet av propertyService:
   host_name?: string | null;
   host_phone?: string | null;
+  host_language?: Language | null;
   cleaning_time?: string | null;
   internal_notes?: string | null;
   cleaners?: CleanerInfo[]; // Kopplade städerskor/städfirmor

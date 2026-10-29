@@ -1,13 +1,14 @@
 // src/components/cleaner/IncidentModal.tsx
 import { useState } from 'react';
 import { supabase, type NewIncident } from '../../lib/supabase';
-import { translations } from '../../i18n/translations';
+import { translations, type Language } from '../../i18n/translations';
 import { Loader2, X, Check, MessageSquare, AlertTriangle } from 'lucide-react';
 
 interface IncidentModalProps {
   bookingId: string;
   propertyName?: string;
   hostPhone?: string | null;
+  hostLanguage?: Language | null;
   lang?: 'es' | 'en' | 'sv' | 'da';
   onClose: () => void;
   onSaved: () => void;
@@ -17,6 +18,7 @@ export default function IncidentModal({
   bookingId,
   propertyName,
   hostPhone,
+  hostLanguage,
   lang = 'es',
   onClose,
   onSaved,
@@ -67,7 +69,10 @@ export default function IncidentModal({
   };
 
   const getWhatsAppNotifyUrl = () => {
-    const message = `🚨 *CleanBook - Incidencia / Daño*\n\n🏡 *Propiedad:* ${propertyName || 'Propiedad'}\n📝 *Nota:* ${note.trim()}`;
+    const hostTxt = translations.incidentModal[hostLanguage ?? 'sv'];
+    const message = hostTxt.waMessage
+      .replace('{property}', () => propertyName ?? '')
+      .replace('{note}', () => note.trim());
     const cleanPhone = hostPhone ? hostPhone.replace(/[^0-9]/g, '') : '';
     return cleanPhone
       ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
