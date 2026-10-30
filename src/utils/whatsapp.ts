@@ -1,5 +1,5 @@
 // src/utils/whatsapp.ts
-import type { Booking } from '../lib/supabase';
+import type { Booking, Property } from '../lib/supabase';
 import { formatDate, APP_CONFIG } from '../lib/constants';
 import { getValidNote } from './notes';
 
@@ -26,6 +26,8 @@ Por favor, entra en CleanBook para aceptar la tarea.`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 }
 
-export function getPropertyInviteWhatsAppUrl(message: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+export function getPropertyInviteWhatsAppUrl(prop: Property): string {
+  const code = prop.invite_code || '';
+  const msg = `¡Hola! Te invito a conectarte a mi propiedad "${prop.name}" en CleanBook.\n\nCódigo de invitación: *${code}*`;
+  return `https://wa.me/?text=${encodeURIComponent(msg)}`;
 }

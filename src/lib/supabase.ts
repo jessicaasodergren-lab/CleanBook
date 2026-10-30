@@ -22,7 +22,6 @@ export interface Profile {
 
 export interface CleanerInfo {
   id: string;
-  connection_id: string;
   full_name: string | null;
   phone: string | null;
   email: string;
@@ -33,6 +32,7 @@ export interface Property {
   host_id?: string | null;
   name: string;
   address: string;
+  invite_code?: string | null;
   kvm?: string | null;
   rooms?: string | null;
   bathrooms?: string | null;
@@ -43,10 +43,19 @@ export interface Property {
   host_name?: string | null;
   host_phone?: string | null;
   host_language?: Language | null;
-  connection_id?: string | null;
   cleaning_time?: string | null;
   internal_notes?: string | null;
   cleaners?: CleanerInfo[]; // Kopplade städerskor/städfirmor
+}
+
+export interface PropertyConnection {
+  id: string;
+  property_id: string;
+  cleaner_id: string;
+  internal_notes?: string | null;
+  cleaning_time?: string | null;
+  created_at?: string;
+  properties?: Property;
 }
 
 export interface BookingProperty {

@@ -44,17 +44,10 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
       : activeJobs;
 
   const handleAcceptTask = async (b: Booking) => {
-    setActionError(null);
     setCompletingId(b.id);
-    try {
-      await bookingService.updateStatus(b.id, 'accepted');
-    } catch (err) {
-      console.error('Kunde inte acceptera uppdraget:', err);
-      setActionError({ id: b.id, msg: txt.errStatusUpdate });
-    } finally {
-      setCompletingId(null);
-      onRefresh();
-    }
+    await bookingService.updateStatus(b.id, 'accepted');
+    setCompletingId(null);
+    onRefresh();
   };
 
   const handleCompleteTask = async (b: Booking) => {
@@ -69,29 +62,16 @@ export default function TaskList({ bookings, incidents, properties, loading, onR
     }
 
     setCompletingId(b.id);
-    try {
-      await bookingService.updateStatus(b.id, 'finished');
-    } catch (err) {
-      console.error('Kunde inte slutföra uppdraget:', err);
-      setActionError({ id: b.id, msg: txt.errStatusUpdate });
-    } finally {
-      setCompletingId(null);
-      onRefresh();
-    }
+    await bookingService.updateStatus(b.id, 'finished');
+    setCompletingId(null);
+    onRefresh();
   };
 
   const handleReopenTask = async (b: Booking) => {
-    setActionError(null);
     setCompletingId(b.id);
-    try {
-      await bookingService.updateStatus(b.id, 'accepted');
-    } catch (err) {
-      console.error('Kunde inte återöppna uppdraget:', err);
-      setActionError({ id: b.id, msg: txt.errStatusUpdate });
-    } finally {
-      setCompletingId(null);
-      onRefresh();
-    }
+    await bookingService.updateStatus(b.id, 'accepted');
+    setCompletingId(null);
+    onRefresh();
   };
 
   const activeIncidentBooking = openIncidentFor ? bookings.find((b) => b.id === openIncidentFor) : null;

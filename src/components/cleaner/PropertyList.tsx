@@ -1,6 +1,6 @@
 // src/components/cleaner/PropertyList.tsx
-import { useState } from 'react';
-import type { Property } from '../../lib/supabase';
+import { useState, useEffect } from 'react';
+import { supabase, type Property } from '../../lib/supabase';
 import type { CleanerLanguage } from '../CleanerView';
 import { translations } from '../../i18n/translations';
 import PropertyCard from './PropertyCard';
@@ -15,8 +15,36 @@ interface PropertyListProps {
 
 export default function PropertyList({ properties = [], onRefresh, lang = 'es' }: PropertyListProps) {
   const [showConnectModal, setShowConnectModal] = useState(false);
+  const [connectionsMap, setConnectionsMap] = useState<Record<string, any>>({});
 
   const txt = translations.propertyList[lang];
+
+  const fetchConnections = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase
+        .from('property_connections')
+        .select('id, property_id, internal_notes, cleaning_time')
+        .eq('cleaner_id', session.user.id);
+
+      if (error) {
+        console.error('Kunde inte hämta property_connections:', error);
+        return;
+      }
+
+      if (data) {
+        const map: Record<string, any> = {};
+        data.forEach((item: any) => { map[item.property_id] = item; });
+        setConnectionsMap(map);
+      }
+    } catch (err) {
+      console.error('Fel vid hämtning av anslutningar:', err);
+    }
+  };
+
+  useEffect(() => { fetchConnections(); }, [properties]);
 
   return (
     <div className="space-y-4">
@@ -61,8 +89,9 @@ export default function PropertyList({ properties = [], onRefresh, lang = 'es' }
             <PropertyCard
               key={p.id}
               property={p}
+              connectionData={connectionsMap[p.id]}
               lang={lang}
-              onRefresh={onRefresh}
+              onRefresh={() => { fetchConnections(); onRefresh(); }}
             />
           ))
         )}
