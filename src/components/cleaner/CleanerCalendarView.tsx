@@ -1,6 +1,7 @@
 // src/components/cleaner/CleanerCalendarView.tsx
 import { useState } from 'react';
-import { supabase, type Booking, type Incident, type Property } from '../../lib/supabase';
+import { type Booking, type Incident, type Property } from '../../lib/supabase';
+import { bookingService } from '../../services/bookingService';
 import { formatDate } from '../../lib/constants';
 import { translations } from '../../i18n/translations';
 import IncidentModal from './IncidentModal';
@@ -75,6 +76,7 @@ export default function CleanerCalendarView({
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [openIncidentFor, setOpenIncidentFor] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState(false);
 
   const txt = translations.cleanerCalendar[lang];
   const daysOfWeek = txt.weekdays;
@@ -112,21 +114,23 @@ export default function CleanerCalendarView({
     weeks.push(monthDays.slice(i, i + 7));
   }
 
-  const handleAcceptTask = async (b: Booking) => {
+  const updateTaskStatus = async (b: Booking, status: 'accepted' | 'finished') => {
     setCompletingId(b.id);
-    await supabase.from('bookings').update({ status: 'accepted' }).eq('id', b.id);
-    setCompletingId(null);
-    setSelectedBooking({ ...b, status: 'accepted' });
-    onRefresh();
+    setStatusError(false);
+    try {
+      await bookingService.updateStatus(b.id, status);
+      setSelectedBooking({ ...b, status });
+    } catch (err) {
+      console.error('Kunde inte uppdatera uppdraget:', err);
+      setStatusError(true);
+    } finally {
+      setCompletingId(null);
+      onRefresh();
+    }
   };
 
-  const handleCompleteTask = async (b: Booking) => {
-    setCompletingId(b.id);
-    await supabase.from('bookings').update({ status: 'finished' }).eq('id', b.id);
-    setCompletingId(null);
-    setSelectedBooking({ ...b, status: 'finished' });
-    onRefresh();
-  };
+  const handleAcceptTask = (b: Booking) => updateTaskStatus(b, 'accepted');
+  const handleCompleteTask = (b: Booking) => updateTaskStatus(b, 'finished');
 
   const incidentProp = properties.find((p) => p.id === selectedBooking?.property_id);
   return (
@@ -428,6 +432,10 @@ export default function CleanerCalendarView({
                     <span>{txt.btnIncident}</span>
                   </button>
                 </div>
+
+                {statusError && (
+                  <p className="text-xs font-bold text-rose-600">{txt.errStatusUpdate}</p>
+                )}
               </div>
             </div>
           </div>

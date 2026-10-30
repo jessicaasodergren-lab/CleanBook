@@ -131,37 +131,10 @@ export default function App() {
     setLoadingData(true);
 
     try {
-      const userId = session.user.id;
-      let targetPropertyIds: string[] = [];
-
-      if (userProfile.role === 'host') {
-        const { data: props } = await supabase
-          .from('properties')
-          .select('id')
-          .eq('host_id', userId);
-        
-        targetPropertyIds = (props || []).map((p) => p.id);
-      } else {
-        const { data: conns } = await supabase
-          .from('property_connections')
-          .select('property_id')
-          .eq('cleaner_id', userId);
-
-        targetPropertyIds = (conns || []).map((c) => c.property_id);
-      }
-
-      if (targetPropertyIds.length === 0) {
-        setBookings([]);
-        setIncidents([]);
-        setLoadingData(false);
-        return;
-      }
-
       const [bRes, iRes] = await Promise.all([
         supabase
           .from('bookings')
           .select('*, properties(name, address)')
-          .in('property_id', targetPropertyIds)
           .order('check_out_date', { ascending: true }),
         supabase
           .from('incidents')
