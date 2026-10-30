@@ -1,6 +1,5 @@
 // src/components/modals/ConnectPropertyModal.tsx
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import { propertyService } from '../../services/propertyService';
 import { translations } from '../../i18n/translations';
 import type { CleanerLanguage } from '../CleanerView';

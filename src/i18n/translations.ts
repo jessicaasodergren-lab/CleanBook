@@ -88,7 +88,7 @@ export const translations = {
       welcomeDesc: 'För att kunna skapa bokningar och bjuda in din städerska behöver du först registrera en fastighet.',
       createPropNow: 'Skapa fastighet nu',
       editPropTitle: 'Redigera fastighet',
-      copyCodeTitle: 'Kopiera kod',
+      copyCodeTitle: 'Kopiera kod', btnCreateInvite: 'Skapa inbjudningskod', inviteOneTimeHint: 'Koden gäller i 7 dagar och kan bara användas en gång. Den visas endast här, så dela den direkt.', inviteWhatsAppText: 'Hej! Jag bjuder in dig att ansluta till min fastighet "{name}" i CleanBook.\n\nInbjudningskod: *{code}*', btnRemoveCleaner: 'Ta bort', confirmRemoveCleaner: 'Ta bort städerskan från fastigheten? Hen förlorar åtkomst direkt. Påbörjade men ej slutförda uppdrag blir lediga igen. Slutförda uppdrag finns kvar i historiken.', errInviteCreate: 'Det gick inte att skapa koden. Försök igen.', errRemoveCleaner: 'Det gick inte att ta bort städerskan. Försök igen.',
     },
     en: {
       tabNew: 'New booking',
@@ -100,7 +100,7 @@ export const translations = {
       welcomeDesc: 'To create bookings and invite your cleaner, you first need to register a property.',
       createPropNow: 'Create property now',
       editPropTitle: 'Edit property',
-      copyCodeTitle: 'Copy code',
+      copyCodeTitle: 'Copy code', btnCreateInvite: 'Create invitation code', inviteOneTimeHint: 'The code is valid for 7 days and can be used only once. It is shown only here, so share it right away.', inviteWhatsAppText: 'Hi! I invite you to connect to my property "{name}" in CleanBook.\n\nInvitation code: *{code}*', btnRemoveCleaner: 'Remove', confirmRemoveCleaner: 'Remove this cleaner from the property? They lose access immediately. Accepted but unfinished tasks become available again. Completed work stays in their history.', errInviteCreate: 'The code could not be created. Please try again.', errRemoveCleaner: 'The cleaner could not be removed. Please try again.',
     },
     da: {
       tabNew: 'Ny booking',
@@ -112,7 +112,7 @@ export const translations = {
       welcomeDesc: 'For at kunne oprette bookinger og invitere din rengøringsperson skal du først registrere en ejendom.',
       createPropNow: 'Opret ejendom nu',
       editPropTitle: 'Rediger ejendom',
-      copyCodeTitle: 'Kopiér kode',
+      copyCodeTitle: 'Kopiér kode', btnCreateInvite: 'Opret invitationskode', inviteOneTimeHint: 'Koden er gyldig i 7 dage og kan kun bruges én gang. Den vises kun her, så del den med det samme.', inviteWhatsAppText: 'Hej! Jeg inviterer dig til at forbinde dig med min ejendom "{name}" i CleanBook.\n\nInvitationskode: *{code}*', btnRemoveCleaner: 'Fjern', confirmRemoveCleaner: 'Fjern rengøringen fra ejendommen? Adgangen ophører med det samme. Påbegyndte, men ikke afsluttede opgaver bliver ledige igen. Afsluttede opgaver bliver i historikken.', errInviteCreate: 'Koden kunne ikke oprettes. Prøv igen.', errRemoveCleaner: 'Rengøringen kunne ikke fjernes. Prøv igen.',
     },
     es: {
       tabNew: 'Nueva reserva',
@@ -124,7 +124,7 @@ export const translations = {
       welcomeDesc: 'Para poder crear reservas e invitar a tu limpiadora, primero necesitas registrar una propiedad.',
       createPropNow: 'Crear propiedad ahora',
       editPropTitle: 'Editar propiedad',
-      copyCodeTitle: 'Copiar código',
+      copyCodeTitle: 'Copiar código', btnCreateInvite: 'Crear código de invitación', inviteOneTimeHint: 'El código es válido 7 días y solo puede usarse una vez. Se muestra solo aquí, así que compártelo enseguida.', inviteWhatsAppText: '¡Hola! Te invito a conectarte a mi propiedad "{name}" en CleanBook.\n\nCódigo de invitación: *{code}*', btnRemoveCleaner: 'Quitar', confirmRemoveCleaner: '¿Quitar a la limpiadora de la propiedad? Pierde el acceso al instante. Las tareas aceptadas pero no terminadas vuelven a quedar libres. Las completadas se mantienen en su historial.', errInviteCreate: 'No se pudo crear el código. Inténtalo de nuevo.', errRemoveCleaner: 'No se pudo quitar a la limpiadora. Inténtalo de nuevo.',
     },
   },
 
@@ -377,7 +377,7 @@ export const translations = {
       photosLabel: 'fotos',
       noTasksTitle: 'Sin tareas aquí',
       noTasksDesc: 'No hay limpiezas encontradas en este filtro.',
-      errCannotCompleteEarly: 'No puedes completar esta tarea antes de la salida del huésped.',
+      errCannotCompleteEarly: 'No puedes completar esta tarea antes de la salida del huésped.', errStatusUpdate: 'No se pudo actualizar la tarea. Inténtalo de nuevo.',
     },
     en: {
       filterActive: '🧹 Active',
@@ -408,7 +408,7 @@ export const translations = {
       photosLabel: 'photos',
       noTasksTitle: 'No tasks here',
       noTasksDesc: 'No cleanings found in this filter.',
-      errCannotCompleteEarly: 'You cannot complete this task before guest check-out.',
+      errCannotCompleteEarly: 'You cannot complete this task before guest check-out.', errStatusUpdate: 'The task could not be updated. Please try again.',
     },
     sv: {
       filterActive: '🧹 Aktiva',
@@ -439,7 +439,7 @@ export const translations = {
       photosLabel: 'foton',
       noTasksTitle: 'Inga uppdrag här',
       noTasksDesc: 'Hittade inga städningar i det här filtret.',
-      errCannotCompleteEarly: 'Du kan inte slutföra detta uppdrag före gästens utcheckning.',
+      errCannotCompleteEarly: 'Du kan inte slutföra detta uppdrag före gästens utcheckning.', errStatusUpdate: 'Det gick inte att uppdatera uppdraget. Försök igen.',
     },
     da: {
       filterActive: '🧹 Aktive',
@@ -470,15 +470,15 @@ export const translations = {
       photosLabel: 'fotos',
       noTasksTitle: 'Ingen opgaver her',
       noTasksDesc: 'Ingen rengøringer fundet i dette filter.',
-      errCannotCompleteEarly: 'Du kan ikke gennemføre denne opgave før gæstens udtjekning.',
+      errCannotCompleteEarly: 'Du kan ikke gennemføre denne opgave før gæstens udtjekning.', errStatusUpdate: 'Opgaven kunne ikke opdateres. Prøv igen.',
     },
   },
 
   cleanerCalendar: {
-    sv: { weekdays: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'], title: 'Städkalender', btnToday: 'Idag', legendPending: '🟡 Väntar', legendAccepted: '🔵 Accepterad', legendFinished: '💚 Slutförd', legendOpenDashed: '⏳ Streckad = Ingen nästa gäst', openWindowLabel: '(Gott om tid)', modalTitle: 'Städdetaljer', modalStatusLabel: 'Uppdragsstatus:', modalHostLabel: 'Värd:', modalInstruction: 'Värdens instruktion:', modalNextArrival: 'Nästa incheckning (Deadline):', departure: 'Utcheckning / Städstart', arrival: 'Incheckning', noNextArrival: 'Ingen nästa gäst inbokad (Gott om tid)', guests: 'gäster', laundryYes: '🧺 Tvätta lakan/handdukar', laundryNo: '🚫 Ingen tvätt', btnAccept: 'Acceptera uppdrag', btnComplete: 'Slutförd', btnIncident: 'Foto / Skada', windowWithNext: 'Städfönster: {address} ({start} till {end})', windowNoNext: 'Städfönster: {address} ({start} - ingen nästa gäst)' },
-    en: { weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], title: 'Cleaning Calendar', btnToday: 'Today', legendPending: '🟡 Pending', legendAccepted: '🔵 Accepted', legendFinished: '💚 Completed', legendOpenDashed: '⏳ Dashed = Flexible time', openWindowLabel: '(Flexible time)', modalTitle: 'Cleaning Details', modalStatusLabel: 'Task Status:', modalHostLabel: 'Host:', modalInstruction: 'Host Instruction:', modalNextArrival: 'Next arrival (Deadline):', departure: 'Departure / Cleaning start', arrival: 'Arrival', noNextArrival: 'No upcoming arrival (Flexible time)', guests: 'guests', laundryYes: '🧺 Wash linen', laundryNo: '🚫 No laundry', btnAccept: 'Accept task', btnComplete: 'Completed', btnIncident: 'Photo / Damage', windowWithNext: 'Cleaning window: {address} ({start} to {end})', windowNoNext: 'Cleaning window: {address} ({start} - no next guest)' },
-    da: { weekdays: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'], title: 'Rengøringskalender', btnToday: 'I dag', legendPending: '🟡 Afventer', legendAccepted: '🔵 Accepteret', legendFinished: '💚 Gennemført', legendOpenDashed: '⏳ Stribet = God tid', openWindowLabel: '(God tid)', modalTitle: 'Detaljer om rengøring', modalStatusLabel: 'Opgavestatus:', modalHostLabel: 'Vært:', modalInstruction: 'Værtens instruktion:', modalNextArrival: 'Næste ankomst (Deadline):', departure: 'Udtjekning / Rengøringsstart', arrival: 'Indtjekning', noNextArrival: 'Ingen næste ankomst (God tid)', guests: 'gæster', laundryYes: '🧺 Vask linned/håndklæder', laundryNo: '🚫 Ingen vask', btnAccept: 'Accepter opgave', btnComplete: 'Gennemført', btnIncident: 'Foto / Skade', windowWithNext: 'Rengøringsvindue: {address} ({start} til {end})', windowNoNext: 'Rengøringsvindue: {address} ({start} - ingen næste gæst)' },
-    es: { weekdays: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'], title: 'Calendario de Limpiezas', btnToday: 'Hoy', legendPending: '🟡 Por aceptar', legendAccepted: '🔵 Aceptada', legendFinished: '💚 Completada', legendOpenDashed: '⏳ Borde punteado = Tiempo extra', openWindowLabel: '(Tiempo extra)', modalTitle: 'Detalles de Limpieza', modalStatusLabel: 'Estado de tarea:', modalHostLabel: 'Anfitriona:', modalInstruction: 'Instrucción del anfitrión:', modalNextArrival: 'Próxima entrada (Límite):', departure: 'Salida / Inicio de limpieza', arrival: 'Entrada', noNextArrival: 'Sin próxima entrada (Tiempo extra)', guests: 'huéspedes', laundryYes: '🧺 Lavar lencería', laundryNo: '🚫 Sin colada', btnAccept: 'Aceptar tarea', btnComplete: 'Completado', btnIncident: 'Foto / Daño', windowWithNext: 'Ventana de limpieza: {address} ({start} a {end})', windowNoNext: 'Ventana de limpieza: {address} ({start} - sin próxima entrada)' },
+    sv: { weekdays: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'], title: 'Städkalender', btnToday: 'Idag', legendPending: '🟡 Väntar', legendAccepted: '🔵 Accepterad', legendFinished: '💚 Slutförd', legendOpenDashed: '⏳ Streckad = Ingen nästa gäst', openWindowLabel: '(Gott om tid)', modalTitle: 'Städdetaljer', modalStatusLabel: 'Uppdragsstatus:', modalHostLabel: 'Värd:', modalInstruction: 'Värdens instruktion:', modalNextArrival: 'Nästa incheckning (Deadline):', departure: 'Utcheckning / Städstart', arrival: 'Incheckning', noNextArrival: 'Ingen nästa gäst inbokad (Gott om tid)', guests: 'gäster', laundryYes: '🧺 Tvätta lakan/handdukar', laundryNo: '🚫 Ingen tvätt', btnAccept: 'Acceptera uppdrag', btnComplete: 'Slutförd', btnIncident: 'Foto / Skada', errStatusUpdate: 'Det gick inte att uppdatera uppdraget. Försök igen.', windowWithNext: 'Städfönster: {address} ({start} till {end})', windowNoNext: 'Städfönster: {address} ({start} - ingen nästa gäst)' },
+    en: { weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], title: 'Cleaning Calendar', btnToday: 'Today', legendPending: '🟡 Pending', legendAccepted: '🔵 Accepted', legendFinished: '💚 Completed', legendOpenDashed: '⏳ Dashed = Flexible time', openWindowLabel: '(Flexible time)', modalTitle: 'Cleaning Details', modalStatusLabel: 'Task Status:', modalHostLabel: 'Host:', modalInstruction: 'Host Instruction:', modalNextArrival: 'Next arrival (Deadline):', departure: 'Departure / Cleaning start', arrival: 'Arrival', noNextArrival: 'No upcoming arrival (Flexible time)', guests: 'guests', laundryYes: '🧺 Wash linen', laundryNo: '🚫 No laundry', btnAccept: 'Accept task', btnComplete: 'Completed', btnIncident: 'Photo / Damage', errStatusUpdate: 'The task could not be updated. Please try again.', windowWithNext: 'Cleaning window: {address} ({start} to {end})', windowNoNext: 'Cleaning window: {address} ({start} - no next guest)' },
+    da: { weekdays: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'], title: 'Rengøringskalender', btnToday: 'I dag', legendPending: '🟡 Afventer', legendAccepted: '🔵 Accepteret', legendFinished: '💚 Gennemført', legendOpenDashed: '⏳ Stribet = God tid', openWindowLabel: '(God tid)', modalTitle: 'Detaljer om rengøring', modalStatusLabel: 'Opgavestatus:', modalHostLabel: 'Vært:', modalInstruction: 'Værtens instruktion:', modalNextArrival: 'Næste ankomst (Deadline):', departure: 'Udtjekning / Rengøringsstart', arrival: 'Indtjekning', noNextArrival: 'Ingen næste ankomst (God tid)', guests: 'gæster', laundryYes: '🧺 Vask linned/håndklæder', laundryNo: '🚫 Ingen vask', btnAccept: 'Accepter opgave', btnComplete: 'Gennemført', btnIncident: 'Foto / Skade', errStatusUpdate: 'Opgaven kunne ikke opdateres. Prøv igen.', windowWithNext: 'Rengøringsvindue: {address} ({start} til {end})', windowNoNext: 'Rengøringsvindue: {address} ({start} - ingen næste gæst)' },
+    es: { weekdays: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'], title: 'Calendario de Limpiezas', btnToday: 'Hoy', legendPending: '🟡 Por aceptar', legendAccepted: '🔵 Aceptada', legendFinished: '💚 Completada', legendOpenDashed: '⏳ Borde punteado = Tiempo extra', openWindowLabel: '(Tiempo extra)', modalTitle: 'Detalles de Limpieza', modalStatusLabel: 'Estado de tarea:', modalHostLabel: 'Anfitriona:', modalInstruction: 'Instrucción del anfitrión:', modalNextArrival: 'Próxima entrada (Límite):', departure: 'Salida / Inicio de limpieza', arrival: 'Entrada', noNextArrival: 'Sin próxima entrada (Tiempo extra)', guests: 'huéspedes', laundryYes: '🧺 Lavar lencería', laundryNo: '🚫 Sin colada', btnAccept: 'Aceptar tarea', btnComplete: 'Completado', btnIncident: 'Foto / Daño', errStatusUpdate: 'No se pudo actualizar la tarea. Inténtalo de nuevo.', windowWithNext: 'Ventana de limpieza: {address} ({start} a {end})', windowNoNext: 'Ventana de limpieza: {address} ({start} - sin próxima entrada)' },
   },
 
   propertyModal: {

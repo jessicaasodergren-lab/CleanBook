@@ -1,6 +1,6 @@
 // src/components/cleaner/PropertyCard.tsx
 import { useState, useEffect } from 'react';
-import type { Property } from '../../lib/supabase';
+import { supabase, type Property } from '../../lib/supabase';
 import { propertyService } from '../../services/propertyService';
 import { formatDate } from '../../lib/constants';
 import { translations } from '../../i18n/translations';
@@ -25,29 +25,20 @@ import {
   User,
 } from 'lucide-react';
 
-interface ConnectionData {
-  id: string;
-  property_id: string;
-  internal_notes: string | null;
-  cleaning_time: string | null;
-}
-
 interface PropertyCardProps {
   property: Property;
-  connectionData?: ConnectionData;
   lang?: CleanerLanguage;
   onRefresh: () => void;
 }
 
 export default function PropertyCard({
   property: p,
-  connectionData,
   lang = 'es',
   onRefresh,
 }: PropertyCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [timeVal, setTimeVal] = useState(connectionData?.cleaning_time || p.cleaning_time || '');
-  const [notesVal, setNotesVal] = useState(connectionData?.internal_notes || p.internal_notes || '');
+  const [timeVal, setTimeVal] = useState(p.cleaning_time || '');
+  const [notesVal, setNotesVal] = useState(p.internal_notes || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -55,20 +46,20 @@ export default function PropertyCard({
 
   // Håll state synkat när data laddas om från databasen
   useEffect(() => {
-    setTimeVal(connectionData?.cleaning_time || p.cleaning_time || '');
-    setNotesVal(connectionData?.internal_notes || p.internal_notes || '');
-  }, [connectionData, p.cleaning_time, p.internal_notes]);
+    setTimeVal(p.cleaning_time || '');
+    setNotesVal(p.internal_notes || '');
+  }, [p.cleaning_time, p.internal_notes]);
 
   const txt = translations.propertyList[lang];
 
-  const displayTime = connectionData?.cleaning_time || p.cleaning_time || txt.noTimeSet;
+  const displayTime = p.cleaning_time || txt.noTimeSet;
 
   const handleSaveInline = async () => {
     setIsSaving(true);
     setSaveError(null);
 
     try {
-      const { data: { session } } = await (await import('../../lib/supabase')).supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session');
 
       await propertyService.updateCleanerConnection(session.user.id, p.id, timeVal, notesVal);
@@ -85,14 +76,12 @@ export default function PropertyCard({
 
   const handleDisconnect = async () => {
     if (!window.confirm(`${txt.confirmDisconnect} "${p.name}"?`)) return;
+    if (!p.connection_id) return;
 
     setIsDisconnecting(true);
     try {
-      const { data: { session } } = await (await import('../../lib/supabase')).supabase.auth.getSession();
-      if (session) {
-        await propertyService.disconnectProperty(session.user.id, p.id);
-        onRefresh();
-      }
+      await propertyService.endConnection(p.connection_id);
+      onRefresh();
     } catch (err) {
       console.error('Kunde inte koppla från fastighet:', err);
     } finally {

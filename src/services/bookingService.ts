@@ -1,5 +1,5 @@
 // src/services/bookingService.ts
-import { supabase, type Booking, type BookingStatus, translateToSpanish } from '../lib/supabase';
+import { supabase, type Booking, translateToSpanish } from '../lib/supabase';
 
 export const bookingService = {
   /**
@@ -35,48 +35,13 @@ export const bookingService = {
   },
 
   /**
-   * Uppdaterar en hel bokning
+   * Städerska accepterar, återöppnar eller slutför en bokning (valideras i databasen)
    */
-  async updateBooking(
-    bookingId: string,
-    payload: Partial<Omit<Booking, 'id' | 'created_at'>>
-  ): Promise<Booking> {
-    let notesEs = payload.notes_es;
-
-    if (payload.notes !== undefined) {
-      const cleanNotes = payload.notes?.trim();
-      if (cleanNotes) {
-        try {
-          const safeText = cleanNotes.length > 450 ? cleanNotes.slice(0, 450) : cleanNotes;
-          const translated = await translateToSpanish(safeText);
-          notesEs = (translated && !translated.toUpperCase().includes('QUERY LENGTH LIMIT')) ? translated : cleanNotes;
-        } catch {
-          notesEs = cleanNotes;
-        }
-      } else {
-        notesEs = null;
-      }
-    }
-
-    const { data, error } = await supabase
-      .from('bookings')
-      .update({
-        ...payload,
-        ...(payload.notes !== undefined ? { notes_es: notesEs } : {}),
-      })
-      .eq('id', bookingId)
-      .select('*, properties(name, address)')
-      .single();
-
-    if (error) throw error;
-    return data as Booking;
-  },
-
-  async updateStatus(bookingId: string, status: BookingStatus): Promise<void> {
-    const { error } = await supabase
-      .from('bookings')
-      .update({ status })
-      .eq('id', bookingId);
+  async updateStatus(bookingId: string, status: 'accepted' | 'finished'): Promise<void> {
+    const { error } = await supabase.rpc('update_booking_status', {
+      p_booking_id: bookingId,
+      p_status: status,
+    });
 
     if (error) throw error;
   },

@@ -3,7 +3,7 @@ import { supabase, type Property } from '../lib/supabase';
 
 export const propertyService = {
   /**
-   * Hämtar alla fastigheter som ägs av den inloggade värden och inkluderar kopplade städerskor i 1 anrop
+   * Hämtar alla fastigheter som ägs av den inloggade värden och inkluderar aktiva städerskor i 1 anrop
    */
   async getHostProperties(hostId: string): Promise<Property[]> {
     const { data: properties, error: propError } = await supabase
@@ -13,16 +13,13 @@ export const propertyService = {
 
     if (propError || !properties) return [];
 
-    const propertyIds = properties.map(p => p.id);
-
-    // Hämta kopplingar separat
     const { data: connections, error: connError } = await supabase
       .from('property_connections')
-      .select('property_id, cleaner_id');
+      .select('id, property_id, cleaner_id')
+      .eq('status', 'active');
 
     if (connError) return properties;
 
-    // Hämta profilerna för de städare vi hittade i kopplingarna
     const cleanerIds = connections.map(c => c.cleaner_id);
     const { data: profiles } = await supabase
       .from('profiles')
@@ -33,7 +30,10 @@ export const propertyService = {
       const conn = connections.filter(c => c.property_id === p.id);
       return {
         ...p,
-        cleaners: conn.map(c => profiles?.find(prof => prof.id === c.cleaner_id)).filter(Boolean)
+        cleaners: conn.flatMap(c => {
+          const profile = profiles?.find(prof => prof.id === c.cleaner_id);
+          return profile ? [{ ...profile, connection_id: c.id }] : [];
+        })
       };
     });
   },
@@ -50,15 +50,12 @@ export const propertyService = {
     bathrooms?: string | null;
     property_notes?: string | null;
   }): Promise<Property> {
-    const inviteCode = `CLEAN-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
     const { data, error } = await supabase
       .from('properties')
       .insert({
         host_id: payload.hostId,
         name: payload.name,
         address: payload.address || payload.name,
-        invite_code: inviteCode,
         kvm: payload.kvm || null,
         rooms: payload.rooms || null,
         bathrooms: payload.bathrooms || null,
@@ -115,33 +112,33 @@ export const propertyService = {
   },
 
   /**
-   * Hämtar städerskans kopplade fastigheter och värdens namn i 1 anrop
+   * Hämtar städerskans aktiva fastigheter, hennes privata inställningar och värdens namn i 1 anrop
    */
   async getCleanerProperties(cleanerId: string): Promise<Property[]> {
-    console.log("Hämtar för cleanerId:", cleanerId);
-
-    // 1. Hämta kopplingar
     const { data: connections, error: connError } = await supabase
       .from('property_connections')
-      .select('property_id, cleaning_time, internal_notes')
-      .eq('cleaner_id', cleanerId);
+      .select('id, property_id')
+      .eq('cleaner_id', cleanerId)
+      .eq('status', 'active');
 
-    console.log("Kopplingar hittade:", connections);
-
-    if (connError) { console.error("Kopplingsfel:", connError); throw connError; }
+    if (connError) throw connError;
     if (!connections || connections.length === 0) return [];
 
     const propertyIds = connections.map(c => c.property_id);
 
-    // 2. Hämta fastigheter (vi tar bort joinen för att utesluta fel i relationsnamnet)
     const { data: properties, error: propError } = await supabase
       .from('properties')
       .select('*')
       .in('id', propertyIds);
 
-    console.log("Fastigheter hittade:", properties);
+    if (propError) throw propError;
 
-    if (propError) { console.error("Fastighetsfel:", propError); throw propError; }
+    const { data: settings, error: settingsError } = await supabase
+      .from('cleaner_property_settings')
+      .select('property_id, cleaning_time, internal_notes')
+      .eq('cleaner_id', cleanerId);
+
+    if (settingsError) throw settingsError;
 
     const hostIds = [...new Set((properties || []).map(p => p.host_id).filter(Boolean))];
     const { data: hosts, error: hostError } = await supabase
@@ -153,19 +150,33 @@ export const propertyService = {
 
     return (properties || []).map(p => {
       const conn = connections.find(c => c.property_id === p.id);
+      const setting = settings?.find(s => s.property_id === p.id);
       const host = hosts?.find(h => h.id === p.host_id);
       return {
         ...p,
         host_name: host?.full_name || 'Värd',
         host_phone: host?.phone || null,
         host_language: host?.language || null,
-        cleaning_time: conn?.cleaning_time,
-        internal_notes: conn?.internal_notes,
+        connection_id: conn?.id ?? null,
+        cleaning_time: setting?.cleaning_time,
+        internal_notes: setting?.internal_notes,
       } as Property;
     });
   },
+
   /**
-   * Kopplar en städerska till en fastighet via invite_code
+   * Skapar en engångsinbjudningskod för en fastighet (visas bara en gång)
+   */
+  async createInvitation(propertyId: string): Promise<string> {
+    const { data, error } = await supabase.rpc('create_property_invitation', { p_property_id: propertyId });
+
+    if (error) throw error;
+    if (typeof data !== 'string') throw new Error('INVALID_RESPONSE');
+    return data;
+  },
+
+  /**
+   * Kopplar en städerska till en fastighet via en engångsinbjudningskod
    */
   async connectByInviteCode(code: string): Promise<void> {
     const { error } = await supabase.rpc('connect_cleaner_by_invite', { p_code: code });
@@ -187,26 +198,26 @@ export const propertyService = {
     notes: string | null
   ): Promise<void> {
     const { error } = await supabase
-      .from('property_connections')
-      .update({
-        cleaning_time: time?.trim() || null,
-        internal_notes: notes?.trim() || null,
-      })
-      .eq('property_id', propertyId)
-      .eq('cleaner_id', cleanerId);
+      .from('cleaner_property_settings')
+      .upsert(
+        {
+          cleaner_id: cleanerId,
+          property_id: propertyId,
+          cleaning_time: time?.trim() || null,
+          internal_notes: notes?.trim() || null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'cleaner_id,property_id' }
+      );
 
     if (error) throw error;
   },
 
   /**
-   * Kopplar från en fastighet från städerskan
+   * Avslutar en koppling mellan städerska och fastighet (från både värd och städerska)
    */
-  async disconnectProperty(cleanerId: string, propertyId: string): Promise<void> {
-    const { error } = await supabase
-      .from('property_connections')
-      .delete()
-      .eq('property_id', propertyId)
-      .eq('cleaner_id', cleanerId);
+  async endConnection(connectionId: string): Promise<void> {
+    const { error } = await supabase.rpc('end_connection', { p_connection_id: connectionId });
 
     if (error) throw error;
   },
